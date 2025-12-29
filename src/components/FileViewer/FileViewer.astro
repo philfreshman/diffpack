@@ -1,0 +1,70 @@
+<div id="diff-container" class="hidden">
+	<div id="diff-filename" class="text-sm font-semibold text-neutral-900 dark:text-white"></div>
+	<pre
+		id="diff-output"
+		class="line mt-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-xs text-neutral-900 dark:text-neutral-100 overflow-auto whitespace-pre-wrap"
+	></pre>
+</div>
+
+<script>
+    const diffContainer = document.getElementById('diff-container');
+    const diffFilename = document.getElementById('diff-filename');
+    const diffOutput = document.getElementById('diff-output');
+
+    function resetDiff() {
+        diffContainer?.classList.add('hidden');
+        if (diffFilename) diffFilename.textContent = "";
+        if (diffOutput) diffOutput.innerHTML = "";
+    }
+
+    function escapeHtml(value: string) {
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function renderDiffHtml(diff: string, isDiff = true) {
+		const lineHeight = 'leading-[1.9]'
+        return diff.split('\n').map((line) => {
+            let lineClass: string;
+            if (isDiff) {
+                if (line.startsWith('+')) {
+                    lineClass = 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+                } else if (line.startsWith('-')) {
+                    lineClass = 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+                } else if (line.startsWith('@@') || line.startsWith('---') || line.startsWith('+++')) {
+                    lineClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200';
+                } else {
+                    lineClass = 'text-neutral-800 dark:text-neutral-100';
+                }
+            } else {
+                lineClass = 'text-neutral-800 dark:text-neutral-100';
+            }
+
+            return `<div class="${lineHeight} ${lineClass}">${escapeHtml(line)}</div>`;
+        }).join('');
+    }
+
+    function showDiff(filename: string, diff: string, isDiff = true) {
+        if (!diffContainer || !diffFilename || !diffOutput) return;
+        diffContainer.classList.remove('hidden');
+        diffFilename.textContent = filename;
+        diffOutput.innerHTML = renderDiffHtml(diff, isDiff);
+    }
+
+    interface FileDiffDetail {
+        filename: string;
+        diff: string;
+        isDiff: boolean;
+    }
+
+    window.addEventListener('start-diff', resetDiff);
+    window.addEventListener('file-diff', (e) => {
+        const customEvent = e as CustomEvent<FileDiffDetail>;
+        const detail = customEvent.detail;
+        if (detail && detail.filename && detail.diff !== undefined) {
+            showDiff(detail.filename, detail.diff, detail.isDiff);
+        }
+    });
+</script>
