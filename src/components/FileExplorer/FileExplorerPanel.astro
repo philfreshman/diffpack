@@ -40,6 +40,7 @@ import TreeList from "./TreeList.astro";
     let currentFilter = "";
     let showOnlyModified = false;
     let expandedKeys = new Set<string>();
+    let collapsedKeys = new Set<string>();
     let width = DEFAULT_WIDTH;
     let diffData: DiffFileEntry | null = null;
     let diffWorker: Worker | null = null;
@@ -62,11 +63,16 @@ import TreeList from "./TreeList.astro";
         }
     }
 
-    function getStatusBadge(status: DiffStatus) {
-        if (status === "unchanged") return "";
-        const char = status === "added" ? "A" : status === "removed" ? "R" : "M";
-        const color = getStatusColor(status);
-        return `<span class="text-[10px] font-bold ${color} px-1 shrink-0">${char}</span>`;
+    function getStatusBadge(item: DiffFileEntry) {
+        if (item.status === "unchanged" || item.diffCount === undefined) return "";
+
+        const count = item.diffCount;
+        if (count === 0) return "";
+
+        const color = count > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+        const text = count > 0 ? `+${count}` : `${count}`;
+
+        return `<span class="text-[12px] font-bold ${color} px-1 shrink-0">${text}</span>`;
     }
 
     // Initialization
@@ -106,11 +112,13 @@ import TreeList from "./TreeList.astro";
 
         filterInput?.addEventListener("input", (e) => {
             currentFilter = (e.target as HTMLInputElement).value.toLowerCase();
+            collapsedKeys.clear();
             renderTree();
         });
 
         toggleModifiedBtn?.addEventListener("click", () => {
             showOnlyModified = !showOnlyModified;
+            collapsedKeys.clear();
             if (showOnlyModified) {
                 toggleModifiedBtn.classList.add("bg-blue-50", "text-blue-600", "border-blue-200", "dark:bg-blue-900/20", "dark:text-blue-400", "dark:border-blue-800");
                 toggleModifiedBtn.classList.remove("text-neutral-400", "dark:text-neutral-500");
@@ -185,15 +193,15 @@ import TreeList from "./TreeList.astro";
 
     function hasVisibleDescendants(item: DiffFileEntry): boolean {
         if (!item.children) return false;
-        
+
         return item.children.some(child => {
             const matchesFilter = child.path.toLowerCase().includes(currentFilter);
             const isModified = child.status !== "unchanged";
-            
+
             // Check if this child itself should be visible
             const isVisible = showOnlyModified ? (isModified && matchesFilter) : matchesFilter;
             if (isVisible) return true;
-            
+
             // Recursively check its descendants
             return hasVisibleDescendants(child);
         });
@@ -206,9 +214,12 @@ import TreeList from "./TreeList.astro";
         const isModified = item.status !== "unchanged";
 
         const hasVisibleChildren = hasChildren ? hasVisibleDescendants(item) : false;
-
         const shouldAutoExpand = currentFilter.length > 0 || showOnlyModified;
-        const isExpanded = expandedKeys.has(item.path) || (shouldAutoExpand && hasVisibleChildren);
+
+        let isExpanded = expandedKeys.has(item.path);
+        if (!isExpanded && !collapsedKeys.has(item.path) && shouldAutoExpand && hasVisibleChildren) {
+            isExpanded = true;
+        }
 
         // Visibility logic:
         // 1. If filtering by text, item or its descendants must match filter
@@ -248,14 +259,19 @@ import TreeList from "./TreeList.astro";
         nameSpan.textContent = name;
         row.appendChild(nameSpan);
 
-        row.innerHTML += getStatusBadge(item.status);
+        const badgeHtml = getStatusBadge(item);
+        if (badgeHtml) {
+            row.insertAdjacentHTML('beforeend', badgeHtml);
+        }
 
         row.addEventListener("click", () => {
             if (hasChildren) {
-                if (expandedKeys.has(item.path)) {
+                if (isExpanded) {
                     expandedKeys.delete(item.path);
+                    collapsedKeys.add(item.path);
                 } else {
                     expandedKeys.add(item.path);
+                    collapsedKeys.delete(item.path);
                 }
                 renderTree();
             } else if (item.type === "file" && diffWorker) {

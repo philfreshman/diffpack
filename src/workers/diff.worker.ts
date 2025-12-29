@@ -6,6 +6,7 @@ export type DiffFileEntry = {
 	path: string;
 	type: "file" | "directory";
 	status: DiffStatus;
+	diffCount?: number;
 	children?: DiffFileEntry[];
 };
 
@@ -254,43 +255,105 @@ function computeStatuses(
 	toFiles: Record<string, FileMapEntry>,
 	fromDirs: Set<string>,
 	toDirs: Set<string>,
-): DiffStatus {
+): { status: DiffStatus; diffCount: number } {
 	if (node.type === "file") {
 		const fromEntry = fromFiles[node.path];
 		const toEntry = toFiles[node.path];
 
 		if (fromEntry && !toEntry) {
 			node.status = "removed";
+			node.diffCount = -fromEntry.content.split("\n").length;
 		} else if (!fromEntry && toEntry) {
 			node.status = "added";
+			node.diffCount = toEntry.content.split("\n").length;
 		} else if (fromEntry && toEntry) {
-			node.status =
-				fromEntry.content === toEntry.content ? "unchanged" : "modified";
+			if (fromEntry.content === toEntry.content) {
+				node.status = "unchanged";
+				node.diffCount = 0;
+			} else {
+				node.status = "modified";
+				const fromLines = fromEntry.content.split("\n");
+				const toLines = toEntry.content.split("\n");
+				const { added, removed } = countDiff(fromLines, toLines);
+				node.diffCount = added - removed;
+			}
 		} else {
 			node.status = "unchanged";
+			node.diffCount = 0;
 		}
-		return node.status;
+		return { status: node.status, diffCount: node.diffCount || 0 };
 	}
 
 	const children = node.children || [];
-	const childStatuses = children.map((child) =>
+	const childResults = children.map((child) =>
 		computeStatuses(child, fromFiles, toFiles, fromDirs, toDirs),
 	);
 
 	const inFrom = node.path === "/" || fromDirs.has(node.path);
 	const inTo = node.path === "/" || toDirs.has(node.path);
 
+	const totalDiffCount = childResults.reduce((acc, curr) => acc + curr.diffCount, 0);
+	node.diffCount = totalDiffCount;
+
 	if (inFrom && !inTo) {
 		node.status = "removed";
 	} else if (!inFrom && inTo) {
 		node.status = "added";
-	} else if (childStatuses.every((status) => status === "unchanged")) {
+	} else if (childResults.every((res) => res.status === "unchanged")) {
 		node.status = "unchanged";
 	} else {
 		node.status = "modified";
 	}
 
-	return node.status;
+	return { status: node.status, diffCount: node.diffCount };
+}
+
+function countDiff(fromLines: string[], toLines: string[]): { added: number, removed: number } {
+	const m = fromLines.length;
+	const n = toLines.length;
+	const dp: number[][] = Array.from({ length: m + 1 }, () =>
+		Array(n + 1).fill(0),
+	);
+
+	for (let i = m - 1; i >= 0; i--) {
+		for (let j = n - 1; j >= 0; j--) {
+			if (fromLines[i] === toLines[j]) {
+				dp[i][j] = dp[i + 1][j + 1] + 1;
+			} else {
+				dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+			}
+		}
+	}
+
+	let added = 0;
+	let removed = 0;
+	let i = 0;
+	let j = 0;
+
+	while (i < m && j < n) {
+		if (fromLines[i] === toLines[j]) {
+			i++;
+			j++;
+		} else if (dp[i + 1][j] >= dp[i][j + 1]) {
+			removed++;
+			i++;
+		} else {
+			added++;
+			j++;
+		}
+	}
+
+	while (i < m) {
+		removed++;
+		i++;
+	}
+
+	while (j < n) {
+		added++;
+		j++;
+	}
+
+	return { added, removed };
 }
 
 export function handleGetDiff(
