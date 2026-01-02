@@ -92,6 +92,11 @@
 		line-height: 1.5;
 	}
 
+	.diff-highlight .diff-code-line {
+		display: block;
+		width: 100%;
+	}
+
 	.dark .line-numbers .line-numbers-rows {
 		border-right: 1px solid #444;
 	}
@@ -248,15 +253,17 @@
 
 			if (isDiff) {
 				diffOutput.classList.add('diff-highlight');
+				diffCode.className = '';
+				diffCode.classList.add('language-diff');
+				diffCode.textContent = diff;
+				Prism.highlightElement(diffCode);
 			} else {
 				diffOutput.classList.remove('diff-highlight');
+				diffCode.className = '';
+				diffCode.classList.add(`language-${lang}`);
+				diffCode.textContent = diff;
+				Prism.highlightElement(diffCode);
 			}
-
-			diffCode.className = '';
-			diffCode.classList.add(`language-${lang}`);
-
-			diffCode.textContent = diff;
-			Prism.highlightElement(diffCode);
 		}
     }
 
@@ -270,7 +277,7 @@
     window.addEventListener('file-diff', (e) => {
         const customEvent = e as CustomEvent<FileDiffDetail>;
         const detail = customEvent.detail;
-        if (detail && detail.filename && detail.diff !== undefined) {
+        if (detail?.filename && detail.diff !== undefined) {
             showDiff(detail.filename, detail.diff, detail.isDiff);
         }
     });

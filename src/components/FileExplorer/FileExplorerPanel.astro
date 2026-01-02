@@ -1,4 +1,5 @@
 ---
+
 import ResizerHandle from "./ResizerHandle.astro";
 import TreeFilter from "./TreeFilter.astro";
 import TreeList from "./TreeList.astro";
@@ -64,15 +65,22 @@ import TreeList from "./TreeList.astro";
     }
 
     function getStatusBadge(item: DiffFileEntry) {
-        if (item.status === "unchanged" || item.diffCount === undefined) return "";
+        if (item.status === "unchanged") return "";
 
-        const count = item.diffCount;
-        if (count === 0) return "";
+        const added = item.added || 0;
+        const removed = item.removed || 0;
 
-        const color = count > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
-        const text = count > 0 ? `+${count}` : `${count}`;
+        if (added === 0 && removed === 0) return "";
 
-        return `<span class="text-[12px] font-bold ${color} px-1 shrink-0">${text}</span>`;
+        let badges = "";
+        if (added > 0) {
+            badges += `<span class="text-[12px] font-bold text-green-600 dark:text-green-400 px-1 shrink-0">+${added}</span>`;
+        }
+        if (removed > 0) {
+            badges += `<span class="text-[12px] font-bold text-red-600 dark:text-red-400 px-1 shrink-0">-${removed}</span>`;
+        }
+
+        return badges;
     }
 
     // Initialization

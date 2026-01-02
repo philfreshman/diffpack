@@ -6,7 +6,8 @@ export type DiffFileEntry = {
 	path: string;
 	type: "file" | "directory";
 	status: DiffStatus;
-	diffCount?: number;
+	added?: number;
+	removed?: number;
 	children?: DiffFileEntry[];
 };
 
@@ -255,33 +256,42 @@ function computeStatuses(
 	toFiles: Record<string, FileMapEntry>,
 	fromDirs: Set<string>,
 	toDirs: Set<string>,
-): { status: DiffStatus; diffCount: number } {
+): { status: DiffStatus; added: number; removed: number } {
 	if (node.type === "file") {
 		const fromEntry = fromFiles[node.path];
 		const toEntry = toFiles[node.path];
 
 		if (fromEntry && !toEntry) {
 			node.status = "removed";
-			node.diffCount = -fromEntry.content.split("\n").length;
+			node.added = 0;
+			node.removed = fromEntry.content.split("\n").length;
 		} else if (!fromEntry && toEntry) {
 			node.status = "added";
-			node.diffCount = toEntry.content.split("\n").length;
+			node.added = toEntry.content.split("\n").length;
+			node.removed = 0;
 		} else if (fromEntry && toEntry) {
 			if (fromEntry.content === toEntry.content) {
 				node.status = "unchanged";
-				node.diffCount = 0;
+				node.added = 0;
+				node.removed = 0;
 			} else {
 				node.status = "modified";
 				const fromLines = fromEntry.content.split("\n");
 				const toLines = toEntry.content.split("\n");
 				const { added, removed } = countDiff(fromLines, toLines);
-				node.diffCount = added - removed;
+				node.added = added;
+				node.removed = removed;
 			}
 		} else {
 			node.status = "unchanged";
-			node.diffCount = 0;
+			node.added = 0;
+			node.removed = 0;
 		}
-		return { status: node.status, diffCount: node.diffCount || 0 };
+		return {
+			status: node.status,
+			added: node.added || 0,
+			removed: node.removed || 0,
+		};
 	}
 
 	const children = node.children || [];
@@ -292,8 +302,13 @@ function computeStatuses(
 	const inFrom = node.path === "/" || fromDirs.has(node.path);
 	const inTo = node.path === "/" || toDirs.has(node.path);
 
-	const totalDiffCount = childResults.reduce((acc, curr) => acc + curr.diffCount, 0);
-	node.diffCount = totalDiffCount;
+	const totalAdded = childResults.reduce((acc, curr) => acc + curr.added, 0);
+	const totalRemoved = childResults.reduce(
+		(acc, curr) => acc + curr.removed,
+		0,
+	);
+	node.added = totalAdded;
+	node.removed = totalRemoved;
 
 	if (inFrom && !inTo) {
 		node.status = "removed";
@@ -305,10 +320,13 @@ function computeStatuses(
 		node.status = "modified";
 	}
 
-	return { status: node.status, diffCount: node.diffCount };
+	return { status: node.status, added: node.added, removed: node.removed };
 }
 
-function countDiff(fromLines: string[], toLines: string[]): { added: number, removed: number } {
+function countDiff(
+	fromLines: string[],
+	toLines: string[],
+): { added: number; removed: number } {
 	const m = fromLines.length;
 	const n = toLines.length;
 	const dp: number[][] = Array.from({ length: m + 1 }, () =>
