@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/npm/(.*)", "destination": "/npm" },
+    { "source": "/crates/(.*)", "destination": "/crates" }
+  ]
+}

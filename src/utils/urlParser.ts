@@ -7,7 +7,8 @@ export interface UrlState {
 }
 
 export function parseUrl(pathname: string): UrlState {
-	const parts = pathname.split("/").filter(Boolean);
+	const decodedPathname = decodeURIComponent(pathname);
+	const parts = decodedPathname.split("/").filter(Boolean);
 
 	if (parts.length === 0) {
 		return { registry: "npm", package: "", from: "", to: "" , file: ""};
