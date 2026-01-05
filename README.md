@@ -1,4 +1,4 @@
-# diffpack.io
+# diffpack
 
 Compare package versions across ecosystems. Clean. Fast. Source-aware.
 
