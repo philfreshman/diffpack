@@ -1,13 +1,14 @@
 ---
-import EyeIcon from "../Icons/EyeIcon.astro";
 import FilterIcon from "../Icons/FilterIcon.astro";
+import SearchIcon from "../Icons/SearchIcon.astro";
 ---
 
 <div class="relative mb-3 flex items-center gap-2">
 	<div class="relative flex-1">
-		<FilterIcon
+		<SearchIcon
 			class="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-neutral-500"
 		/>
+		<label for="tree-filter"/>
 		<input
 			type="text"
 			id="tree-filter"
@@ -20,6 +21,6 @@ import FilterIcon from "../Icons/FilterIcon.astro";
 		class="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 transition-colors"
 		title="Toggle show only modified files"
 	>
-		<EyeIcon class="w-4 h-4"/>
+		<FilterIcon class="w-4 h-4"/>
 	</button>
 </div>
