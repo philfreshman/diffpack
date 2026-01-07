@@ -45,10 +45,20 @@ import Toolbar from "./Toolbar.astro";
 	import "prismjs/plugins/diff-highlight/prism-diff-highlight";
 	import "prismjs/plugins/autolinker/prism-autolinker";
 
-	const diffContainer = document.getElementById("diff-container");
-	const diffFilename = document.getElementById("diff-filename");
-	const diffContent = document.getElementById("diff-content");
-	const languageBadge = document.getElementById("language-badge");
+	let diffContainer = document.getElementById("diff-container");
+	let diffFilename = document.getElementById("diff-filename");
+	let diffContent = document.getElementById("diff-content");
+	let languageBadge = document.getElementById("language-badge");
+
+	function initFileViewer() {
+		diffContainer = document.getElementById("diff-container");
+		diffFilename = document.getElementById("diff-filename");
+		diffContent = document.getElementById("diff-content");
+		languageBadge = document.getElementById("language-badge");
+	}
+
+	initFileViewer();
+	document.addEventListener("astro:page-load", initFileViewer);
 
 	interface DiffLine {
 		type: "added" | "deleted" | "unchanged" | "hunk";

@@ -31,9 +31,14 @@ import ThemeSelect from "./ThemeSelect.astro";
 </div>
 
 <script>
-	const expandAllBtn = document.getElementById("expand-all-btn");
+	function initToolbar() {
+		const expandAllBtn = document.getElementById("expand-all-btn");
 
-	expandAllBtn?.addEventListener("click", () => {
-		window.dispatchEvent(new CustomEvent("expand-all-diff"));
-	});
+		expandAllBtn?.addEventListener("click", () => {
+			window.dispatchEvent(new CustomEvent("expand-all-diff"));
+		});
+	}
+
+	initToolbar();
+	document.addEventListener("astro:page-load", initToolbar);
 </script>

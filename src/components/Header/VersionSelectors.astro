@@ -55,217 +55,224 @@
 	} from "../../registries/searchService.ts";
 	import { parseUrl } from "../../utils/urlParser";
 
-	const fromInput = document.getElementById("from-version") as HTMLInputElement;
-	const toInput = document.getElementById("to-version") as HTMLInputElement;
-	const fromResults = document.getElementById("from-results") as HTMLDivElement;
-	const toResults = document.getElementById("to-results") as HTMLDivElement;
+	function initVersionSelectors() {
+		const fromInput = document.getElementById("from-version") as HTMLInputElement;
+		const toInput = document.getElementById("to-version") as HTMLInputElement;
+		const fromResults = document.getElementById("from-results") as HTMLDivElement;
+		const toResults = document.getElementById("to-results") as HTMLDivElement;
 
-	let allVersions: string[] = [];
-	let fromSelectedIndex = -1;
-	let toSelectedIndex = -1;
+		if (!fromInput || !toInput || !fromResults || !toResults) return;
 
-	function renderDropdown(
-		container: HTMLDivElement,
-		versions: string[],
-		_: HTMLInputElement,
-	) {
-		if (versions.length === 0) {
-			container.classList.add("hidden");
-			return;
-		}
+		let allVersions: string[] = [];
+		let fromSelectedIndex = -1;
+		let toSelectedIndex = -1;
 
-		container.innerHTML = versions
-			.map(
-				(v, i) => `
+		function renderDropdown(
+			container: HTMLDivElement,
+			versions: string[],
+			_: HTMLInputElement,
+		) {
+			if (versions.length === 0) {
+				container.classList.add("hidden");
+				return;
+			}
+
+			container.innerHTML = versions
+				.map(
+					(v, i) => `
 			<div class="version-item px-4 py-2 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors text-sm text-neutral-900 dark:text-white" data-version="${v}" data-index="${i}">
 				${v}
 			</div>
 		`,
-			)
-			.join("");
-		container.classList.remove("hidden");
-	}
-
-	function filterVersions(query: string) {
-		return allVersions.filter((v) =>
-			v.toLowerCase().includes(query.toLowerCase()),
-		);
-	}
-
-	function selectVersion(
-		input: HTMLInputElement,
-		version: string,
-		container: HTMLDivElement,
-	) {
-		input.value = version;
-		container.classList.add("hidden");
-
-		const packageInput = document.getElementById(
-			"package-search",
-		) as HTMLInputElement;
-		updateUrl(packageInput.value, fromInput.value, toInput.value);
-		window.dispatchEvent(new CustomEvent("version-changed"));
-	}
-
-	function getUrlState() {
-		return parseUrl(window.location.pathname);
-	}
-
-	function updateUrl(pkg: string, from: string, to: string) {
-		const registry = getRegistry();
-		const state = parseUrl(window.location.pathname);
-		const file = state.package === pkg ? state.file : "";
-		const pathParts = [registry, pkg, from, to, file].filter(Boolean);
-		const newPath = `/${pathParts.join("/")}`;
-		if (window.location.pathname !== newPath) {
-			window.history.pushState({}, "", newPath);
+				)
+				.join("");
+			container.classList.remove("hidden");
 		}
-	}
 
-	async function loadVersions(packageName: string) {
-		fromInput.disabled = true;
-		toInput.disabled = true;
-		fromInput.placeholder = "Loading...";
-		toInput.placeholder = "Loading...";
-
-		try {
-			allVersions = await fetchVersions(packageName);
-
-			const state = getUrlState();
-			if (state.from && allVersions.includes(state.from)) {
-				fromInput.value = state.from;
-			} else if (allVersions.length >= 2) {
-				fromInput.value = allVersions[1];
-			} else if (allVersions.length >= 1) {
-				fromInput.value = allVersions[0];
-			}
-
-			if (state.to && allVersions.includes(state.to)) {
-				toInput.value = state.to;
-			} else if (allVersions.length >= 1) {
-				toInput.value = allVersions[0];
-			}
-
-			window.dispatchEvent(
-				new CustomEvent("versions-loaded", {
-					detail: { packageName, from: fromInput.value, to: toInput.value },
-				}),
+		function filterVersions(query: string) {
+			return allVersions.filter((v) =>
+				v.toLowerCase().includes(query.toLowerCase()),
 			);
-
-			updateUrl(packageName, fromInput.value, toInput.value);
-		} catch (e) {
-			console.error(e);
-			fromInput.placeholder = "Error";
-			toInput.placeholder = "Error";
-		} finally {
-			fromInput.disabled = false;
-			toInput.disabled = false;
-			fromInput.placeholder = "Select version";
-			toInput.placeholder = "Select version";
 		}
-	}
 
-	// Setup listeners for both inputs
-	[
-		{
-			input: fromInput,
-			results: fromResults,
-			getIndex: () => fromSelectedIndex,
-			setIndex: (i: number) => {
-				fromSelectedIndex = i;
-			},
-		},
-		{
-			input: toInput,
-			results: toResults,
-			getIndex: () => toSelectedIndex,
-			setIndex: (i: number) => {
-				toSelectedIndex = i;
-			},
-		},
-	].forEach(({ input, results, getIndex, setIndex }) => {
-		input?.addEventListener("focus", () => {
-			renderDropdown(results, allVersions, input);
-			setIndex(-1);
-		});
+		function selectVersion(
+			input: HTMLInputElement,
+			version: string,
+			container: HTMLDivElement,
+		) {
+			input.value = version;
+			container.classList.add("hidden");
 
-		input?.addEventListener("input", (e) => {
-			const query = (e.target as HTMLInputElement).value;
-			const filtered = filterVersions(query);
-			renderDropdown(results, filtered, input);
-			setIndex(-1);
-		});
+			const packageInput = document.getElementById(
+				"package-search",
+			) as HTMLInputElement;
+			updateUrl(packageInput.value, fromInput.value, toInput.value);
+			window.dispatchEvent(new CustomEvent("version-changed"));
+		}
 
-		results?.addEventListener("click", (e) => {
-			const item = (e.target as HTMLElement).closest(
-				".version-item",
-			) as HTMLElement;
-			if (item) {
-				const version = item.dataset.version;
-				if (version) selectVersion(input, version, results);
+		function getUrlState() {
+			return parseUrl(window.location.pathname);
+		}
+
+		function updateUrl(pkg: string, from: string, to: string) {
+			const registry = getRegistry();
+			const state = parseUrl(window.location.pathname);
+			const file = state.package === pkg ? state.file : "";
+			const pathParts = [registry, pkg, from, to, file].filter(Boolean);
+			const newPath = `/${pathParts.join("/")}`;
+			if (window.location.pathname !== newPath) {
+				window.history.pushState({}, "", newPath);
 			}
-		});
+		}
 
-		input?.addEventListener("keydown", (e) => {
-			if (results.classList.contains("hidden")) {
-				if (e.key === "ArrowDown") {
-					renderDropdown(results, allVersions, input);
+		async function loadVersions(packageName: string) {
+			fromInput.disabled = true;
+			toInput.disabled = true;
+			fromInput.placeholder = "Loading...";
+			toInput.placeholder = "Loading...";
+
+			try {
+				allVersions = await fetchVersions(packageName);
+
+				const state = getUrlState();
+				if (state.from && allVersions.includes(state.from)) {
+					fromInput.value = state.from;
+				} else if (allVersions.length >= 2) {
+					fromInput.value = allVersions[1];
+				} else if (allVersions.length >= 1) {
+					fromInput.value = allVersions[0];
 				}
-				return;
+
+				if (state.to && allVersions.includes(state.to)) {
+					toInput.value = state.to;
+				} else if (allVersions.length >= 1) {
+					toInput.value = allVersions[0];
+				}
+
+				window.dispatchEvent(
+					new CustomEvent("versions-loaded", {
+						detail: { packageName, from: fromInput.value, to: toInput.value },
+					}),
+				);
+
+				updateUrl(packageName, fromInput.value, toInput.value);
+			} catch (e) {
+				console.error(e);
+				fromInput.placeholder = "Error";
+				toInput.placeholder = "Error";
+			} finally {
+				fromInput.disabled = false;
+				toInput.disabled = false;
+				fromInput.placeholder = "Select version";
+				toInput.placeholder = "Select version";
 			}
+		}
 
-			const items = results.querySelectorAll(".version-item");
-			if (!items.length) return;
+		// Setup listeners for both inputs
+		[
+			{
+				input: fromInput,
+				results: fromResults,
+				getIndex: () => fromSelectedIndex,
+				setIndex: (i: number) => {
+					fromSelectedIndex = i;
+				},
+			},
+			{
+				input: toInput,
+				results: toResults,
+				getIndex: () => toSelectedIndex,
+				setIndex: (i: number) => {
+					toSelectedIndex = i;
+				},
+			},
+		].forEach(({ input, results, getIndex, setIndex }) => {
+			input?.addEventListener("focus", () => {
+				renderDropdown(results, allVersions, input);
+				setIndex(-1);
+			});
 
-			if (e.key === "ArrowDown") {
-				e.preventDefault();
-				setIndex((getIndex() + 1) % items.length);
-				updateHighlight(items, getIndex());
-			} else if (e.key === "ArrowUp") {
-				e.preventDefault();
-				setIndex((getIndex() - 1 + items.length) % items.length);
-				updateHighlight(items, getIndex());
-			} else if (e.key === "Enter") {
-				e.preventDefault();
-				if (getIndex() >= 0) {
-					const version = (items[getIndex()] as HTMLElement).dataset.version;
+			input?.addEventListener("input", (e) => {
+				const query = (e.target as HTMLInputElement).value;
+				const filtered = filterVersions(query);
+				renderDropdown(results, filtered, input);
+				setIndex(-1);
+			});
+
+			results?.addEventListener("click", (e) => {
+				const item = (e.target as HTMLElement).closest(
+					".version-item",
+				) as HTMLElement;
+				if (item) {
+					const version = item.dataset.version;
 					if (version) selectVersion(input, version, results);
 				}
-			} else if (e.key === "Escape") {
-				results.classList.add("hidden");
+			});
+
+			input?.addEventListener("keydown", (e) => {
+				if (results.classList.contains("hidden")) {
+					if (e.key === "ArrowDown") {
+						renderDropdown(results, allVersions, input);
+					}
+					return;
+				}
+
+				const items = results.querySelectorAll(".version-item");
+				if (!items.length) return;
+
+				if (e.key === "ArrowDown") {
+					e.preventDefault();
+					setIndex((getIndex() + 1) % items.length);
+					updateHighlight(items, getIndex());
+				} else if (e.key === "ArrowUp") {
+					e.preventDefault();
+					setIndex((getIndex() - 1 + items.length) % items.length);
+					updateHighlight(items, getIndex());
+				} else if (e.key === "Enter") {
+					e.preventDefault();
+					if (getIndex() >= 0) {
+						const version = (items[getIndex()] as HTMLElement).dataset.version;
+						if (version) selectVersion(input, version, results);
+					}
+				} else if (e.key === "Escape") {
+					results.classList.add("hidden");
+				}
+			});
+		});
+
+		function updateHighlight(items: NodeListOf<Element>, selectedIndex: number) {
+			items.forEach((item, i) => {
+				item.classList.toggle("bg-blue-50", i === selectedIndex);
+				item.classList.toggle("dark:bg-neutral-800", i === selectedIndex);
+			});
+			if (selectedIndex >= 0) {
+				items[selectedIndex].scrollIntoView({ block: "nearest" });
+			}
+		}
+
+		// Close dropdowns on click outside
+		document.addEventListener("click", (e) => {
+			if (
+				!fromInput.contains(e.target as Node) &&
+				!fromResults.contains(e.target as Node)
+			) {
+				fromResults.classList.add("hidden");
+			}
+			if (
+				!toInput.contains(e.target as Node) &&
+				!toResults.contains(e.target as Node)
+			) {
+				toResults.classList.add("hidden");
 			}
 		});
-	});
 
-	function updateHighlight(items: NodeListOf<Element>, selectedIndex: number) {
-		items.forEach((item, i) => {
-			item.classList.toggle("bg-blue-50", i === selectedIndex);
-			item.classList.toggle("dark:bg-neutral-800", i === selectedIndex);
+		// Listen for package selection
+		window.addEventListener("package-selected", (e: Event) => {
+			const detail = (e as CustomEvent).detail;
+			loadVersions(detail.name);
 		});
-		if (selectedIndex >= 0) {
-			items[selectedIndex].scrollIntoView({ block: "nearest" });
-		}
 	}
 
-	// Close dropdowns on click outside
-	document.addEventListener("click", (e) => {
-		if (
-			!fromInput.contains(e.target as Node) &&
-			!fromResults.contains(e.target as Node)
-		) {
-			fromResults.classList.add("hidden");
-		}
-		if (
-			!toInput.contains(e.target as Node) &&
-			!toResults.contains(e.target as Node)
-		) {
-			toResults.classList.add("hidden");
-		}
-	});
-
-	// Listen for package selection
-	window.addEventListener("package-selected", (e: Event) => {
-		const detail = (e as CustomEvent).detail;
-		loadVersions(detail.name);
-	});
+	initVersionSelectors();
+	document.addEventListener("astro:page-load", initVersionSelectors);
 </script>
