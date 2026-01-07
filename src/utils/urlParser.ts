@@ -11,7 +11,7 @@ export function parseUrl(pathname: string): UrlState {
 	const parts = decodedPathname.split("/").filter(Boolean);
 
 	if (parts.length === 0) {
-		return { registry: "npm", package: "", from: "", to: "" , file: ""};
+		return { registry: "npm", package: "", from: "", to: "", file: "" };
 	}
 
 	const isKnownRegistry = parts[0] === "npm" || parts[0] === "crates";

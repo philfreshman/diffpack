@@ -3,7 +3,11 @@ import FileViewer from "../components/FileViewer/FileViewer.astro";
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout registry="npm" title="npm" description="Compare npm package versions and view source-aware diffs for JavaScript and TypeScript ecosystems.">
+<Layout
+	registry="npm"
+	title="npm"
+	description="Compare npm package versions and view source-aware diffs for JavaScript and TypeScript ecosystems."
+>
 	<div id="content" class="flex-1 p-4 overflow-auto min-w-0">
 		<!--<div-->
 		<!--	id="compare-status"-->
@@ -22,7 +26,6 @@ import Layout from "../layouts/Layout.astro";
 	function handleUrlChange() {
 		// const state = parseUrl(window.location.pathname);
 		// const { package: pkg, from, to } = state;
-
 		// if (statusEl) {
 		// 	if (pkg && from && to) {
 		// 		// statusEl.textContent = `Comparing ${pkg}: ${from} -> ${to}. Select a file from the tree to view changes.`;
