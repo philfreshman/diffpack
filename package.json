@@ -4,7 +4,8 @@
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "astro dev",
-		"build": "astro build",
+		"build": "bun run build:wasm && astro build",
+		"build:wasm": "cd wasm/diff-wasm && wasm-pack build --target web",
 		"preview": "astro build && astro preview",
 		"astro": "astro",
 		"format": "bunx biome check --write"

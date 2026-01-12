@@ -1,4 +1,30 @@
+import init, {
+	count_diff,
+	get_diff_content,
+} from "../../wasm/diff-wasm/pkg/diff_wasm.js";
+import wasmUrl from "../../wasm/diff-wasm/pkg/diff_wasm_bg.wasm?url";
 import { registries } from "../registries/registries.ts";
+
+let wasmInitialized = false;
+export async function ensureWasmInitialized() {
+	if (!wasmInitialized) {
+		try {
+			let module_or_path: string | URL | Request = wasmUrl as any;
+			if (
+				typeof module_or_path === "string" &&
+				module_or_path.startsWith("/") &&
+				typeof process !== "undefined"
+			) {
+				module_or_path = `file://${module_or_path}`;
+			}
+			await init({ module_or_path });
+			wasmInitialized = true;
+		} catch (error) {
+			console.error("WASM initialization failed:", error);
+			throw error;
+		}
+	}
+}
 
 export type DiffStatus = "added" | "removed" | "modified" | "unchanged";
 
@@ -34,6 +60,15 @@ export type FileMapEntry = {
 const decoder = new TextDecoder();
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
+	try {
+		await ensureWasmInitialized();
+	} catch (error) {
+		const message =
+			error instanceof Error ? error.message : "WASM initialization failed";
+		postMessage({ type: "error", error: message });
+		return;
+	}
+
 	const data = event.data;
 
 	if (data.type === "start-diff") {
@@ -276,9 +311,10 @@ function computeStatuses(
 				node.removed = 0;
 			} else {
 				node.status = "modified";
-				const fromLines = fromEntry.content.split("\n");
-				const toLines = toEntry.content.split("\n");
-				const { added, removed } = countDiff(fromLines, toLines);
+				const { added, removed } = countDiff(
+					fromEntry.content,
+					toEntry.content,
+				);
 				node.added = added;
 				node.removed = removed;
 			}
@@ -324,54 +360,17 @@ function computeStatuses(
 }
 
 function countDiff(
-	fromLines: string[],
-	toLines: string[],
+	from: string,
+	to: string,
 ): { added: number; removed: number } {
-	const m = fromLines.length;
-	const n = toLines.length;
-	const dp: number[][] = Array.from({ length: m + 1 }, () =>
-		Array(n + 1).fill(0),
-	);
-
-	for (let i = m - 1; i >= 0; i--) {
-		for (let j = n - 1; j >= 0; j--) {
-			if (fromLines[i] === toLines[j]) {
-				dp[i][j] = dp[i + 1][j + 1] + 1;
-			} else {
-				dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
-			}
-		}
+	const result = count_diff(from, to);
+	try {
+		const added = result.added;
+		const removed = result.removed;
+		return { added, removed };
+	} finally {
+		result.free();
 	}
-
-	let added = 0;
-	let removed = 0;
-	let i = 0;
-	let j = 0;
-
-	while (i < m && j < n) {
-		if (fromLines[i] === toLines[j]) {
-			i++;
-			j++;
-		} else if (dp[i + 1][j] >= dp[i][j + 1]) {
-			removed++;
-			i++;
-		} else {
-			added++;
-			j++;
-		}
-	}
-
-	while (i < m) {
-		removed++;
-		i++;
-	}
-
-	while (j < n) {
-		added++;
-		j++;
-	}
-
-	return { added, removed };
 }
 
 export function handleGetDiff(
@@ -397,55 +396,14 @@ export function handleGetDiff(
 		result = toContent ?? "";
 		isDiff = false;
 	} else {
-		const fromLines = fromContent.split("\n");
-		const toLines = toContent.split("\n");
-
-		const m = fromLines.length;
-		const n = toLines.length;
-		const dp: number[][] = Array.from({ length: m + 1 }, () =>
-			Array(n + 1).fill(0),
-		);
-
-		for (let i = m - 1; i >= 0; i--) {
-			for (let j = n - 1; j >= 0; j--) {
-				if (fromLines[i] === toLines[j]) {
-					dp[i][j] = dp[i + 1][j + 1] + 1;
-				} else {
-					dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
-				}
-			}
+		try {
+			result = get_diff_content(filename, fromContent, toContent);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Diff generation failed";
+			postMessage({ type: "error", error: message });
+			return;
 		}
-
-		const edits: { type: " " | "+" | "-"; line: string }[] = [];
-		let i = 0;
-		let j = 0;
-
-		while (i < m && j < n) {
-			if (fromLines[i] === toLines[j]) {
-				edits.push({ type: " ", line: fromLines[i] });
-				i++;
-				j++;
-			} else if (dp[i + 1][j] >= dp[i][j + 1]) {
-				edits.push({ type: "-", line: fromLines[i] });
-				i++;
-			} else {
-				edits.push({ type: "+", line: toLines[j] });
-				j++;
-			}
-		}
-
-		while (i < m) {
-			edits.push({ type: "-", line: fromLines[i] });
-			i++;
-		}
-
-		while (j < n) {
-			edits.push({ type: "+", line: toLines[j] });
-			j++;
-		}
-
-		const header = `--- from/${filename}\n+++ to/${filename}`;
-		result = [header, ...edits.map((e) => `${e.type} ${e.line}`)].join("\n");
 	}
 
 	postMessage({ type: "diff-result", filename, data: result, isDiff });
