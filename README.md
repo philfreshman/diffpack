@@ -11,14 +11,31 @@ Compare package versions across ecosystems. Clean. Fast. Source-aware.
 
 ## Getting Started
 
+### Installation
+
 ```bash
-# Install dependencies
 bun install
+```
 
-# Start development server
+### WASM Development
+
+The core diffing logic is implemented in Rust and compiled to WebAssembly. To rebuild the WASM module:
+
+```bash
+bun run build:wasm
+```
+
+This requires [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) to be installed on your system.
+
+### Development Server
+
+```bash
 bun run dev
+```
 
-# Build for production
+### Build for production
+
+```bash
 bun run build
 ```
 

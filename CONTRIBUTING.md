@@ -20,6 +20,16 @@ Thank you for your interest in contributing to diffpack! This document provides 
    bun run dev
    ```
 
+ ### WASM Development
+
+ The core diffing logic is implemented in Rust and compiled to WebAssembly. If you make changes to the Rust code in `wasm/diff-wasm/src`, you need to rebuild the WASM module:
+
+ 1. Ensure you have [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/) installed.
+ 2. Run the build script:
+    ```bash
+    bun run build:wasm
+    ```
+
 ## Development Workflow
 
 - **Branching**: Create a feature branch for your changes.
