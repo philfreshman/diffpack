@@ -6,10 +6,23 @@ import wasmUrl from "../../wasm/diff-wasm/pkg/diff_wasm_bg.wasm?url";
 import { registries } from "../registries/registries.ts";
 
 let wasmInitialized = false;
-async function ensureWasmInitialized() {
+export async function ensureWasmInitialized() {
 	if (!wasmInitialized) {
-		await init({ module_or_path: wasmUrl });
-		wasmInitialized = true;
+		try {
+			let module_or_path: string | URL | Request = wasmUrl as any;
+			if (
+				typeof module_or_path === "string" &&
+				module_or_path.startsWith("/") &&
+				typeof process !== "undefined"
+			) {
+				module_or_path = `file://${module_or_path}`;
+			}
+			await init({ module_or_path });
+			wasmInitialized = true;
+		} catch (error) {
+			console.error("WASM initialization failed:", error);
+			throw error;
+		}
 	}
 }
 
@@ -47,7 +60,15 @@ export type FileMapEntry = {
 const decoder = new TextDecoder();
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
-	await ensureWasmInitialized();
+	try {
+		await ensureWasmInitialized();
+	} catch (error) {
+		const message =
+			error instanceof Error ? error.message : "WASM initialization failed";
+		postMessage({ type: "error", error: message });
+		return;
+	}
+
 	const data = event.data;
 
 	if (data.type === "start-diff") {
@@ -343,10 +364,13 @@ function countDiff(
 	to: string,
 ): { added: number; removed: number } {
 	const result = count_diff(from, to);
-	const added = result.added;
-	const removed = result.removed;
-	result.free();
-	return { added, removed };
+	try {
+		const added = result.added;
+		const removed = result.removed;
+		return { added, removed };
+	} finally {
+		result.free();
+	}
 }
 
 export function handleGetDiff(
@@ -372,7 +396,14 @@ export function handleGetDiff(
 		result = toContent ?? "";
 		isDiff = false;
 	} else {
-		result = get_diff_content(filename, fromContent, toContent);
+		try {
+			result = get_diff_content(filename, fromContent, toContent);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Diff generation failed";
+			postMessage({ type: "error", error: message });
+			return;
+		}
 	}
 
 	postMessage({ type: "diff-result", filename, data: result, isDiff });
