@@ -43,34 +43,36 @@
 </div>
 
 <script>
-	const themeSelect = document.getElementById(
-		"prism-theme",
-	) as HTMLSelectElement;
+	function initThemeSelect() {
+		const themeSelect = document.getElementById(
+			"prism-theme",
+		) as HTMLSelectElement;
 
-	let themeStyle = document.getElementById(
-		"prism-theme-style",
-	) as HTMLStyleElement;
+		let themeStyle = document.getElementById(
+			"prism-theme-style",
+		) as HTMLStyleElement;
 
-	if (!themeStyle) {
-		themeStyle = document.createElement("style");
-		themeStyle.id = "prism-theme-style";
-		document.head.appendChild(themeStyle);
+		if (!themeStyle) {
+			themeStyle = document.createElement("style");
+			themeStyle.id = "prism-theme-style";
+			document.head.appendChild(themeStyle);
+		}
+
+		const THEME_STORAGE_KEY = "prism_theme";
+
+		// Load saved theme
+		const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "prism";
+		if (themeSelect) themeSelect.value = savedTheme;
+		updatePrismTheme(savedTheme, themeStyle);
+
+		themeSelect?.addEventListener("change", (e) => {
+			const theme = (e.target as HTMLSelectElement).value;
+			localStorage.setItem(THEME_STORAGE_KEY, theme);
+			updatePrismTheme(theme, themeStyle);
+		});
 	}
 
-	const THEME_STORAGE_KEY = "prism_theme";
-
-	// Load saved theme
-	const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "prism";
-	if (themeSelect) themeSelect.value = savedTheme;
-	updatePrismTheme(savedTheme);
-
-	themeSelect?.addEventListener("change", (e) => {
-		const theme = (e.target as HTMLSelectElement).value;
-		localStorage.setItem(THEME_STORAGE_KEY, theme);
-		updatePrismTheme(theme);
-	});
-
-	async function updatePrismTheme(theme: string) {
+	async function updatePrismTheme(theme: string, themeStyle: HTMLStyleElement) {
 		const isStandardTheme = [
 			"prism",
 			"prism-dark",
@@ -105,4 +107,7 @@
 			}
 		}
 	}
+
+	initThemeSelect();
+	document.addEventListener("astro:page-load", initThemeSelect);
 </script>

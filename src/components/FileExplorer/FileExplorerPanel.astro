@@ -17,6 +17,7 @@ import TreeList from "./TreeList.astro";
 </div>
 
 <script>
+	import { escapeHTML } from "../../utils/dom.ts";
 	import { parseUrl } from "../../utils/urlParser";
 	import type { DiffFileEntry, DiffStatus } from "../../workers/diff.worker";
 
@@ -32,14 +33,11 @@ import TreeList from "./TreeList.astro";
 	const MIN_WIDTH = 220;
 	const MAX_WIDTH = 640;
 
-	const panel = document.getElementById("tree-panel");
-	const filterInput = document.getElementById(
-		"tree-filter",
-	) as HTMLInputElement;
-	const toggleModifiedBtn = document.getElementById("toggle-modified");
-	const treeContent = document.getElementById("tree-content");
-	const resizer = document.getElementById("tree-resizer");
-
+	let panel: HTMLElement | null = null;
+	let filterInput: HTMLInputElement | null = null;
+	let toggleModifiedBtn: HTMLElement | null = null;
+	let treeContent: HTMLElement | null = null;
+	let resizer: HTMLElement | null = null;
 	let currentFilter = "";
 	let showOnlyModified = false;
 	let expandedKeys = new Set<string>();
@@ -92,6 +90,21 @@ import TreeList from "./TreeList.astro";
 
 	// Initialization
 	function init() {
+		panel = document.getElementById("tree-panel");
+		filterInput = document.getElementById("tree-filter") as HTMLInputElement;
+		toggleModifiedBtn = document.getElementById("toggle-modified");
+		treeContent = document.getElementById("tree-content");
+		resizer = document.getElementById("tree-resizer");
+
+		if (
+			!panel ||
+			!filterInput ||
+			!toggleModifiedBtn ||
+			!treeContent ||
+			!resizer
+		)
+			return;
+
 		const savedWidth = localStorage.getItem(STORAGE_KEY);
 		if (savedWidth && panel) {
 			const parsed = parseInt(savedWidth, 10);
@@ -99,6 +112,10 @@ import TreeList from "./TreeList.astro";
 				width = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, parsed));
 				panel.style.width = `${width}px`;
 			}
+		}
+
+		if (diffWorker) {
+			diffWorker.terminate();
 		}
 
 		diffWorker = new Worker(
@@ -150,7 +167,7 @@ import TreeList from "./TreeList.astro";
 			} else if (e.data.type === "error") {
 				console.error("Worker error:", e.data.error);
 				if (treeContent)
-					treeContent.innerHTML = `<div class="p-4 text-red-500">Error: ${e.data.error}</div>`;
+					treeContent.innerHTML = `<div class="p-4 text-red-500">Error: ${escapeHTML(e.data.error)}</div>`;
 			}
 		};
 
@@ -213,52 +230,58 @@ import TreeList from "./TreeList.astro";
 			window.addEventListener("mousemove", onMouseMove);
 			window.addEventListener("mouseup", onMouseUp);
 		});
-
-		interface StartDiffDetail {
-			registry: string;
-			pkg: string;
-			from: string;
-			to: string;
-		}
-
-		window.addEventListener("start-diff", (e) => {
-			const customEvent = e as CustomEvent<StartDiffDetail>;
-			const detail = customEvent.detail;
-			const { pkg, from, to } = detail;
-			const state = parseUrl(window.location.pathname);
-			const registry = detail.registry || state.registry;
-			if (pkg && from && to && diffWorker) {
-				if (treeContent)
-					treeContent.innerHTML =
-						'<div class="p-4 text-neutral-500">Computing diff...</div>';
-				diffWorker.postMessage({ type: "start-diff", registry, pkg, from, to });
-			}
-		});
-
-		window.addEventListener("popstate", () => {
-			const state = parseUrl(window.location.pathname);
-			if (state.file !== selectedFilePath) {
-				selectedFilePath = state.file;
-				if (selectedFilePath && diffWorker) {
-					const fromContent = fromFiles?.[selectedFilePath]?.content;
-					const toContent = toFiles?.[selectedFilePath]?.content;
-					if (fromContent !== undefined || toContent !== undefined) {
-						diffWorker.postMessage({
-							type: "get-diff",
-							filename: selectedFilePath,
-							fromContent,
-							toContent,
-						});
-					}
-				}
-				renderTree();
-			}
-		});
 	}
+
+	interface StartDiffDetail {
+		registry: string;
+		pkg: string;
+		from: string;
+		to: string;
+	}
+
+	window.addEventListener("start-diff", (e) => {
+		const customEvent = e as CustomEvent<StartDiffDetail>;
+		const detail = customEvent.detail;
+		const { pkg, from, to } = detail;
+		const state = parseUrl(window.location.pathname);
+		const registry = detail.registry || state.registry;
+		if (pkg && from && to && diffWorker) {
+			if (treeContent)
+				treeContent.innerHTML =
+					'<div class="p-4 text-neutral-500">Computing diff...</div>';
+			diffWorker.postMessage({ type: "start-diff", registry, pkg, from, to });
+		}
+	});
+
+	window.addEventListener("popstate", () => {
+		const state = parseUrl(window.location.pathname);
+		if (state.file !== selectedFilePath) {
+			selectedFilePath = state.file;
+			if (selectedFilePath && diffWorker) {
+				const fromContent = fromFiles?.[selectedFilePath]?.content;
+				const toContent = toFiles?.[selectedFilePath]?.content;
+				if (fromContent !== undefined || toContent !== undefined) {
+					diffWorker.postMessage({
+						type: "get-diff",
+						filename: selectedFilePath,
+						fromContent,
+						toContent,
+					});
+				}
+			}
+			renderTree();
+		}
+	});
 
 	function updateUrl(file: string) {
 		const state = parseUrl(window.location.pathname);
-		const pathParts = [state.registry, state.package, state.from, state.to, file].filter(Boolean);
+		const pathParts = [
+			state.registry,
+			state.package,
+			state.from,
+			state.to,
+			file,
+		].filter(Boolean);
 		const newPath = `/${pathParts.join("/")}`;
 		if (window.location.pathname !== newPath) {
 			window.history.pushState({}, "", newPath);
@@ -312,7 +335,7 @@ import TreeList from "./TreeList.astro";
 	): HTMLElement | null {
 		const name = item.path.split("/").pop() || item.path;
 		const hasChildren = item.children && item.children.length > 0;
-		const matchesFilter = name.toLowerCase().includes(currentFilter);
+		const matchesFilter = item.path.toLowerCase().includes(currentFilter);
 		const isModified = item.status !== "unchanged";
 
 		const hasVisibleChildren = hasChildren
@@ -418,5 +441,5 @@ import TreeList from "./TreeList.astro";
 		return container;
 	}
 
-	init();
+	document.addEventListener("astro:page-load", init);
 </script>

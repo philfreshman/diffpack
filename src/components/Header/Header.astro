@@ -58,74 +58,87 @@ const currentGradient = registryGradients[registry] || "";
 <script>
 	import { parseUrl } from "../../utils/urlParser";
 
-	const input = document.getElementById("package-search") as HTMLInputElement;
-	const fromSelect = document.getElementById(
-		"from-version",
-	) as HTMLSelectElement;
-	const toSelect = document.getElementById("to-version") as HTMLSelectElement;
-	const compareBtn = document.getElementById(
-		"compare-btn",
-	) as HTMLButtonElement;
+	let abortController: AbortController | null = null;
 
-	function updateCompareButton() {
-		compareBtn.disabled = !input.value || !fromSelect.value || !toSelect.value;
-	}
+	function initHeader() {
+		if (abortController) abortController.abort();
+		abortController = new AbortController();
+		const { signal } = abortController;
 
-	function getUrlState() {
-		return parseUrl(window.location.pathname);
-	}
+		const input = document.getElementById("package-search") as HTMLInputElement;
+		const fromSelect = document.getElementById(
+			"from-version",
+		) as HTMLSelectElement;
+		const toSelect = document.getElementById("to-version") as HTMLSelectElement;
+		const compareBtn = document.getElementById(
+			"compare-btn",
+		) as HTMLButtonElement;
 
-	// Compare button handler
-	compareBtn.addEventListener("click", () => {
-		const state = getUrlState();
-		window.dispatchEvent(
-			new CustomEvent("start-diff", {
-				detail: {
-					registry: state.registry,
-					pkg: input.value,
-					from: fromSelect.value,
-					to: toSelect.value,
+		if (!input || !fromSelect || !toSelect || !compareBtn) return;
+
+		function updateCompareButton() {
+			compareBtn.disabled = !input.value || !fromSelect.value || !toSelect.value;
+		}
+
+		function getUrlState() {
+			return parseUrl(window.location.pathname);
+		}
+
+		// Compare button handler
+		compareBtn.addEventListener("click", () => {
+			const state = getUrlState();
+			window.dispatchEvent(
+				new CustomEvent("start-diff", {
+					detail: {
+						registry: state.registry,
+						pkg: input.value,
+						from: fromSelect.value,
+						to: toSelect.value,
+					},
+				}),
+			);
+		}, { signal });
+
+		// Update button state on changes
+		window.addEventListener("package-selected", updateCompareButton, { signal });
+		window.addEventListener("versions-loaded", updateCompareButton, { signal });
+		window.addEventListener("version-changed", updateCompareButton, { signal });
+
+		// Initialization - handle URL state on load
+		const initialState = getUrlState();
+		if (initialState.package) {
+			input.value = initialState.package;
+
+			// Trigger package selection which will load versions
+			window.dispatchEvent(
+				new CustomEvent("package-selected", {
+					detail: { name: initialState.package },
+				}),
+			);
+
+			// After versions are loaded, trigger diff if all params present
+			window.addEventListener(
+				"versions-loaded",
+				() => {
+					const state = getUrlState();
+					if (state.package && state.from && state.to) {
+						window.dispatchEvent(
+							new CustomEvent("start-diff", {
+								detail: {
+									registry: state.registry,
+									pkg: state.package,
+									from: state.from,
+									to: state.to,
+								},
+							}),
+						);
+					}
 				},
-			}),
-		);
-	});
-
-	// Update button state on changes
-	window.addEventListener("package-selected", updateCompareButton);
-	window.addEventListener("versions-loaded", updateCompareButton);
-	window.addEventListener("version-changed", updateCompareButton);
-
-	// Initialization - handle URL state on load
-	const initialState = getUrlState();
-	if (initialState.package) {
-		input.value = initialState.package;
-
-		// Trigger package selection which will load versions
-		window.dispatchEvent(
-			new CustomEvent("package-selected", {
-				detail: { name: initialState.package },
-			}),
-		);
-
-		// After versions are loaded, trigger diff if all params present
-		window.addEventListener(
-			"versions-loaded",
-			() => {
-				const state = getUrlState();
-				if (state.package && state.from && state.to) {
-					window.dispatchEvent(
-						new CustomEvent("start-diff", {
-							detail: {
-								registry: state.registry,
-								pkg: state.package,
-								from: state.from,
-								to: state.to,
-							},
-						}),
-					);
-				}
-			},
-			{ once: true },
-		);
+				{ once: true, signal },
+			);
+		}
 	}
+
+	initHeader();
+	document.addEventListener("astro:page-load", initHeader);
 </script>
