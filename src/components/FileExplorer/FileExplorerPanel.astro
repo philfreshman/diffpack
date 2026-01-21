@@ -162,7 +162,10 @@ import TreeList from "./TreeList.astro";
 						selectedFilePath = state.file;
 						const fromContent = fromFiles?.[state.file]?.content;
 						const toContent = toFiles?.[state.file]?.content;
-						if (fromContent !== undefined || toContent !== undefined) {
+						if (
+							(fromContent !== undefined || toContent !== undefined) &&
+							diffWorker
+						) {
 							diffWorker.postMessage({
 								type: "get-diff",
 								filename: state.file,
@@ -194,6 +197,7 @@ import TreeList from "./TreeList.astro";
 		});
 
 		toggleModifiedBtn?.addEventListener("click", () => {
+			if (!toggleModifiedBtn) return;
 			showOnlyModified = !showOnlyModified;
 			collapsedKeys.clear();
 			if (!showOnlyModified) {
@@ -322,7 +326,7 @@ import TreeList from "./TreeList.astro";
 		if (diffData.children) {
 			diffData.children.forEach((child) => {
 				const node = createNodeElement(child, 0);
-				if (node) treeContent.appendChild(node);
+				if (node && treeContent) treeContent.appendChild(node);
 			});
 		}
 	}
