@@ -39,7 +39,7 @@ import TreeList from "./TreeList.astro";
 	let treeContent: HTMLElement | null = null;
 	let resizer: HTMLElement | null = null;
 	let currentFilter = "";
-	let showOnlyModified = false;
+	let showOnlyModified = true;
 	let expandedKeys = new Set<string>();
 	let collapsedKeys = new Set<string>();
 	let width = DEFAULT_WIDTH;
@@ -118,6 +118,22 @@ import TreeList from "./TreeList.astro";
 			diffWorker.terminate();
 		}
 
+		if (!showOnlyModified && toggleModifiedBtn) {
+			toggleModifiedBtn.classList.add(
+				"bg-blue-50",
+				"text-blue-600",
+				"border-blue-200",
+				"dark:bg-blue-900/20",
+				"dark:text-blue-400",
+				"dark:border-blue-800",
+			);
+		} else if (toggleModifiedBtn) {
+			toggleModifiedBtn.classList.add(
+				"text-neutral-400",
+				"dark:text-neutral-500",
+			);
+		}
+
 		diffWorker = new Worker(
 			new URL("../../workers/diff.worker.ts", import.meta.url),
 			{ type: "module" },
@@ -146,7 +162,10 @@ import TreeList from "./TreeList.astro";
 						selectedFilePath = state.file;
 						const fromContent = fromFiles?.[state.file]?.content;
 						const toContent = toFiles?.[state.file]?.content;
-						if (fromContent !== undefined || toContent !== undefined) {
+						if (
+							(fromContent !== undefined || toContent !== undefined) &&
+							diffWorker
+						) {
 							diffWorker.postMessage({
 								type: "get-diff",
 								filename: state.file,
@@ -178,9 +197,10 @@ import TreeList from "./TreeList.astro";
 		});
 
 		toggleModifiedBtn?.addEventListener("click", () => {
+			if (!toggleModifiedBtn) return;
 			showOnlyModified = !showOnlyModified;
 			collapsedKeys.clear();
-			if (showOnlyModified) {
+			if (!showOnlyModified) {
 				toggleModifiedBtn.classList.add(
 					"bg-blue-50",
 					"text-blue-600",
@@ -306,7 +326,7 @@ import TreeList from "./TreeList.astro";
 		if (diffData.children) {
 			diffData.children.forEach((child) => {
 				const node = createNodeElement(child, 0);
-				if (node) treeContent.appendChild(node);
+				if (node && treeContent) treeContent.appendChild(node);
 			});
 		}
 	}
