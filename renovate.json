@@ -9,8 +9,9 @@
 	},
 	"packageRules": [
 		{
+			"matchPackagePatterns": ["*"],
 			"labels": [
-				"dependency-updates"
+				"dependency-update"
 			],
 			"prBodyNotes": [
 				"- [ ] [{{{packageName}}} {{{currentVersion}}} → {{{newVersion}}}](https://www.diffpack.io/{{{datasource}}}/{{{packageName}}}/{{{currentVersion}}}/{{{newVersion}}})"
