@@ -1,0 +1,15 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:recommended"],
+	"prBodyColumns": [" ", "Package", "Diffpack", "Age", "Confidence"],
+	"prBodyDefinitions": {
+		" ": "<ul><li>- [ ] </li></ul>",
+		"Diffpack": "[{{{currentVersion}}} → {{{newVersion}}}](https://www.diffpack.io/{{{datasource}}}/{{{depName}}}/{{{currentVersion}}}/{{{newVersion}}})"
+	},
+	"packageRules": [
+		{
+			"labels": ["dependency-update"],
+			"matchPackageNames": ["*"]
+		}
+	]
+}
