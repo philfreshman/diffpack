@@ -63,6 +63,7 @@ import TreeList from "./TreeList.astro";
 			case "removed":
 				return "text-red-600 dark:text-red-400";
 			case "modified":
+			case "renamed":
 				return "text-amber-600 dark:text-amber-400";
 			default:
 				return "text-neutral-800 dark:text-neutral-200";
@@ -72,12 +73,14 @@ import TreeList from "./TreeList.astro";
 	function getStatusBadge(item: DiffFileEntry) {
 		if (item.status === "unchanged") return "";
 
+		let badges = "";
+		if (item.status === "renamed") {
+			badges += `<span class="text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded mr-1 shrink-0">RENAMED</span>`;
+		}
+
 		const added = item.added || 0;
 		const removed = item.removed || 0;
 
-		if (added === 0 && removed === 0) return "";
-
-		let badges = "";
 		if (added > 0) {
 			badges += `<span class="text-[12px] font-bold text-green-600 dark:text-green-400 px-1 shrink-0">+${added}</span>`;
 		}
@@ -86,6 +89,17 @@ import TreeList from "./TreeList.astro";
 		}
 
 		return badges;
+	}
+
+	function findNode(root: DiffFileEntry, path: string): DiffFileEntry | null {
+		if (root.path === path) return root;
+		if (root.children) {
+			for (const child of root.children) {
+				const found = findNode(child, path);
+				if (found) return found;
+			}
+		}
+		return null;
 	}
 
 	// Initialization
@@ -160,7 +174,8 @@ import TreeList from "./TreeList.astro";
 					const state = parseUrl(window.location.pathname);
 					if (state.file) {
 						selectedFilePath = state.file;
-						const fromContent = fromFiles?.[state.file]?.content;
+						const item = diffData ? findNode(diffData, state.file) : null;
+						const fromContent = fromFiles?.[item?.oldPath || state.file]?.content;
 						const toContent = toFiles?.[state.file]?.content;
 						if (
 							(fromContent !== undefined || toContent !== undefined) &&
@@ -401,6 +416,8 @@ import TreeList from "./TreeList.astro";
 		row.className =
 			"flex items-center gap-1 py-1 px-1 pr-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer select-none rounded group w-full overflow-hidden";
 		row.style.paddingLeft = `${depth * 18 + 4}px`;
+		row.title =
+			item.status === "renamed" ? `Renamed from ${item.oldPath}` : item.path;
 
 		if (item.path === selectedFilePath) {
 			row.classList.add("bg-blue-50", "dark:bg-blue-900/20");
@@ -447,7 +464,7 @@ import TreeList from "./TreeList.astro";
 				updateUrl(item.path);
 				renderTree();
 
-				const fromContent = fromFiles?.[item.path]?.content;
+				const fromContent = fromFiles?.[item.oldPath || item.path]?.content;
 				const toContent = toFiles?.[item.path]?.content;
 				diffWorker.postMessage({
 					type: "get-diff",
