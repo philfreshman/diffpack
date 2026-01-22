@@ -6,20 +6,20 @@ import Toolbar from "./Toolbar.astro";
 ---
 
 <div class="flex flex-col h-full">
-	<Toolbar/>
-	<DiffArea/>
+	<Toolbar />
+	<DiffArea />
 </div>
 
 <template id="expand-up-tpl">
-	<ExpandButton direction="up" title=""/>
+	<ExpandButton direction="up" title="" />
 </template>
 
 <template id="expand-down-tpl">
-	<ExpandButton direction="down" title=""/>
+	<ExpandButton direction="down" title="" />
 </template>
 
 <template id="expand-all-content-tpl">
-	<ExpandAllContentButton/>
+	<ExpandAllContentButton />
 </template>
 
 <script>
@@ -49,12 +49,71 @@ import Toolbar from "./Toolbar.astro";
 	let diffFilename = document.getElementById("diff-filename");
 	let diffContent = document.getElementById("diff-content");
 	let languageBadge = document.getElementById("language-badge");
+	let scrollbarTrack = document.getElementById("scrollbar-track");
+	let scrollbarThumb = document.getElementById("scrollbar-thumb");
+	let scrollbarMarkers = document.getElementById("scrollbar-markers");
+
+	const scrollPositions = new Map<string, number>();
+	let currentFilename = "";
+	let scrollbarHideTimeout: ReturnType<typeof setTimeout> | null = null;
+	let isDragging = false;
+	let isHoveringTrack = false;
+
+	function showScrollbar() {
+		if (!scrollbarTrack || !diffContent) return;
+		if (diffContent.scrollHeight <= diffContent.clientHeight) return;
+
+		if (scrollbarHideTimeout) {
+			clearTimeout(scrollbarHideTimeout);
+			scrollbarHideTimeout = null;
+		}
+		scrollbarTrack.classList.remove("opacity-0");
+		scrollbarTrack.classList.add("opacity-100");
+	}
+
+	function hideScrollbarWithDelay() {
+		if (scrollbarHideTimeout) {
+			clearTimeout(scrollbarHideTimeout);
+		}
+		scrollbarHideTimeout = setTimeout(() => {
+			if (!scrollbarTrack || isDragging || isHoveringTrack) return;
+			scrollbarTrack.classList.remove("opacity-100");
+			scrollbarTrack.classList.add("opacity-0");
+			scrollbarHideTimeout = null;
+		}, 600);
+	}
 
 	function initFileViewer() {
+		if (scrollbarHideTimeout) {
+			clearTimeout(scrollbarHideTimeout);
+			scrollbarHideTimeout = null;
+		}
 		diffContainer = document.getElementById("diff-container");
 		diffFilename = document.getElementById("diff-filename");
 		diffContent = document.getElementById("diff-content");
 		languageBadge = document.getElementById("language-badge");
+		scrollbarTrack = document.getElementById("scrollbar-track");
+		scrollbarThumb = document.getElementById("scrollbar-thumb");
+		scrollbarMarkers = document.getElementById("scrollbar-markers");
+
+		if (diffContent) {
+			diffContent.addEventListener("scroll", () => {
+				updateScrollbarThumb();
+				showScrollbar();
+				hideScrollbarWithDelay();
+			});
+		}
+		if (scrollbarTrack) {
+			scrollbarTrack.addEventListener("mousedown", onScrollbarMouseDown);
+			scrollbarTrack.addEventListener("mouseenter", () => {
+				isHoveringTrack = true;
+				showScrollbar();
+			});
+			scrollbarTrack.addEventListener("mouseleave", () => {
+				isHoveringTrack = false;
+				hideScrollbarWithDelay();
+			});
+		}
 	}
 
 	initFileViewer();
@@ -97,7 +156,127 @@ import Toolbar from "./Toolbar.astro";
 			"flex items-center bg-[#f1f8ff] text-neutral-500 italic h-10 dark:bg-[#1e2836] dark:text-neutral-400",
 	};
 
+	function updateScrollbarThumb() {
+		if (!diffContent || !scrollbarThumb || !scrollbarTrack) return;
+		const scrollHeight = diffContent.scrollHeight;
+		const clientHeight = diffContent.clientHeight;
+		const scrollTop = diffContent.scrollTop;
+
+		if (scrollHeight <= clientHeight) {
+			scrollbarThumb.style.display = "none";
+			scrollbarTrack.classList.remove("opacity-100");
+			scrollbarTrack.classList.add("opacity-0");
+			return;
+		}
+
+		scrollbarThumb.style.display = "block";
+		const thumbHeight = Math.max(
+			20,
+			(clientHeight / scrollHeight) * clientHeight,
+		);
+		const maxScrollTop = scrollHeight - clientHeight;
+		const maxThumbTop = clientHeight - thumbHeight;
+		const thumbTop = (scrollTop / maxScrollTop) * maxThumbTop;
+
+		scrollbarThumb.style.height = `${thumbHeight}px`;
+		scrollbarThumb.style.top = `${thumbTop}px`;
+	}
+
+	let startY = 0;
+	let startScrollTop = 0;
+
+	function onScrollbarMouseDown(e: MouseEvent) {
+		if (!diffContent || !scrollbarThumb || !scrollbarTrack) return;
+		const content = diffContent;
+
+		if (e.target === scrollbarThumb) {
+			isDragging = true;
+			startY = e.clientY;
+			startScrollTop = content.scrollTop;
+			document.addEventListener("mousemove", onScrollbarMouseMove);
+			document.addEventListener("mouseup", onScrollbarMouseUp);
+			e.preventDefault();
+		} else {
+			const rect = scrollbarTrack.getBoundingClientRect();
+			const clickPos = e.clientY - rect.top;
+			const thumbHeight = scrollbarThumb.offsetHeight;
+			const clientHeight = content.clientHeight;
+			const scrollHeight = content.scrollHeight;
+
+			const targetScrollTop =
+				((clickPos - thumbHeight / 2) / (clientHeight - thumbHeight)) *
+				(scrollHeight - clientHeight);
+			content.scrollTop = targetScrollTop;
+		}
+	}
+
+	function onScrollbarMouseMove(e: MouseEvent) {
+		if (!isDragging || !diffContent || !scrollbarThumb || !scrollbarTrack)
+			return;
+		const content = diffContent;
+
+		const deltaY = e.clientY - startY;
+		const clientHeight = content.clientHeight;
+		const scrollHeight = content.scrollHeight;
+		const thumbHeight = scrollbarThumb.offsetHeight;
+
+		const scrollDelta =
+			(deltaY / (clientHeight - thumbHeight)) * (scrollHeight - clientHeight);
+		content.scrollTop = startScrollTop + scrollDelta;
+	}
+
+	function onScrollbarMouseUp() {
+		isDragging = false;
+		document.removeEventListener("mousemove", onScrollbarMouseMove);
+		document.removeEventListener("mouseup", onScrollbarMouseUp);
+		hideScrollbarWithDelay();
+	}
+
+	function renderMarkers() {
+		if (!scrollbarMarkers || !diffContent || !scrollbarTrack) return;
+		const content = diffContent;
+		scrollbarMarkers.innerHTML = "";
+
+		const scrollHeight = content.scrollHeight;
+		const trackHeight = scrollbarTrack.clientHeight;
+
+		if (scrollHeight <= 0) return;
+
+		const contentRect = content.getBoundingClientRect();
+		const rows = content.querySelectorAll(
+			'[data-type="added"], [data-type="deleted"]',
+		);
+		const fragment = document.createDocumentFragment();
+
+		rows.forEach((row) => {
+			const htmlRow = row as HTMLElement;
+			const rowRect = htmlRow.getBoundingClientRect();
+			const top = rowRect.top - contentRect.top + content.scrollTop;
+			const height = rowRect.height;
+
+			const markerTop = (top / scrollHeight) * trackHeight;
+			const markerHeight = Math.max(1, (height / scrollHeight) * trackHeight);
+
+			const marker = document.createElement("div");
+			marker.className = "absolute left-0 w-full";
+			marker.style.top = `${markerTop}px`;
+			marker.style.height = `${markerHeight}px`;
+
+			if (htmlRow.dataset.type === "added") {
+				marker.classList.add("bg-[#e6ffec]", "dark:bg-[#233329]");
+			} else {
+				marker.classList.add("bg-[#ffeef0]", "dark:bg-[#442d30]");
+			}
+
+			fragment.appendChild(marker);
+		});
+
+		scrollbarMarkers.appendChild(fragment);
+	}
+
 	function resetDiff() {
+		scrollPositions.clear();
+		currentFilename = "";
 		diffContainer?.classList.add("hidden");
 		if (diffFilename) diffFilename.textContent = "";
 		if (diffContent) diffContent.innerHTML = "";
@@ -105,6 +284,8 @@ import Toolbar from "./Toolbar.astro";
 			languageBadge.textContent = "";
 			languageBadge.classList.add("hidden");
 		}
+		if (scrollbarMarkers) scrollbarMarkers.innerHTML = "";
+		updateScrollbarThumb();
 	}
 
 	function getLanguageFromFilename(filename: string) {
@@ -156,6 +337,10 @@ import Toolbar from "./Toolbar.astro";
 
 	function showDiff(filename: string, diff: string, isDiff = true) {
 		if (!diffContainer || !diffFilename || !diffContent) return;
+
+		scrollPositions.set(currentFilename, diffContent.scrollTop);
+		currentFilename = filename;
+
 		diffContainer.classList.remove("hidden");
 		diffFilename.textContent = filename;
 
@@ -232,12 +417,23 @@ import Toolbar from "./Toolbar.astro";
 			if (l.newNum && l.newNum > maxLineNum) maxLineNum = l.newNum;
 		}
 		const chars = Math.max(maxLineNum.toString().length, 3);
-		diffContent?.style.setProperty(
-			"--line-number-width",
-			`calc(${chars + 1}ch + 0.6rem)`,
-		);
+		if (diffContent) {
+			diffContent.style.setProperty(
+				"--line-number-width",
+				`calc(${chars + 1}ch + 0.6rem)`,
+			);
+		}
 
 		renderDiffContent();
+
+		if (diffContent) {
+			const content = diffContent;
+			if (scrollPositions.has(filename)) {
+				content.scrollTop = scrollPositions.get(filename)!;
+			} else {
+				content.scrollTop = 0;
+			}
+		}
 	}
 
 	function renderDiffContent(expandAll = false) {
@@ -279,12 +475,16 @@ import Toolbar from "./Toolbar.astro";
 				i--;
 			}
 		}
+
+		updateScrollbarThumb();
+		renderMarkers();
 	}
 
 	function createDiffRow(lineObj: DiffLine) {
 		const { type, line, oldNum, newNum } = lineObj;
 		const row = document.createElement("div");
 		row.className = CLASSES.row;
+		row.dataset.type = type;
 
 		const oldNumCell = document.createElement("div");
 		oldNumCell.className = CLASSES.lineNumber;
@@ -417,5 +617,10 @@ import Toolbar from "./Toolbar.astro";
 		if (detail?.filename && detail.diff !== undefined) {
 			showDiff(detail.filename, detail.diff, detail.isDiff);
 		}
+	});
+
+	window.addEventListener("resize", () => {
+		updateScrollbarThumb();
+		renderMarkers();
 	});
 </script>
