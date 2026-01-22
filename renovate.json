@@ -1,6 +1,10 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ]
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:recommended"
+	],
+	"prBodyColumns": ["Package", "Diffpack", "Age", "Confidence"],
+	"prBodyDefinitions": {
+		"Diffpack": "- [ ] [{{{currentVersion}}} -> {{{newVersion}}}](https://www.diffpack.io/npm/{{{depName}}}/{{{currentVersion}}}/{{{newVersion}}})"
+	}
 }
