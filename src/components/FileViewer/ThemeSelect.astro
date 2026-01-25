@@ -10,21 +10,29 @@
 		class="text-xs bg-transparent border-none focus:ring-0 text-neutral-700 dark:text-neutral-300 cursor-pointer"
 	>
 		<optgroup label="Highlight.js Themes">
-			<option value="github">GitHub</option>
-			<option value="github-dark">GitHub Dark</option>
-			<option value="github-dark-dimmed">GitHub Dark Dimmed</option>
+			<option value="base16/3024">3024</option>
 			<option value="atom-one-dark">Atom One Dark</option>
 			<option value="atom-one-light">Atom One Light</option>
+			<option value="default">Default</option>
+			<option value="base16/dracula">Dracula</option>
+			<option value="base16/github">GitHub</option>
+			<option value="github-dark">GitHub Dark</option>
+			<option value="github-dark-dimmed">GitHub Dark Dimmed</option>
+			<option value="material">Material</option>
 			<option value="monokai">Monokai</option>
 			<option value="monokai-sublime">Monokai Sublime</option>
-			<option value="dracula">Dracula</option>
-			<option value="nord">Nord</option>
 			<option value="night-owl">Night Owl</option>
-			<option value="tokyo-night-dark">Tokyo Night Dark</option>
+			<option value="nightfall">Nightfall</option>
+			<option value="nord">Nord</option>
+			<option value="onedark">One Dark</option>
 			<option value="stackoverflow-dark">Stack Overflow Dark</option>
 			<option value="stackoverflow-light">Stack Overflow Light</option>
+			<option value="solarized-light">Solarized Light</option>
+			<option value="solarized-dark">Solarized Dark</option>
+			<option value="tokyo-night-dark">Tokyo Night Dark</option>
 			<option value="vs">VS</option>
 			<option value="vs2015">VS 2015</option>
+			<option value="windows-95">Windows 95</option>
 		</optgroup>
 	</select>
 </div>
@@ -47,10 +55,13 @@
 
 		const THEME_STORAGE_KEY = "highlight_theme";
 
-		// Load saved theme
-		const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "github";
-		if (themeSelect) themeSelect.value = savedTheme;
-		updateHighlightTheme(savedTheme, themeStyle);
+		// Load saved theme or fall back to page theme
+		const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+		const pageTheme = document.documentElement.getAttribute("data-theme");
+		const defaultTheme = pageTheme === "dark" ? "github-dark" : "github";
+		const initialTheme = savedTheme || defaultTheme;
+		if (themeSelect) themeSelect.value = initialTheme;
+		updateHighlightTheme(initialTheme, themeStyle);
 
 		themeSelect?.addEventListener("change", (e) => {
 			const theme = (e.target as HTMLSelectElement).value;
@@ -63,23 +74,37 @@
 		theme: string,
 		themeStyle: HTMLStyleElement,
 	) {
+		// Custom theme handling
+		if (theme === "nightfall") {
+			const response = await fetch("/nightfall.css");
+			if (!response.ok) {
+				console.error("Theme not found: nightfall");
+				return;
+			}
+			themeStyle.textContent = await response.text();
+			return;
+		}
+
 		const themes = import.meta.glob(
-			["/node_modules/highlight.js/styles/*.css"],
+			["/node_modules/highlight.js/styles/**/*.css"], // Added ** to search subfolders
 			{ query: "?raw", eager: true },
 		);
 
-		const themeKey = `/node_modules/highlight.js/styles/${theme}.css`;
+		// Find the key that matches the filename (e.g., "dracula.css" or "base16/dracula.css")
+		const themeKey = Object.keys(themes).find((key) =>
+			key.endsWith(`/${theme}.css`),
+		);
 
-		const cssModule = themes[themeKey] as { default: string } | undefined;
+		const cssModule = themeKey
+			? (themes[themeKey] as { default: string })
+			: undefined;
 		if (cssModule) {
 			themeStyle.textContent = cssModule.default;
 		} else {
 			console.error(`Theme not found: ${themeKey}`);
 			const defaultTheme = themes[
 				"/node_modules/highlight.js/styles/github.css"
-			] as
-				| { default: string }
-				| undefined;
+			] as { default: string } | undefined;
 			if (defaultTheme) {
 				themeStyle.textContent = defaultTheme.default;
 			}
