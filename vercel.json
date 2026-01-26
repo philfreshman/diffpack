@@ -3,6 +3,23 @@
     { "source": "/npm/(.*)", "destination": "/npm" },
     { "source": "/crates/(.*)", "destination": "/crates" }
   ],
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "host", "value": "www.diffpack.io" }
+      ],
+      "destination": "https://diffpack.io/$1",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
