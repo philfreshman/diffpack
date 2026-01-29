@@ -98,7 +98,7 @@ impl DiffTreeBuilder {
         let mut renames = HashMap::new();
         let mut used = HashSet::new();
 
-        // Phase 1: Exact content matches using hash-based lookup (O(n+m) instead of O(n*m))
+        // Phase 1: Exact content matches using hash-based lookup
         let mut del_by_hash: HashMap<u64, Vec<&String>> = HashMap::new();
         for del_path in deleted {
             if let Some(content) = self.file_content(&self.from_files, del_path) {
@@ -120,7 +120,6 @@ impl DiffTreeBuilder {
                             continue;
                         }
 
-                        // Verify content match (hash collision check)
                         if let Some(del_content) = self.file_content(&self.from_files, del_path) {
                             if add_content == del_content {
                                 renames.insert(add_path.clone(), (*del_path).clone());
@@ -133,7 +132,19 @@ impl DiffTreeBuilder {
             }
         }
 
-        // Phase 2: Similar content (using similar crate)
+        // Phase 2: Similar content with multi-stage filtering
+
+        // Pre-compute line sets for Jaccard similarity (fast pre-filter)
+        let mut del_line_sets: HashMap<&String, HashSet<&str>> = HashMap::new();
+        for del_path in deleted {
+            if used.contains(del_path) {
+                continue;
+            }
+            if let Some(content) = self.file_content(&self.from_files, del_path) {
+                del_line_sets.insert(del_path, content.lines().collect());
+            }
+        }
+
         for add_path in added {
             if renames.contains_key(add_path) {
                 continue;
@@ -144,6 +155,7 @@ impl DiffTreeBuilder {
                 None => continue,
             };
 
+            let add_lines: HashSet<&str> = add_content.lines().collect();
             let add_name = add_path.split('/').last().unwrap_or("");
             let mut best: Option<(String, f64)> = None;
 
@@ -157,11 +169,21 @@ impl DiffTreeBuilder {
                     None => continue,
                 };
 
-                // Quick filter
+                // Filter 1: Length ratio check (very fast)
                 if !self.can_be_similar(del_content, add_content) {
                     continue;
                 }
 
+                // Filter 2: Jaccard similarity on line sets (fast)
+                let del_lines = del_line_sets.get(del_path).unwrap();
+                let jaccard = self.jaccard_similarity(&add_lines, del_lines);
+
+                // Early reject if Jaccard is too low (threshold * 0.7 as heuristic)
+                if jaccard < self.similarity_threshold * 0.7 {
+                    continue;
+                }
+
+                // Filter 3: Expensive diff-based similarity (only for promising candidates)
                 let similarity = self.calculate_similarity(del_content, add_content);
 
                 // Filename boost
@@ -190,6 +212,21 @@ impl DiffTreeBuilder {
         }
 
         renames
+    }
+
+    fn jaccard_similarity(&self, set1: &HashSet<&str>, set2: &HashSet<&str>) -> f64 {
+        if set1.is_empty() && set2.is_empty() {
+            return 1.0;
+        }
+
+        let intersection = set1.intersection(set2).count();
+        let union = set1.len() + set2.len() - intersection;
+
+        if union == 0 {
+            return 0.0;
+        }
+
+        intersection as f64 / union as f64
     }
 
     fn can_be_similar(&self, from: &str, to: &str) -> bool {
@@ -310,31 +347,33 @@ impl DiffTreeBuilder {
             // Get or create children vec
             let children = current.children.as_mut().unwrap();
 
-            // Find or create the child node - use binary search on sorted children for better performance
-            let child_pos = children.iter().position(|c| c.path == current_path);
+            // Binary search to find insertion point or existing node
+            let child_pos = children.binary_search_by(|c| c.path.cmp(&current_path));
 
-            if let Some(pos) = child_pos {
-                current = &mut children[pos];
-            } else {
-                let new_node = DiffFileEntry {
-                    path: current_path.clone(),
-                    old_path: None,
-                    file_type: if is_leaf {
-                        file_type.clone()
-                    } else {
-                        FileType::Directory
-                    },
-                    status: DiffStatus::Unchanged,
-                    added: None,
-                    removed: None,
-                    children: Some(Vec::new()),
-                };
-                children.push(new_node);
-                // Sort children for consistent ordering and potential binary search optimization
-                children.sort_by(|a, b| a.path.cmp(&b.path));
-                let pos = children.iter().position(|c| c.path == current_path).unwrap();
-                current = &mut children[pos];
-            }
+            current = match child_pos {
+                Ok(pos) => {
+                    // Node already exists
+                    &mut children[pos]
+                }
+                Err(insert_pos) => {
+                    // Node doesn't exist, insert at correct sorted position
+                    let new_node = DiffFileEntry {
+                        path: current_path.clone(),
+                        old_path: None,
+                        file_type: if is_leaf {
+                            file_type.clone()
+                        } else {
+                            FileType::Directory
+                        },
+                        status: DiffStatus::Unchanged,
+                        added: None,
+                        removed: None,
+                        children: Some(Vec::new()),
+                    };
+                    children.insert(insert_pos, new_node);
+                    &mut children[insert_pos]
+                }
+            };
         }
     }
 

@@ -1,7 +1,12 @@
 use std::collections::HashMap;
+use std::fs::File;
 use std::hint::black_box;
+use std::io::{self, Read};
+use std::path::{Component, Path, PathBuf};
 
 use criterion::{criterion_group, criterion_main, Criterion};
+use flate2::read::GzDecoder;
+use tar::Archive;
 
 #[allow(dead_code)]
 #[path = "../src/core.rs"]
@@ -10,72 +15,56 @@ mod core;
 mod types;
 use types::{FileMapEntry, FileType};
 
-fn make_content(file_index: usize) -> String {
-    let mut content = String::with_capacity(128);
-    for line in 0..6 {
-        content.push_str(&format!("file-{file_index} line-{line}\n"));
+fn normalize_entry_path(path: PathBuf) -> Option<String> {
+    if path
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return None;
     }
-    content
+
+    let path_str = path.to_string_lossy().to_string();
+    if path_str.is_empty() {
+        None
+    } else {
+        Some(path_str)
+    }
 }
 
-fn make_file_maps(
-    file_count: usize,
-    dir_count: usize,
-    change_stride: usize,
-    rename_stride: usize,
-    remove_stride: usize,
-    added_files: usize,
-) -> (HashMap<String, FileMapEntry>, HashMap<String, FileMapEntry>) {
-    let mut from_map = HashMap::with_capacity(file_count);
-    let mut to_map = HashMap::with_capacity(file_count + added_files);
+fn load_tgz_file_map(path: &Path) -> io::Result<HashMap<String, FileMapEntry>> {
+    let file = File::open(path)?;
+    let decoder = GzDecoder::new(file);
+    let mut archive = Archive::new(decoder);
+    let mut map = HashMap::new();
 
-    for i in 0..file_count {
-        let dir = i % dir_count;
-        let path = format!("dir{dir}/file_{i}.txt");
-        let content = make_content(i);
+    for entry in archive.entries()? {
+        let mut entry = entry?;
+        let path = match normalize_entry_path(entry.path()?.to_path_buf()) {
+            Some(path) => path,
+            None => continue,
+        };
+        let entry_type = entry.header().entry_type();
 
-        from_map.insert(
-            path.clone(),
-            FileMapEntry {
-                file_type: FileType::File,
-                content: content.clone(),
-            },
-        );
-
-        if i % rename_stride == 0 {
-            let new_path = format!("dir{dir}/renamed_{i}.txt");
-            to_map.insert(
-                new_path,
+        if entry_type.is_dir() {
+            map.insert(
+                path,
                 FileMapEntry {
-                    file_type: FileType::File,
-                    content,
+                    file_type: FileType::Directory,
+                    content: String::new(),
                 },
             );
             continue;
         }
 
-        if i % remove_stride == 0 {
+        if !entry_type.is_file() {
             continue;
         }
 
-        let mut to_content = content;
-        if i % change_stride == 0 {
-            to_content.push_str("extra-change\n");
-        }
+        let mut buffer = Vec::new();
+        entry.read_to_end(&mut buffer)?;
+        let content = String::from_utf8_lossy(&buffer).into_owned();
 
-        to_map.insert(
-            path,
-            FileMapEntry {
-                file_type: FileType::File,
-                content: to_content,
-            },
-        );
-    }
-
-    for i in 0..added_files {
-        let path = format!("added/added_{i}.txt");
-        let content = format!("added file {i}\n");
-        to_map.insert(
+        map.insert(
             path,
             FileMapEntry {
                 file_type: FileType::File,
@@ -84,13 +73,19 @@ fn make_file_maps(
         );
     }
 
-    (from_map, to_map)
+    Ok(map)
 }
 
 fn bench_build_diff_tree(c: &mut Criterion) {
-    let (from_files, to_files) = make_file_maps(1_000, 25, 9, 23, 17, 120);
+    let benches_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("benches");
+    let from_path = benches_dir.join("react-query-3.34.14.tgz");
+    let to_path = benches_dir.join("react-query-4.0.0.tgz");
 
-    c.bench_function("build_diff_tree/1k_files", |b| {
+    let from_files =
+        load_tgz_file_map(&from_path).expect("failed to load react-query-3.34.14.tgz");
+    let to_files = load_tgz_file_map(&to_path).expect("failed to load react-query-4.0.0.tgz");
+
+    c.bench_function("build_diff_tree/react_query", |b| {
         b.iter(|| {
             let tree = core::build_diff_tree(
                 black_box(from_files.clone()),
