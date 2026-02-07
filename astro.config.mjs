@@ -12,7 +12,10 @@ export default defineConfig({
 		plugins: [tailwindcss()],
 		build: {
 			minify: 'esbuild',
-			sourcemap: false
+			sourcemap: false,
+			rollupOptions: {
+				external: ['diff-wasm']
+			}
 		}
 	},
 });
