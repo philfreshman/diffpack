@@ -1,6 +1,6 @@
 {
-	"buildCommand": "bun run prepare && bun run build",
-	"installCommand": "bun install",
+	"installCommand": "rustup target add wasm32-unknown-unknown && bun install",
+	"buildCommand": "bun run build",
 	"rewrites": [
 		{ "source": "/npm/(.*)", "destination": "/npm" },
 		{ "source": "/crates/(.*)", "destination": "/crates" }
