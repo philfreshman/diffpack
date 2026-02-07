@@ -7,7 +7,7 @@
       "dependencies": {
         "@vercel/analytics": "^1.6.1",
         "astro": "5.17.1",
-        "diff-wasm": "workspace:*",
+        "diff-wasm": "file:./wasm/diff-wasm/pkg",
         "highlight.js": "^11.11.1",
       },
       "devDependencies": {
@@ -15,10 +15,6 @@
         "@tailwindcss/vite": "4.1.18",
         "tailwindcss": "4.1.18",
       },
-    },
-    "wasm/diff-wasm/pkg": {
-      "name": "diff-wasm",
-      "version": "0.1.0",
     },
   },
   "packages": {
@@ -376,7 +372,7 @@
 
     "diff": ["diff@8.0.3", "", {}, "sha512-qejHi7bcSD4hQAZE0tNAawRK1ZtafHDmMTMkrrIGgSLl7hTnQHmKCeB45xAcbfTqK2zowkM3j3bHt/4b/ARbYQ=="],
 
-    "diff-wasm": ["diff-wasm@workspace:wasm/diff-wasm/pkg"],
+    "diff-wasm": ["diff-wasm@file:wasm/diff-wasm/pkg", {}],
 
     "dlv": ["dlv@1.1.3", "", {}, "sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA=="],
 
