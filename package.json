@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "astro dev",
 		"prepare": "wasm-pack build --target web wasm/diff-wasm",
-		"build": "astro build",
+		"build": "bun run prepare && astro build",
 		"preview": "astro build && astro preview",
 		"astro": "astro",
 		"format": "bunx biome check --write"
