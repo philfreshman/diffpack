@@ -13,7 +13,8 @@
 	"dependencies": {
 		"@vercel/analytics": "^1.6.1",
 		"astro": "5.17.1",
-		"highlight.js": "^11.11.1"
+		"highlight.js": "^11.11.1",
+		"diff-wasm": "file:./wasm/diff-wasm/pkg"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.13",
