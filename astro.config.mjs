@@ -16,6 +16,17 @@ export default defineConfig({
 		},
 		optimizeDeps: {
 			exclude: ['diff-wasm']
+		},
+		worker: {
+			format: 'es',
+			rollupOptions: {
+				external: ['diff-wasm'],
+				output: {
+					paths: {
+						'diff-wasm': '/diff-wasm/diff_wasm.js'
+					}
+				}
+			}
 		}
 	},
 });
