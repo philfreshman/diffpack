@@ -4,8 +4,8 @@
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "astro dev",
-		"prepare": "cd wasm/diff-wasm && wasm-pack build --target web",
-		"build": "bun run prepare && astro build",
+		"build": "astro build",
+		"build:wasm": "cd wasm/diff-wasm && wasm-pack build --target web",
 		"preview": "astro build && astro preview",
 		"astro": "astro",
 		"format": "bunx biome check --write"
@@ -13,8 +13,7 @@
 	"dependencies": {
 		"@vercel/analytics": "^1.6.1",
 		"astro": "5.17.1",
-		"highlight.js": "^11.11.1",
-		"diff-wasm": "file:./wasm/diff-wasm/pkg"
+		"highlight.js": "^11.11.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.13",
