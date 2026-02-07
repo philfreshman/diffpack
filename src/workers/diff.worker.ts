@@ -2,8 +2,9 @@ import init, {
 	build_diff_tree_for_package,
 	get_diff_for_path,
 	prefetch_package,
-} from "../../wasm/diff-wasm/pkg/diff_wasm.js";
-import wasmUrl from "../../wasm/diff-wasm/pkg/diff_wasm_bg.wasm?url";
+} from "diff-wasm";
+
+import wasmUrl, {} from "diff-wasm/diff_wasm_bg.wasm?url";
 
 let wasmInitialized = false;
 export async function ensureWasmInitialized() {
