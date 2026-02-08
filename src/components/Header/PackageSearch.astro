@@ -1,59 +1,20 @@
 ---
-import ResetIcon from "../Icons/ResetIcon.astro";
-import SearchIcon from "../Icons/SearchIcon.astro";
+import SearchInput from "./SearchInput.astro";
+import SearchResults from "./SearchResults.astro";
 
 const { registry } = Astro.props;
 ---
 
 <div class="flex-2 relative" data-registry={registry}>
-	<label
-		for="package-search"
-		class="absolute -top-5 text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1"
-	>
-		Package Name
-	</label>
-	<div class="relative">
-		<input
-			id="package-search"
-			type="text"
-			value=""
-			placeholder={`Search ${registry || 'package'}s...`}
-			autocomplete="off"
-			class="w-full px-4 py-2 pr-10 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500"
-		>
-		<div
-			id="search-loading"
-			class="absolute right-3 top-1/2 -translate-y-1/2 hidden"
-		>
-			<div
-				class="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"
-			></div>
-		</div>
-		<div id="search-icon" class="absolute right-3 top-1/2 -translate-y-1/2">
-			<SearchIcon class="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-		</div>
-		<button
-			id="search-reset"
-			type="button"
-			class="absolute right-3 top-1/2 -translate-y-1/2 hidden"
-			aria-label="Reset search"
-		>
-			<ResetIcon
-				class="w-4 h-4 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"
-			/>
-		</button>
-
-		<!-- Search Results Dropdown -->
-		<div
-			id="search-results"
-			class="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden hidden"
-		>
-			<div id="search-results-list" class="max-h-80 overflow-y-auto"></div>
-		</div>
-	</div>
+	<SearchInput registry={registry} />
+	<SearchResults />
 </div>
 
 <script>
+	import {
+		getHistory,
+		saveToHistory,
+	} from "../../registries/historyService.ts";
 	import { searchPackages } from "../../registries/searchService.ts";
 	import type { SearchResult } from "../../registries/types.ts";
 	import { escapeHTML } from "../../utils/dom.ts";
@@ -82,26 +43,6 @@ const { registry } = Astro.props;
 		let selectedIndex = -1;
 		let selectedPackage: string | null = null;
 		let isLoading = false;
-
-		const HISTORY_KEY = `search_history_${registry}`;
-
-		function getHistory(): SearchResult[] {
-			try {
-				const history = localStorage.getItem(HISTORY_KEY);
-				return history ? JSON.parse(history) : [];
-			} catch {
-				return [];
-			}
-		}
-
-		function saveToHistory(pkg: SearchResult) {
-			const history = getHistory();
-			const newHistory = [
-				pkg,
-				...history.filter((item) => item.name !== pkg.name),
-			].slice(0, 10);
-			localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
-		}
 
 		function updateActionIcon() {
 			if (isLoading) {
@@ -159,7 +100,7 @@ const { registry } = Astro.props;
 
 			const pkg = currentResults.find((r) => r.name === name);
 			if (pkg) {
-				saveToHistory(pkg);
+				saveToHistory(registry, pkg);
 			}
 
 			window.dispatchEvent(
@@ -175,10 +116,10 @@ const { registry } = Astro.props;
 			updateActionIcon();
 			window.dispatchEvent(new CustomEvent("package-reset"));
 			input.focus();
-			const history = getHistory();
+			const history = getHistory(registry);
 			if (history.length > 0) {
 				currentResults = history;
-				renderResults(history, true);
+				renderResults(history);
 			}
 		}
 
@@ -193,10 +134,10 @@ const { registry } = Astro.props;
 					updateActionIcon();
 				}
 				if (query.length === 0) {
-					const history = getHistory();
+					const history = getHistory(registry);
 					if (history.length > 0) {
 						currentResults = history;
-						renderResults(history, true);
+						renderResults(history);
 					} else {
 						hideResults();
 					}
@@ -226,10 +167,10 @@ const { registry } = Astro.props;
 			"focus",
 			() => {
 				if (input.value.length === 0) {
-					const history = getHistory();
+					const history = getHistory(registry);
 					if (history.length > 0) {
 						currentResults = history;
-						renderResults(history, true);
+						renderResults(history);
 					}
 				} else if (currentResults.length > 0) {
 					renderResults(currentResults);
@@ -279,10 +220,10 @@ const { registry } = Astro.props;
 				}
 
 				if (isHidden && e.key === "ArrowDown" && input.value.length === 0) {
-					const history = getHistory();
+					const history = getHistory(registry);
 					if (history.length > 0) {
 						currentResults = history;
-						renderResults(history, true);
+						renderResults(history);
 						return;
 					}
 				}
@@ -329,7 +270,7 @@ const { registry } = Astro.props;
 				if (detail?.name) {
 					selectedPackage = detail.name;
 					if (detail.pkg) {
-						saveToHistory(detail.pkg);
+						saveToHistory(registry, detail.pkg);
 					}
 					updateActionIcon();
 				}
