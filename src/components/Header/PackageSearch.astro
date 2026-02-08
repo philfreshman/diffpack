@@ -5,7 +5,7 @@ import SearchIcon from "../Icons/SearchIcon.astro";
 const { registry } = Astro.props;
 ---
 
-<div class="flex-2 relative">
+<div class="flex-2 relative" data-registry={registry}>
 	<label
 		for="package-search"
 		class="absolute -top-5 text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1"
@@ -30,7 +30,7 @@ const { registry } = Astro.props;
 			></div>
 		</div>
 		<div id="search-icon" class="absolute right-3 top-1/2 -translate-y-1/2">
-			<SearchIcon class="w-4 h-4 text-neutral-400 dark:text-neutral-500"/>
+			<SearchIcon class="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
 		</div>
 		<button
 			id="search-reset"
@@ -38,14 +38,18 @@ const { registry } = Astro.props;
 			class="absolute right-3 top-1/2 -translate-y-1/2 hidden"
 			aria-label="Reset search"
 		>
-			<ResetIcon class="w-4 h-4 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"/>
+			<ResetIcon
+				class="w-4 h-4 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+			/>
 		</button>
 
 		<!-- Search Results Dropdown -->
 		<div
 			id="search-results"
-			class="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden max-h-80 overflow-y-auto hidden"
-		></div>
+			class="absolute z-50 w-full mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden hidden"
+		>
+			<div id="search-results-list" class="max-h-80 overflow-y-auto"></div>
+		</div>
 	</div>
 </div>
 
@@ -63,9 +67,13 @@ const { registry } = Astro.props;
 
 		const input = document.getElementById("package-search") as HTMLInputElement;
 		const resultsDropdown = document.getElementById("search-results");
+		const resultsList = document.getElementById("search-results-list");
 		const loadingIcon = document.getElementById("search-loading");
 		const searchIcon = document.getElementById("search-icon");
 		const resetButton = document.getElementById("search-reset");
+		const registry =
+			(document.querySelector("[data-registry]") as HTMLElement)?.dataset
+				.registry || "npm";
 
 		if (!input) return;
 
@@ -74,6 +82,26 @@ const { registry } = Astro.props;
 		let selectedIndex = -1;
 		let selectedPackage: string | null = null;
 		let isLoading = false;
+
+		const HISTORY_KEY = `search_history_${registry}`;
+
+		function getHistory(): SearchResult[] {
+			try {
+				const history = localStorage.getItem(HISTORY_KEY);
+				return history ? JSON.parse(history) : [];
+			} catch {
+				return [];
+			}
+		}
+
+		function saveToHistory(pkg: SearchResult) {
+			const history = getHistory();
+			const newHistory = [
+				pkg,
+				...history.filter((item) => item.name !== pkg.name),
+			].slice(0, 10);
+			localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+		}
 
 		function updateActionIcon() {
 			if (isLoading) {
@@ -95,13 +123,13 @@ const { registry } = Astro.props;
 		}
 
 		function renderResults(results: SearchResult[]) {
-			if (!resultsDropdown) return;
+			if (!resultsDropdown || !resultsList) return;
 			if (results.length === 0) {
 				hideResults();
 				return;
 			}
 
-			resultsDropdown.innerHTML = results
+			resultsList.innerHTML = results
 				.map((r, i) => {
 					const name = escapeHTML(r.name);
 					const description = r.description ? escapeHTML(r.description) : "";
@@ -113,8 +141,10 @@ const { registry } = Astro.props;
         `;
 				})
 				.join("");
+
 			resultsDropdown.classList.remove("hidden");
 			selectedIndex = -1;
+			resultsList.scrollTop = 0;
 		}
 
 		function hideResults() {
@@ -126,8 +156,14 @@ const { registry } = Astro.props;
 			selectedPackage = name;
 			updateActionIcon();
 			hideResults();
+
+			const pkg = currentResults.find((r) => r.name === name);
+			if (pkg) {
+				saveToHistory(pkg);
+			}
+
 			window.dispatchEvent(
-				new CustomEvent("package-selected", { detail: { name } }),
+				new CustomEvent("package-selected", { detail: { name, pkg } }),
 			);
 		}
 
@@ -139,6 +175,11 @@ const { registry } = Astro.props;
 			updateActionIcon();
 			window.dispatchEvent(new CustomEvent("package-reset"));
 			input.focus();
+			const history = getHistory();
+			if (history.length > 0) {
+				currentResults = history;
+				renderResults(history, true);
+			}
 		}
 
 		// Search input handler
@@ -150,6 +191,16 @@ const { registry } = Astro.props;
 				if (selectedPackage && query !== selectedPackage) {
 					selectedPackage = null;
 					updateActionIcon();
+				}
+				if (query.length === 0) {
+					const history = getHistory();
+					if (history.length > 0) {
+						currentResults = history;
+						renderResults(history, true);
+					} else {
+						hideResults();
+					}
+					return;
 				}
 				if (query.length < 2) {
 					hideResults();
@@ -171,10 +222,37 @@ const { registry } = Astro.props;
 			{ signal },
 		);
 
+		input.addEventListener(
+			"focus",
+			() => {
+				if (input.value.length === 0) {
+					const history = getHistory();
+					if (history.length > 0) {
+						currentResults = history;
+						renderResults(history, true);
+					}
+				} else if (currentResults.length > 0) {
+					renderResults(currentResults);
+				}
+			},
+			{ signal },
+		);
+
+		input.addEventListener(
+			"blur",
+			() => {
+				// Small delay to allow click events on dropdown items to fire first
+				setTimeout(() => {
+					hideResults();
+				}, 100);
+			},
+			{ signal },
+		);
+
 		resetButton?.addEventListener("click", resetSearch, { signal });
 
 		// Click handler
-		resultsDropdown?.addEventListener(
+		resultsList?.addEventListener(
 			"click",
 			(e) => {
 				const item = (e.target as HTMLElement).closest(
@@ -192,9 +270,26 @@ const { registry } = Astro.props;
 		input.addEventListener(
 			"keydown",
 			(e) => {
-				if (resultsDropdown?.classList.contains("hidden")) return;
+				const isHidden = resultsDropdown?.classList.contains("hidden");
+				if (e.key === "Enter" && isHidden) {
+					if (input.value.trim()) {
+						selectPackage(input.value.trim());
+					}
+					return;
+				}
 
-				const items = resultsDropdown?.querySelectorAll(".search-item");
+				if (isHidden && e.key === "ArrowDown" && input.value.length === 0) {
+					const history = getHistory();
+					if (history.length > 0) {
+						currentResults = history;
+						renderResults(history, true);
+						return;
+					}
+				}
+
+				if (isHidden) return;
+
+				const items = resultsList?.querySelectorAll(".search-item");
 				if (!items?.length) return;
 
 				if (e.key === "ArrowDown") {
@@ -210,6 +305,8 @@ const { registry } = Astro.props;
 					if (selectedIndex >= 0) {
 						const name = (items[selectedIndex] as HTMLElement).dataset.name;
 						if (name) selectPackage(name);
+					} else if (input.value.trim()) {
+						selectPackage(input.value.trim());
 					}
 				} else if (e.key === "Escape") {
 					hideResults();
@@ -225,26 +322,15 @@ const { registry } = Astro.props;
 			});
 		}
 
-		// Close dropdown on click outside
-		document.addEventListener(
-			"click",
-			(e) => {
-				if (
-					!input?.contains(e.target as Node) &&
-					!resultsDropdown?.contains(e.target as Node)
-				) {
-					hideResults();
-				}
-			},
-			{ signal },
-		);
-
 		window.addEventListener(
 			"package-selected",
 			(e: Event) => {
 				const detail = (e as CustomEvent).detail;
 				if (detail?.name) {
 					selectedPackage = detail.name;
+					if (detail.pkg) {
+						saveToHistory(detail.pkg);
+					}
 					updateActionIcon();
 				}
 			},
