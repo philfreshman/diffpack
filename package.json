@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "astro dev",
-		"prepare": "RUST_LOG=info wasm-pack build --target web wasm/diff-wasm && pwd && ls",
+		"prepare": "RUST_LOG=info wasm-pack build --target web wasm/diff-wasm",
 		"build": "bun run prepare && astro build",
 		"preview": "astro build && astro preview",
 		"astro": "astro",
