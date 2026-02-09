@@ -3,7 +3,7 @@
 	"buildCommand": "bun run build",
 	"rewrites": [
 		{ "source": "/npm/(.*)", "destination": "/npm" },
-		{ "source": "/crates/(.*)", "destination": "/crates" }
+		{ "source": "/crate/(.*)", "destination": "/crate" }
 	],
 	"cleanUrls": true,
 	"trailingSlash": false,
