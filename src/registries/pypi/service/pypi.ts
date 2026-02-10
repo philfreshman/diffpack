@@ -1,14 +1,10 @@
+import { backend } from "../../../utils/backend.ts";
 import type { PackageVersion, SearchResult } from "../../types.ts";
 import type { PyPIService } from "../domain/base.ts";
 
 export class PyPIRegistryService implements PyPIService {
 	async search(query: string): Promise<SearchResult[]> {
-		const res = await fetch(
-			`https://diffpack-api.vercel.app/api/search?query=${encodeURIComponent(query)}`,
-		);
-
-		if (!res.ok) return [];
-		return res.json();
+		return await backend.search(query);
 	}
 
 	async getVersions(name: string): Promise<string[]> {
