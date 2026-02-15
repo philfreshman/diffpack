@@ -3,39 +3,15 @@ import FileViewer from "../components/FileViewer/FileViewer.astro";
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout registry="crates" title="crates.io" description="Compare Rust crate versions and view source-aware diffs for the Rust ecosystem.">
-	<div id="content" class="flex-1 p-4 overflow-auto min-w-0">
-		<!--<div-->
-		<!--	id="compare-status"-->
-		<!--	class="text-sm text-neutral-700 dark:text-neutral-300 mb-3"-->
-		<!--&gt;-->
-		<!--	Loading...-->
-		<!--</div>-->
-		<FileViewer/>
+<Layout
+	registry="crates"
+	title="crates.io"
+	description="Compare Rust crate versions and view source-aware diffs for the Rust ecosystem."
+>
+	<div
+		id="content"
+		class="relative flex-1 p-4 overflow-auto min-w-0 bg-white dark:bg-neutral-950"
+	>
+		<FileViewer />
 	</div>
 </Layout>
-
-<script>
-	// import { parseUrl } from "../utils/urlParser.ts";
-
-	// const statusEl = document.getElementById("compare-status");
-
-	function handleUrlChange() {
-		// const state = parseUrl(window.location.pathname);
-		// const { package: pkg, from, to } = state;
-		//
-		// if (statusEl) {
-		// 	if (pkg && from && to) {
-		// 		statusEl.textContent = `Comparing ${pkg}: ${from} -> ${to}. Select a file from the tree to view changes.`;
-		// 	} else {
-		// 		statusEl.textContent = "Select a package and versions to compare";
-		// 	}
-		// }
-	}
-
-	window.addEventListener("popstate", handleUrlChange);
-	window.addEventListener("start-diff", handleUrlChange);
-
-	// Initial load
-	handleUrlChange();
-</script>
