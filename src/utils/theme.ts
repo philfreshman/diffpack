@@ -1,4 +1,4 @@
-export function applyTheme() {
+export function applyTheme(doc: Document = document) {
 	const localStorageTheme = localStorage.getItem("theme") || "system";
 	const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
 		? "dark"
@@ -6,11 +6,8 @@ export function applyTheme() {
 	const theme =
 		localStorageTheme !== "system" ? localStorageTheme : systemTheme;
 
-	document.documentElement.setAttribute("data-theme", theme);
-	document.documentElement.setAttribute(
-		"data-theme-selection",
-		localStorageTheme,
-	);
+	doc.documentElement.setAttribute("data-theme", theme);
+	doc.documentElement.setAttribute("data-theme-selection", localStorageTheme);
 }
 
 export function toggleTheme() {
@@ -23,8 +20,10 @@ export function toggleTheme() {
 
 applyTheme();
 
-// Handle View Transitions
-document.addEventListener("astro:after-swap", applyTheme);
+// Apply theme to the incoming document BEFORE it's swapped in — prevents white flash
+document.addEventListener("astro:before-swap", (e) => {
+	applyTheme(e.newDocument);
+});
 
 // Listen for system changes
 window
