@@ -24,6 +24,7 @@ import Toolbar from "./Toolbar.astro";
 
 <script>
 	import hljs from "highlight.js";
+	import { parseUrl } from "../../utils/urlParser";
 
 	let diffContainer = document.getElementById("diff-container");
 	let diffFilename = document.getElementById("diff-filename");
@@ -40,6 +41,7 @@ import Toolbar from "./Toolbar.astro";
 	let scrollbarHideTimeout: ReturnType<typeof setTimeout> | null = null;
 	let isDragging = false;
 	let isHoveringTrack = false;
+	let isEscapeListenerAttached = false;
 
 	function showScrollbar() {
 		if (!scrollbarTrack || !diffContent) return;
@@ -96,6 +98,11 @@ import Toolbar from "./Toolbar.astro";
 				isHoveringTrack = false;
 				hideScrollbarWithDelay();
 			});
+		}
+
+		if (!isEscapeListenerAttached) {
+			document.addEventListener("keydown", onDocumentKeydown);
+			isEscapeListenerAttached = true;
 		}
 	}
 
@@ -440,6 +447,44 @@ import Toolbar from "./Toolbar.astro";
 
 		updateScrollbarThumb();
 		renderMarkers();
+	}
+
+	function onDocumentKeydown(event: KeyboardEvent) {
+		if (event.key !== "Escape") return;
+		if (event.defaultPrevented) return;
+		if (isEditableTarget(event.target as HTMLElement | null)) return;
+		if (diffContainer?.classList.contains("hidden")) return;
+		event.preventDefault();
+		hideCurrentDiff();
+	}
+
+	function hideCurrentDiff() {
+		resetDiff();
+		if (loadingOverlay) loadingOverlay.classList.add("hidden");
+		updateUrlWithoutFile();
+		window.dispatchEvent(new CustomEvent("hide-diff"));
+	}
+
+	function updateUrlWithoutFile() {
+		const state = parseUrl(window.location.pathname);
+		if (!state.file) return;
+		const pathParts = [
+			state.registry,
+			state.package,
+			state.from,
+			state.to,
+		].filter(Boolean);
+		const newPath = `/${pathParts.join("/")}`;
+		if (window.location.pathname !== newPath) {
+			window.history.pushState({}, "", newPath);
+		}
+	}
+
+	function isEditableTarget(target: HTMLElement | null) {
+		if (!target) return false;
+		if (target.isContentEditable) return true;
+		const tag = target.tagName;
+		return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 	}
 
 	function saveExpandedState() {

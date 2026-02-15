@@ -58,6 +58,7 @@ import TreeList from "./TreeList.astro";
 	let diffData: DiffFileEntry | null = null;
 	let diffWorker: Worker | null = null;
 	let selectedFilePath = "";
+	let focusedPath = "";
 
 	// SVGs
 	const chevronRight = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-neutral-600 dark:text-neutral-400 shrink-0"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
@@ -65,7 +66,7 @@ import TreeList from "./TreeList.astro";
 	const folderIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>`;
 	const folderOpenIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"></path></svg>`;
 	const fileIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-neutral-500 dark:text-neutral-400 shrink-0"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
-	const loadingSpinner = `<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block mr-2"></div>`;
+	const loadingSpinner = `<div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent mr-2"></div>`;
 
 	function getStatusColor(status: DiffStatus) {
 		switch (status) {
@@ -163,6 +164,8 @@ import TreeList from "./TreeList.astro";
 				"dark:text-neutral-500",
 			);
 		}
+
+		treeContent.addEventListener("keydown", handleTreeKeydown);
 
 		diffWorker = new Worker(
 			new URL("../../workers/diff.worker.ts", import.meta.url),
@@ -333,6 +336,14 @@ import TreeList from "./TreeList.astro";
 		}
 	});
 
+	window.addEventListener("hide-diff", () => {
+		if (selectedFilePath || focusedPath) {
+			selectedFilePath = "";
+			focusedPath = "";
+			renderTree();
+		}
+	});
+
 	function updateUrl(file: string) {
 		const state = parseUrl(window.location.pathname);
 		const pathParts = [
@@ -350,6 +361,9 @@ import TreeList from "./TreeList.astro";
 
 	function renderTree() {
 		if (!treeContent) return;
+		const hadTreeFocus = treeContent.contains(document.activeElement);
+		const activePath =
+			(document.activeElement as HTMLElement | null)?.dataset?.path || "";
 		treeContent.innerHTML = "";
 		if (!diffData) return;
 
@@ -363,11 +377,31 @@ import TreeList from "./TreeList.astro";
 		}
 
 		// Don't render the root "/" directory itself, just its children
+		if (!focusedPath && selectedFilePath) {
+			focusedPath = selectedFilePath;
+		}
+
 		if (diffData.children) {
 			diffData.children.forEach((child) => {
 				const node = createNodeElement(child, 0);
 				if (node && treeContent) treeContent.appendChild(node);
 			});
+		}
+
+		const visibleRows = getVisibleRows();
+		const focusedRow = focusedPath
+			? visibleRows.find((row) => row.dataset.path === focusedPath)
+			: null;
+		if (!focusedRow && visibleRows.length > 0) {
+			const firstRow = visibleRows[0];
+			const firstPath = firstRow.dataset.path || "";
+			focusedPath = firstPath;
+			firstRow.tabIndex = 0;
+		}
+
+		if (hadTreeFocus) {
+			const targetPath = activePath || focusedPath || selectedFilePath;
+			focusRow(targetPath, false);
 		}
 	}
 
@@ -428,10 +462,30 @@ import TreeList from "./TreeList.astro";
 
 		const row = document.createElement("div");
 		row.className =
-			"flex items-center gap-1 py-1 px-1 pr-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer select-none rounded group w-full overflow-hidden";
+			"flex items-center gap-1 py-1 px-1 pr-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded cursor-pointer select-none group w-full overflow-hidden focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-400/60";
 		row.style.paddingLeft = `${depth * 18 + 4}px`;
 		row.title =
 			item.status === "renamed" ? `Renamed from ${item.oldPath}` : item.path;
+		row.dataset.path = item.path;
+		row.dataset.depth = String(depth);
+		row.dataset.treeRow = "true";
+		row.dataset.hasChildren = hasChildren ? "true" : "false";
+		row.dataset.expanded = isExpanded ? "true" : "false";
+		row.dataset.type = item.type;
+		row.role = "treeitem";
+		row.setAttribute("aria-level", String(depth + 1));
+		if (hasChildren) {
+			row.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+		}
+		row.setAttribute(
+			"aria-selected",
+			item.path === selectedFilePath ? "true" : "false",
+		);
+		if (item.path === focusedPath) {
+			row.tabIndex = 0;
+		} else {
+			row.tabIndex = -1;
+		}
 
 		if (item.path === selectedFilePath) {
 			row.classList.add("bg-blue-50", "dark:bg-blue-900/20");
@@ -463,7 +517,12 @@ import TreeList from "./TreeList.astro";
 			row.insertAdjacentHTML("beforeend", badgeHtml);
 		}
 
+		row.addEventListener("focus", () => {
+			focusedPath = item.path;
+		});
+
 		row.addEventListener("click", () => {
+			focusedPath = item.path;
 			if (hasChildren) {
 				if (isExpanded) {
 					expandedKeys.delete(item.path);
@@ -501,6 +560,137 @@ import TreeList from "./TreeList.astro";
 		}
 
 		return container;
+	}
+
+	function handleTreeKeydown(event: KeyboardEvent) {
+		if (!treeContent) return;
+		const targetRow = (event.target as HTMLElement | null)?.closest?.(
+			'[data-tree-row="true"]',
+		) as HTMLElement | null;
+		if (!targetRow) return;
+
+		const key = event.key;
+		if (
+			![
+				"ArrowUp",
+				"ArrowDown",
+				"ArrowLeft",
+				"ArrowRight",
+				"Home",
+				"End",
+				"Enter",
+				" ",
+			].includes(key)
+		)
+			return;
+
+		event.preventDefault();
+		const rows = getVisibleRows();
+		if (rows.length === 0) return;
+
+		const currentIndex = rows.findIndex((row) => row === targetRow);
+		const currentDepth = Number.parseInt(targetRow.dataset.depth || "0", 10);
+		const hasChildren = targetRow.dataset.hasChildren === "true";
+		const isExpanded = targetRow.dataset.expanded === "true";
+
+		if (key === "ArrowDown") {
+			focusRowByIndex(rows, Math.min(currentIndex + 1, rows.length - 1));
+			return;
+		}
+		if (key === "ArrowUp") {
+			focusRowByIndex(rows, Math.max(currentIndex - 1, 0));
+			return;
+		}
+		if (key === "Home") {
+			focusRowByIndex(rows, 0);
+			return;
+		}
+		if (key === "End") {
+			focusRowByIndex(rows, rows.length - 1);
+			return;
+		}
+		if (key === "Enter" || key === " ") {
+			targetRow.click();
+			return;
+		}
+		if (key === "ArrowRight") {
+			if (hasChildren && !isExpanded) {
+				setExpandedState(targetRow.dataset.path || "", true);
+				return;
+			}
+			const nextRow = rows[currentIndex + 1];
+			const nextDepth = Number.parseInt(nextRow?.dataset.depth || "0", 10);
+			if (nextRow && nextDepth > currentDepth) {
+				focusRowByIndex(rows, currentIndex + 1);
+			}
+			return;
+		}
+		if (key === "ArrowLeft") {
+			if (hasChildren && isExpanded) {
+				setExpandedState(targetRow.dataset.path || "", false);
+				return;
+			}
+			for (let i = currentIndex - 1; i >= 0; i -= 1) {
+				const row = rows[i];
+				const depth = Number.parseInt(row.dataset.depth || "0", 10);
+				if (depth < currentDepth) {
+					focusRowByIndex(rows, i);
+					break;
+				}
+			}
+		}
+	}
+
+	function getVisibleRows() {
+		if (!treeContent) return [];
+		return Array.from(
+			treeContent.querySelectorAll<HTMLElement>('[data-tree-row="true"]'),
+		);
+	}
+
+	function focusRow(path: string, preventScroll: boolean) {
+		if (!treeContent || !path) return;
+		const selector = `[data-tree-row="true"][data-path="${escapeForSelector(path)}"]`;
+		const row = treeContent.querySelector<HTMLElement>(selector);
+		if (!row) return;
+		const rows = getVisibleRows();
+		rows.forEach((item) => {
+			item.tabIndex = item === row ? 0 : -1;
+		});
+		focusedPath = path;
+		row.focus({ preventScroll });
+		row.scrollIntoView({ block: "nearest" });
+	}
+
+	function focusRowByIndex(rows: HTMLElement[], index: number) {
+		const row = rows[index];
+		if (!row) return;
+		const path = row.dataset.path || "";
+		rows.forEach((item) => {
+			item.tabIndex = item === row ? 0 : -1;
+		});
+		focusedPath = path;
+		row.focus({ preventScroll: true });
+		row.scrollIntoView({ block: "nearest" });
+	}
+
+	function setExpandedState(path: string, expanded: boolean) {
+		if (!path) return;
+		if (expanded) {
+			expandedKeys.add(path);
+			collapsedKeys.delete(path);
+		} else {
+			expandedKeys.delete(path);
+			collapsedKeys.add(path);
+		}
+		renderTree();
+	}
+
+	function escapeForSelector(value: string) {
+		if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+			return CSS.escape(value);
+		}
+		return value.replace(/"/g, '\\"');
 	}
 
 	document.addEventListener("astro:page-load", init);
