@@ -4,7 +4,7 @@ import type { PyPIService } from "../domain/base.ts";
 
 export class PyPIRegistryService implements PyPIService {
 	async search(query: string): Promise<SearchResult[]> {
-		return await backend.search(query);
+		return await backend.search(query, "pypi");
 	}
 
 	async getVersions(name: string): Promise<string[]> {
