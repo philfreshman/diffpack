@@ -77,6 +77,7 @@ import DownloadIcon from "../Icons/DownloadIcon.astro";
 		getRegistry,
 	} from "../../registries/searchService.ts";
 	import { escapeHTML } from "../../utils/dom.ts";
+	import { parseGitHubRepoSlug } from "../../utils/github.ts";
 	import { parseUrl } from "../../utils/urlParser";
 
 	let abortController: AbortController | null = null;
@@ -199,6 +200,11 @@ import DownloadIcon from "../Icons/DownloadIcon.astro";
 				const parts = packageName.split("/");
 				const unscopedName = parts[parts.length - 1] || packageName;
 				return `https://registry.npmjs.org/${packageName}/-/${unscopedName}-${version}.tgz`;
+			}
+			if (registry === "zig") {
+				const repo = parseGitHubRepoSlug(packageName);
+				if (!repo) return "";
+				return `https://codeload.github.com/${repo.owner}/${repo.repo}/tar.gz/${version}`;
 			}
 			return `https://static.crates.io/crates/${packageName}/${packageName}-${version}.crate`;
 		}

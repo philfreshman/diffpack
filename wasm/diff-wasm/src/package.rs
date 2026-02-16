@@ -32,6 +32,17 @@ fn build_tarball_url(registry: &str, pkg: &str, version: &str) -> Result<String,
         "crates" => Ok(format!(
             "https://static.crates.io/crates/{pkg}/{pkg}-{version}.crate"
         )),
+        "zig" => {
+            let mut parts = pkg.split('/');
+            let owner = parts.next().unwrap_or("");
+            let repo = parts.next().unwrap_or("");
+            if owner.is_empty() || repo.is_empty() {
+                return Err(JsValue::from_str("Invalid Zig package name"));
+            }
+            Ok(format!(
+                "https://codeload.github.com/{owner}/{repo}/tar.gz/{version}"
+            ))
+        }
         _ => Err(JsValue::from_str(&format!(
             "Unsupported registry: {registry}"
         ))),

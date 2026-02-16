@@ -5,9 +5,10 @@ import SpaceBackground from "../layouts/SpaceBackground.astro";
 
 const title = "diffpack - Compare package versions across ecosystems";
 const description =
-	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm and crates.io.";
+	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io, and Zig.";
 const tiles = [
 	{
+		id: "npm",
 		title: "npm",
 		subtitle: "JavaScript & TypeScript packages",
 		href: "/npm",
@@ -15,11 +16,20 @@ const tiles = [
 		borderColor: "rgba(239, 68, 68, 0.3)",
 	},
 	{
+		id: "crates",
 		title: "crates.io",
 		subtitle: "Rust ecosystem packages",
 		href: "/crates",
 		glowColor: "rgba(251, 146, 60, 0.4)", // orange-400
 		borderColor: "rgba(251, 146, 60, 0.3)",
+	},
+	{
+		id: "zig",
+		title: "zig",
+		subtitle: "Zig ecosystem packages",
+		href: "/zig",
+		glowColor: "rgba(16, 185, 129, 0.4)", // emerald-500
+		borderColor: "rgba(16, 185, 129, 0.3)",
 	},
 ];
 ---
@@ -40,6 +50,12 @@ const tiles = [
 					0 0 20px rgba(251, 146, 60, 0.4),
 					0 0 40px rgba(251, 146, 60, 0.3);
 			}
+
+			.tile-zig:hover {
+				box-shadow:
+					0 0 20px rgba(16, 185, 129, 0.4),
+					0 0 40px rgba(16, 185, 129, 0.3);
+			}
 		</style>
 	</head>
 	<body
@@ -58,11 +74,11 @@ const tiles = [
 				</div>
 			</div>
 
-			<div class="grid w-full max-w-4xl grid-cols-1 gap-8 sm:grid-cols-2">
-				{tiles.map((tile, index) => (
+			<div class="grid w-full max-w-4xl grid-cols-1 gap-8 sm:grid-cols-3">
+				{tiles.map((tile) => (
 				<a
 						href={tile.href}
-						class={`tile-${index === 0 ? 'npm' : 'crates'} group relative rounded-2xl duration-300 hover:scale-[1.02] block`}
+						class={`tile-${tile.id} group relative rounded-2xl duration-300 hover:scale-[1.02] block`}
 						style={{
 							border: `2px solid ${tile.borderColor}`,
 						}}

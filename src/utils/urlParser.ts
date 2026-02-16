@@ -11,10 +11,11 @@ export function parseUrl(pathname: string): UrlState {
 	const parts = decodedPathname.split("/").filter(Boolean);
 
 	if (parts.length === 0) {
-		return { registry: "npm", package: "", from: "", to: "" , file: ""};
+		return { registry: "npm", package: "", from: "", to: "", file: "" };
 	}
 
-	const isKnownRegistry = parts[0] === "npm" || parts[0] === "crates";
+	const isKnownRegistry =
+		parts[0] === "npm" || parts[0] === "crates" || parts[0] === "zig";
 	const registry = isKnownRegistry ? parts[0] : "npm";
 	const remainingParts = isKnownRegistry ? parts.slice(1) : parts;
 
@@ -23,7 +24,12 @@ export function parseUrl(pathname: string): UrlState {
 	let to = "";
 	let fileParts: string[] = [];
 
-	if (remainingParts[0]?.startsWith("@")) {
+	if (registry === "zig") {
+		pkg = remainingParts.slice(0, 2).join("/");
+		from = remainingParts[2] || "";
+		to = remainingParts[3] || "";
+		fileParts = remainingParts.slice(4);
+	} else if (remainingParts[0]?.startsWith("@")) {
 		pkg = `${remainingParts[0]}/${remainingParts[1] || ""}`;
 		from = remainingParts[2] || "";
 		to = remainingParts[3] || "";
