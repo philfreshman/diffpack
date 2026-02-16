@@ -5,21 +5,32 @@ import SpaceBackground from "../layouts/SpaceBackground.astro";
 
 const title = "diffpack - Compare package versions across ecosystems";
 const description =
-	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm and crates.io.";
+	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io and PyPI.";
+
 const tiles = [
 	{
 		title: "npm",
 		subtitle: "JavaScript & TypeScript packages",
 		href: "/npm",
-		glowColor: "rgba(239, 68, 68, 0.4)", // red-500
-		borderColor: "rgba(239, 68, 68, 0.3)",
+		colors: {
+			glow: "239, 68, 68", // red-500
+		},
 	},
 	{
 		title: "crates.io",
 		subtitle: "Rust ecosystem packages",
 		href: "/crates",
-		glowColor: "rgba(251, 146, 60, 0.4)", // orange-400
-		borderColor: "rgba(251, 146, 60, 0.3)",
+		colors: {
+			glow: "251, 146, 60", // orange-400
+		},
+	},
+	{
+		title: "PyPI",
+		subtitle: "Python packages",
+		href: "/pypi",
+		colors: {
+			glow: "59, 130, 246", // blue-500
+		},
 	},
 ];
 ---
@@ -28,76 +39,71 @@ const tiles = [
 <html lang="en" data-theme>
 	<head>
 		<BaseHead title={title} description={description} />
-		<style>
-			.tile-npm:hover {
-				box-shadow:
-					0 0 20px rgba(239, 68, 68, 0.4),
-					0 0 40px rgba(239, 68, 68, 0.3);
-			}
-
-			.tile-crates:hover {
-				box-shadow:
-					0 0 20px rgba(251, 146, 60, 0.4),
-					0 0 40px rgba(251, 146, 60, 0.3);
-			}
-		</style>
 	</head>
 	<body
 		class="min-h-screen text-neutral-900 transition-colors duration-300 dark:text-neutral-100"
 	>
 		<ThemeIcon />
 		<SpaceBackground showGradient={true} />
+
 		<main
 			class="relative flex min-h-screen flex-col items-center justify-center px-6"
 		>
-			<div class="mb-16 text-center">
+			<header class="mb-16 text-center">
 				<h1 class="text-4xl font-bold tracking-tight sm:text-5xl">diffpack</h1>
 				<div class="mt-4 max-w-md text-neutral-600 dark:text-neutral-400">
 					<p>Compare package versions across ecosystems.</p>
 					<p>Clean. Fast. Source-aware.</p>
 				</div>
-			</div>
+			</header>
 
 			<div class="grid w-full max-w-4xl grid-cols-1 gap-8 sm:grid-cols-2">
-				{tiles.map((tile, index) => (
-				<a
+				{tiles.map((tile) => (
+					<a
 						href={tile.href}
-						class={`tile-${index === 0 ? 'npm' : 'crates'} group relative rounded-2xl duration-300 hover:scale-[1.02] block`}
+						class="group relative block rounded-2xl transition-all duration-300 hover:scale-[1.02]"
 						style={{
-							border: `2px solid ${tile.borderColor}`,
+							border: `2px solid rgba(${tile.colors.glow}, 0.3)`,
+							boxShadow: `0 0 0 rgba(${tile.colors.glow}, 0)`,
 						}}
-				>
-					<div class="relative h-full p-8 rounded-2xl backdrop-blur-xs dark:bg-neutral-950/40">
-						<h2 class="text-2xl font-semibold">
-							{tile.title}
-						</h2>
-						<p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-							{tile.subtitle}
-						</p>
-						<div class="mt-6 inline-flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">
-							Explore
-							<svg
-									class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-							>
-								<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 5l7 7-7 7"
-								/>
-							</svg>
+						onmouseover={`this.style.boxShadow='0 0 20px rgba(${tile.colors.glow}, 0.4), 0 0 40px rgba(${tile.colors.glow}, 0.3)'`}
+						onmouseout={`this.style.boxShadow='0 0 0 rgba(${tile.colors.glow}, 0)'`}
+					>
+						<div class="relative h-full rounded-2xl p-8 backdrop-blur-xs dark:bg-neutral-950/40">
+							<h2 class="text-2xl font-semibold">
+								{tile.title}
+							</h2>
+							<p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+								{tile.subtitle}
+							</p>
+							<div class="mt-6 inline-flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">
+								Explore
+								<svg
+										class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+										aria-hidden="true"
+								>
+									<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M9 5l7 7-7 7"
+									/>
+								</svg>
+								<span class="sr-only">Explore {tile.title}</span>
+							</div>
 						</div>
-					</div>
-				</a>
-		))}
+					</a>
+				))}
 			</div>
 
-			<p class="mt-16 text-xs text-neutral-400 dark:text-neutral-500">
-				More registries coming soon.
-			</p>
+			<footer class="mt-16">
+				<p class="text-xs text-neutral-400 dark:text-neutral-500">
+					More registries coming soon.
+				</p>
+			</footer>
 		</main>
 	</body>
 </html>
