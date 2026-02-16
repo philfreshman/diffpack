@@ -14,5 +14,7 @@ import Layout from "../layouts/Layout.astro";
 </Layout>
 
 <script>
-	fetch("https://diffpack-api.vercel.app/api/ping");
+	import { backend } from "../utils/backend.ts";
+
+	backend.ping();
 </script>
