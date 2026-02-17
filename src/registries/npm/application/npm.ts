@@ -6,11 +6,18 @@ export const npmRegistry: PackageRegistry = {
 		return npmService.search(query);
 	},
 
+	async getVersions(name) {
+		return npmService.getVersions(name);
+	},
+
 	async getVersion(name, version) {
 		return npmService.getVersion(name, version);
 	},
 
 	async getPackage(name, version) {
 		return npmService.getTarball(name, version);
+	},
+	getDownloadUrl(name, version) {
+		return npmService.getDownloadUrl(name, version);
 	},
 };

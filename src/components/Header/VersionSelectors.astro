@@ -73,6 +73,7 @@ import DownloadIcon from "../Icons/DownloadIcon.astro";
 
 <script>
 	import {
+		buildDownloadUrl,
 		fetchVersions,
 		getRegistry,
 	} from "../../registries/searchService.ts";
@@ -190,17 +191,6 @@ import DownloadIcon from "../Icons/DownloadIcon.astro";
 			updateUrl("", "", "");
 			updateDownloadLinks();
 			window.dispatchEvent(new CustomEvent("version-changed"));
-		}
-
-		function buildDownloadUrl(packageName: string, version: string) {
-			if (!packageName || !version) return "";
-			const registry = getRegistry();
-			if (registry === "npm") {
-				const parts = packageName.split("/");
-				const unscopedName = parts[parts.length - 1] || packageName;
-				return `https://registry.npmjs.org/${packageName}/-/${unscopedName}-${version}.tgz`;
-			}
-			return `https://static.crates.io/crates/${packageName}/${packageName}-${version}.crate`;
 		}
 
 		function updateDownloadLinks() {
