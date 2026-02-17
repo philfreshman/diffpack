@@ -1,6 +1,7 @@
 ---
 import BaseHead from "../components/BaseHead.astro";
 import ThemeIcon from "../components/Header/ThemeIcon.astro";
+import GithubIcon from "../components/Icons/GithubIcon.astro";
 import SpaceBackground from "../layouts/SpaceBackground.astro";
 
 const title = "diffpack - Compare package versions across ecosystems";
@@ -105,10 +106,20 @@ const tiles = [
 					</a>
 				))}
 			</div>
-
-			<footer class="mt-16">
-				<p class="text-xs text-neutral-400 dark:text-neutral-500">
+			<footer class="relative mt-16">
+				<p
+					class="flex items-center gap-1.5 text-xs text-neutral-400 dark:text-neutral-500"
+				>
 					More registries coming soon.
+					<a
+						href="https://github.com/philfreshman/diffpack"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="hover:text-neutral-600 dark:hover:text-neutral-300"
+					>
+						<GithubIcon />
+						<span class="sr-only">GitHub Profile</span>
+					</a>
 				</p>
 			</footer>
 		</main>
