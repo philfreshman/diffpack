@@ -149,23 +149,4 @@ const { showGradient = false } = Astro.props;
 	// Create shooting stars periodically
 	setInterval(createShootingStar, 2000);
 	createShootingStar();
-
-	// Update gradient visibility on navigation
-	function updateGradientVisibility() {
-		const cosmicBg = document.querySelector(".cosmic-bg");
-		if (!cosmicBg) return;
-
-		// Check if we're on the index page
-		const isIndexPage = window.location.pathname === "/";
-
-		if (isIndexPage) {
-			cosmicBg.classList.remove("hidden");
-		} else {
-			cosmicBg.classList.add("hidden");
-		}
-	}
-
-	// Run on initial load and after each navigation
-	updateGradientVisibility();
-	document.addEventListener("astro:after-swap", updateGradientVisibility);
 </script>

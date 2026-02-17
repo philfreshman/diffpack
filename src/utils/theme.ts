@@ -1,5 +1,5 @@
 export function applyTheme(doc: Document = document) {
-	const localStorageTheme = localStorage.getItem("theme") || "system";
+	const localStorageTheme = localStorage.getItem("theme") || "dark";
 	const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
 		? "dark"
 		: "light";
@@ -12,7 +12,7 @@ export function applyTheme(doc: Document = document) {
 
 export function toggleTheme() {
 	const themes = ["light", "dark", "system"];
-	const currentTheme = localStorage.getItem("theme") || "system";
+	const currentTheme = localStorage.getItem("theme") || "dark";
 	const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
 	localStorage.setItem("theme", nextTheme);
 	applyTheme();
@@ -29,7 +29,7 @@ document.addEventListener("astro:before-swap", (e) => {
 window
 	.matchMedia("(prefers-color-scheme: dark)")
 	.addEventListener("change", (e) => {
-		const localStorageTheme = localStorage.getItem("theme") || "system";
+		const localStorageTheme = localStorage.getItem("theme") || "dark";
 		if (localStorageTheme === "system") {
 			document.documentElement.setAttribute(
 				"data-theme",
