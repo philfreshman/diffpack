@@ -1,6 +1,5 @@
 ---
 import "../styles/global.css";
-import { ClientRouter } from "astro:transitions";
 import Analytics from "@vercel/analytics/astro";
 
 interface Props {
@@ -14,7 +13,7 @@ const { title, description } = Astro.props;
 <script is:inline>
 	(() => {
 		try {
-			const storedTheme = localStorage.getItem("theme") || "system";
+			const storedTheme = localStorage.getItem("theme") || "dark";
 			const prefersDark = window.matchMedia(
 				"(prefers-color-scheme: dark)",
 			).matches;
@@ -26,8 +25,8 @@ const { title, description } = Astro.props;
 				storedTheme,
 			);
 		} catch {
-			document.documentElement.setAttribute("data-theme", "light");
-			document.documentElement.setAttribute("data-theme-selection", "system");
+			document.documentElement.setAttribute("data-theme", "dark");
+			document.documentElement.setAttribute("data-theme-selection", "dark");
 		}
 	})();
 </script>
@@ -62,7 +61,5 @@ const { title, description } = Astro.props;
 	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 
 	<Analytics />
-	<ClientRouter />
-
 	<script src="../utils/theme.ts"></script>
 </head>
