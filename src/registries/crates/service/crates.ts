@@ -21,6 +21,16 @@ export class CratesRegistryService implements CratesService {
 		}));
 	}
 
+	async getVersions(name: string): Promise<string[]> {
+		const res = await fetch(`https://crates.io/api/v1/crates/${encodeURIComponent(name)}`);
+		if (!res.ok) throw new Error("Failed to fetch versions");
+		const data = await res.json();
+		interface CrateVersion {
+			num: string;
+		}
+		return data.versions.map((v: CrateVersion) => v.num);
+	}
+
 	async getVersion(name: string, version: string): Promise<PackageVersion> {
 		const res = await fetch(
 			`https://crates.io/api/v1/crates/${encodeURIComponent(name)}/${version}`,
@@ -33,11 +43,15 @@ export class CratesRegistryService implements CratesService {
 	}
 
 	async getTarball(name: string, version: string): Promise<ArrayBuffer> {
-		// Crates tarballs are at https://static.crates.io/crates/pkg/pkg-version.crate
-		const url = `https://static.crates.io/crates/${name}/${name}-${version}.crate`;
+		const url = this.getDownloadUrl(name, version);
 		const res = await fetch(url);
 		if (!res.ok) throw new Error(`Failed to fetch tarball from ${url}`);
 		return res.arrayBuffer();
+	}
+
+	getDownloadUrl(name: string, version: string): string {
+		// Crates tarballs are at https://static.crates.io/crates/pkg/pkg-version.crate
+		return `https://static.crates.io/crates/${name}/${name}-${version}.crate`;
 	}
 }
 
