@@ -1,7 +1,7 @@
 import { z } from "astro/zod";
 import { type SearchResult, SearchResultSchema } from "../registries/types.ts";
 
-const API_URL = "http://88.198.74.219";
+const API_URL = "https://api.diffpack.io";
 
 export const backend = {
 	ping: async () => {
