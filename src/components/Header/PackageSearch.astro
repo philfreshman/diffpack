@@ -110,9 +110,7 @@ const { registry } = Astro.props;
 
 		function resetSearch() {
 			selectedPackage = null;
-			currentResults = [];
 			input.value = "";
-			hideResults();
 			updateActionIcon();
 			window.dispatchEvent(new CustomEvent("package-reset"));
 			input.focus();
@@ -120,6 +118,8 @@ const { registry } = Astro.props;
 			if (history.length > 0) {
 				currentResults = history;
 				renderResults(history);
+			} else {
+				hideResults();
 			}
 		}
 
@@ -164,17 +164,19 @@ const { registry } = Astro.props;
 		);
 
 		input.addEventListener(
+			"click",
+			() => {
+				const history = getHistory(registry);
+				renderResults(history);
+			},
+			{ signal },
+		);
+
+		input.addEventListener(
 			"focus",
 			() => {
-				if (input.value.length === 0) {
-					const history = getHistory(registry);
-					if (history.length > 0) {
-						currentResults = history;
-						renderResults(history);
-					}
-				} else if (currentResults.length > 0) {
-					renderResults(currentResults);
-				}
+				const history = getHistory(registry);
+				renderResults(history);
 			},
 			{ signal },
 		);
