@@ -1,6 +1,6 @@
 ---
 import PackageSearch from "./PackageSearch.astro";
-import ThemeIcon from "./ThemeIcon.astro";
+import ThemeToggle from "./ThemeToggle.tsx";
 import VersionSelectors from "./VersionSelectors.astro";
 
 const { registry } = Astro.props;
@@ -41,7 +41,7 @@ const { registry } = Astro.props;
 		</button>
 	</div>
 
-	<ThemeIcon />
+	<ThemeToggle client:load />
 </header>
 
 <script>

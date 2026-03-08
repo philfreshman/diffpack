@@ -1,6 +1,6 @@
 ---
 import BaseHead from "../components/BaseHead.astro";
-import ThemeIcon from "../components/Header/ThemeIcon.astro";
+import ThemeToggle from "../components/Header/ThemeToggle.tsx";
 import GithubIcon from "../components/Icons/GithubIcon.tsx";
 import SpaceBackground from "../layouts/SpaceBackground.astro";
 
@@ -51,7 +51,7 @@ const tiles = [
 	<body
 		class="min-h-screen text-neutral-900 transition-colors duration-300 dark:text-neutral-100"
 	>
-		<ThemeIcon />
+		<ThemeToggle client:load />
 		<SpaceBackground showGradient={true} />
 
 		<main
