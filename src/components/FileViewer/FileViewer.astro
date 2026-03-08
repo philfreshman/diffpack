@@ -29,7 +29,6 @@ import Toolbar from "./Toolbar.js";
 	let diffContainer = document.getElementById("diff-container");
 	let diffFilename = document.getElementById("diff-filename");
 	let diffContent = document.getElementById("diff-content");
-	let languageBadge = document.getElementById("language-badge");
 	let loadingOverlay = document.getElementById("loading-overlay");
 	let scrollbarTrack = document.getElementById("scrollbar-track");
 	let scrollbarThumb = document.getElementById("scrollbar-thumb");
@@ -75,7 +74,6 @@ import Toolbar from "./Toolbar.js";
 		diffContainer = document.getElementById("diff-container");
 		diffFilename = document.getElementById("diff-filename");
 		diffContent = document.getElementById("diff-content");
-		languageBadge = document.getElementById("language-badge");
 		loadingOverlay = document.getElementById("loading-overlay");
 		scrollbarTrack = document.getElementById("scrollbar-track");
 		scrollbarThumb = document.getElementById("scrollbar-thumb");
@@ -274,10 +272,6 @@ import Toolbar from "./Toolbar.js";
 		diffContainer?.classList.add("hidden");
 		if (diffFilename) diffFilename.textContent = "";
 		if (diffContent) diffContent.innerHTML = "";
-		if (languageBadge) {
-			languageBadge.textContent = "";
-			languageBadge.classList.add("hidden");
-		}
 		if (scrollbarMarkers) scrollbarMarkers.innerHTML = "";
 		updateScrollbarThumb();
 	}
@@ -391,10 +385,6 @@ import Toolbar from "./Toolbar.js";
 		currentDetectedLang = detectLanguageSample();
 		currentLangLabel = currentDetectedLang || "text";
 
-		if (languageBadge) {
-			languageBadge.textContent = currentLangLabel;
-			languageBadge.classList.remove("hidden");
-		}
 
 		applyExpandedState(filename);
 		renderDiffContent();

@@ -43,10 +43,6 @@ export default function Toolbar() {
 					id="diff-filename"
 					className="text-sm font-semibold text-neutral-900 dark:text-white"
 				/>
-				<div
-					id="language-badge"
-					className="hidden px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-[10px] font-medium text-neutral-600 dark:text-neutral-400 uppercase"
-				/>
 			</div>
 			<ThemeSelect />
 		</div>
