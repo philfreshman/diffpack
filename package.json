@@ -24,7 +24,7 @@
 		"typescript": "^5.9.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.4.0",
+		"@biomejs/biome": "2.4.6",
 		"@tailwindcss/vite": "4.1.18",
 		"tailwindcss": "4.1.18",
 		"wasm-pack": "^0.14.0"
