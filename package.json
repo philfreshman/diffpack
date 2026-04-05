@@ -13,7 +13,7 @@
 	},
 	"dependencies": {
 		"@astrojs/check": "^0.9.6",
-		"@astrojs/react": "^4.4.2",
+		"@astrojs/react": "^5.0.2",
 		"@types/react": "^19.2.14",
 		"@types/react-dom": "^19.2.3",
 		"@vercel/analytics": "^1.6.1",
