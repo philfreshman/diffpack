@@ -23,6 +23,15 @@ function nameOf(path: string): string {
 	return path.split("/").pop() || path;
 }
 
+/** How far each row's fade-in is behind the one above it. */
+const STAGGER_MS = 4;
+/**
+ * Where the stagger stops. A comparison can bring thousands of rows and only
+ * the first screenful is watched arriving; beyond that the cascade would be a
+ * wait rather than an entrance, so the rest come in together at the end of it.
+ */
+const STAGGER_CAP = 30;
+
 /**
  * The file tree, as a real `role="tree"`: rows carry their own depth and
  * expanded state, and the flat row list they come from is what the keyboard
@@ -86,12 +95,13 @@ export function FileTree({
 			aria-label="Changed files"
 			onKeyDown={handleKeyDown}
 		>
-			{rows.map((row) => (
+			{rows.map((row, position) => (
 				<FileTreeRow
 					active={row.entry.path === activePath}
 					key={row.entry.path}
 					onActivate={activate}
 					onFocus={setFocusedPath}
+					position={position}
 					register={elements.current}
 					row={row}
 					selected={row.entry.path === selectedPath}
@@ -109,6 +119,9 @@ interface FileTreeRowProps {
 	selected: boolean;
 	onActivate(row: TreeRow): void;
 	onFocus(path: string): void;
+	/** How far down the tree this row sat when it appeared: its turn in the
+	    fade-in, and read only then. */
+	position: number;
 	/** Where the rows put themselves so the keyboard can focus them. */
 	register: Map<string, HTMLElement>;
 }
@@ -120,9 +133,19 @@ function FileTreeRow({
 	selected,
 	onActivate,
 	onFocus,
+	position,
 	register,
 }: FileTreeRowProps) {
 	const { entry, expanded, hasChildren } = row;
+	// The fade-in is the stylesheet's; a row only says when its turn is. React
+	// mounts a DOM node per row that is new — a finished comparison, an opened
+	// folder, a filter letting rows back in — so the animation runs exactly when
+	// rows appear and never on a row that was already there.
+	//
+	// Pinned at mount: rows renumber as folders open and the filter narrows, and
+	// handing a settled row a later delay would drop it back into its own
+	// animation and flash it.
+	const [delay] = useState(() => Math.min(position, STAGGER_CAP) * STAGGER_MS);
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: the tree owns the keyboard, per the ARIA practices guide
@@ -135,7 +158,10 @@ function FileTreeRow({
 			}}
 			tabIndex={active ? 0 : -1}
 			onFocus={() => onFocus(entry.path)}
-			style={{ paddingLeft: `${row.depth * 18 + 4}px` }}
+			style={{
+				paddingLeft: `${row.depth * 18 + 4}px`,
+				animationDelay: `${delay}ms`,
+			}}
 			aria-level={row.depth + 1}
 			aria-expanded={hasChildren ? expanded : undefined}
 			aria-selected={selected}

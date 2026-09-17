@@ -3,6 +3,16 @@
 	font-size: var(--text-sm);
 }
 
+/* Rows arrive in a cascade down the tree, each a little behind the one above
+   it (the delay is inline, from FileTree.tsx). Longhands rather than the
+   `animation` shorthand so the delay a row sets for itself survives. */
+@keyframes tree-row-in {
+	from {
+		opacity: 0;
+		transform: translateY(-2px);
+	}
+}
+
 .row {
 	display: flex;
 	align-items: center;
@@ -11,6 +21,20 @@
 	border-radius: var(--radius-md);
 	cursor: pointer;
 	user-select: none;
+	animation-name: tree-row-in;
+	/* Short of `--duration-fast`: a row is one of dozens arriving, and the
+	   cascade has to be over before it reads as the tree being slow. */
+	animation-duration: 80ms;
+	animation-timing-function: ease-out;
+	/* The row is held invisible through its delay rather than flashing in at
+	   full opacity and then starting. */
+	animation-fill-mode: backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.row {
+		animation-name: none;
+	}
 }
 
 .row:hover {
