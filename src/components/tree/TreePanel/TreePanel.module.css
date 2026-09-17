@@ -1,45 +1,150 @@
+/*
+ * The sidebar runs the full height of the window, ruled off from the page on
+ * its right. Collapsed is read off `<html>`, which the pre-paint script has
+ * already marked, so a shut panel never flashes open on load.
+ */
 .panel {
 	position: relative;
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-3);
 	flex: 0 0 auto;
 	min-height: 0;
 	width: var(--tree-panel-width, 320px);
-	padding-right: var(--space-3);
 	border-right: 1px solid var(--color-border);
 }
 
-/* Pushed to the bottom of the panel rather than trailing the last row: it is
-   the panel's footing, and a short tree would otherwise leave it floating in
-   the middle of the empty space below. */
-/* Nothing to report is nothing to rule off: a comparison that has not been
-   asked for yet leaves the panel plain. */
-.foot:has(> :empty) {
+/* Never narrower than the panel's minimum, and pinned to its right edge: when a
+   drag takes the panel below that, or it snaps shut, the content keeps its
+   width and slides out past the window's left edge, where nothing can scroll
+   to it. */
+.content {
+	position: absolute;
+	inset: 0 0 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	width: 100%;
+	min-width: 220px;
+	padding: var(--space-2);
+	background-color: var(--color-background);
+}
+
+:global(html[data-tree-collapsed]) .panel {
 	display: none;
 }
 
+/* Snapping shut: let go below its minimum, the panel finishes closing on its
+   own — the box runs down to nothing while the content slides the rest of the
+   way out, fading and blurring on from wherever the drag left it.
+   The hook waits `--duration-fast` before marking the panel collapsed. Only
+   the snap is animated: a drag or a keyboard nudge sets the width outright. */
+:global(html[data-tree-snapping]) .panel {
+	width: 0;
+	transition: width var(--duration-fast) ease;
+}
+
+:global(html[data-tree-snapping]) .content {
+	opacity: 0;
+	filter: blur(2px);
+	transition:
+		opacity var(--duration-fast) ease,
+		filter var(--duration-fast) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:global(html[data-tree-snapping]) .panel,
+	:global(html[data-tree-snapping]) .content {
+		transition: none;
+	}
+}
+
+.head {
+	display: flex;
+	align-items: center;
+	/* Level with the top bar beside it, whatever height the controls give it. */
+	min-height: 2.5rem;
+}
+
+/* The panel's footing, ruled off the way a dashboard sets off its account row:
+   pushed to the bottom rather than trailing a short tree. */
 .foot {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
 	margin-top: auto;
-	padding-top: var(--space-3);
+	padding: var(--space-2) 0 0 var(--space-2);
 	border-top: 1px solid var(--color-border);
 	font-size: var(--text-sm);
 }
 
-/* The panel's right edge doubles as the grip; it widens on hover so it can be
-   grabbed without hunting for it. */
-.resizer {
+/* The panel's right edge doubles as the grip. It is centred on the border so
+   the collapse button can sit across the rule. */
+.edge {
 	position: absolute;
 	top: 0;
-	right: -3px;
+	right: -4px;
 	bottom: 0;
-	width: 6px;
+	width: 8px;
+	z-index: var(--z-toolbar);
+}
+
+.resizer {
+	position: absolute;
+	inset: 0 2px;
 	cursor: col-resize;
 	touch-action: none;
 }
 
 .resizer:hover,
-.resizer:active {
+.resizer:active,
+.resizer:focus-visible {
 	background: var(--color-accent);
 	opacity: 0.35;
+	outline: none;
+}
+
+/* Out of the way until the edge is reached for, and given a moment before it
+   appears so a pointer passing over the rule does not flicker it. */
+.collapse {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	display: grid;
+	place-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	padding: 0;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-full);
+	background-color: var(--color-background);
+	color: var(--color-foreground);
+	cursor: pointer;
+	opacity: 0;
+	translate: -50% -50%;
+	transition: opacity var(--duration-fast) ease var(--duration-fast);
+}
+
+.edge:hover .collapse,
+.collapse:focus-visible {
+	opacity: 1;
+}
+
+/* Mid-drag the button would only be in the way of the edge being dragged, and
+   the pointer, wherever it wanders, is still resizing. */
+:global(html[data-tree-dragging]) .collapse {
+	opacity: 0;
+	pointer-events: none;
+}
+
+:global(html[data-tree-dragging]) {
+	cursor: col-resize;
+	user-select: none;
+}
+
+.collapse:hover {
+	background-color: var(--color-surface);
+	border-color: var(--color-muted);
+}
+
+.collapse:focus-visible {
+	outline: 2px solid var(--color-focus-ring);
+	outline-offset: 2px;
 }
