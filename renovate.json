@@ -2,6 +2,9 @@
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
 	"extends": ["config:recommended"],
 	"schedule": ["before 5am on the 1st and 15th day of the month"],
+	"automerge": true,
+	"automergeType": "pr",
+	"platformAutomerge": true,
 	"prBodyColumns": ["Checklist", "Package", "Diffpack", "Age", "Confidence"],
 	"prBodyDefinitions": {
 		"Checklist": "- [ ]",
