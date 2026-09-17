@@ -1,3 +1,11 @@
+/* Muted like the toolbar's icons, which take the grey from their bar; this
+   one sits in chrome that would otherwise hand it the full foreground. Set on
+   the icon, not the button: the gear `composes` the icon-button rules, which
+   re-emits their `color: currentColor` after this sheet and would win a tie. */
+.toggle svg {
+	color: var(--color-muted);
+}
+
 .floating {
 	position: absolute;
 	top: var(--space-2);

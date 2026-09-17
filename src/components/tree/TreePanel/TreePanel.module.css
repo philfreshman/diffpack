@@ -18,6 +18,7 @@
 .content {
 	position: absolute;
 	inset: 0 0 0 auto;
+	margin-top: 10px;
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);

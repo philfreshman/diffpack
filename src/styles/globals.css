@@ -33,25 +33,6 @@
 	font-display: block;
 }
 
-/* Geist, Vercel's typeface (SIL OFL, see /fonts/Geist-LICENSE.txt). Variable
- * files cover every weight; `swap` keeps body and code text readable while
- * they load, unlike the display face above. */
-@font-face {
-	font-family: "Geist";
-	src: url("/fonts/Geist-Variable.woff2") format("woff2");
-	font-style: normal;
-	font-weight: 100 900;
-	font-display: swap;
-}
-
-@font-face {
-	font-family: "Geist Mono";
-	src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
-	font-style: normal;
-	font-weight: 100 900;
-	font-display: swap;
-}
-
 :root {
 	color-scheme: light;
 
@@ -148,11 +129,9 @@
 	/* --- Type ----------------------------------------------------------- */
 	--font-display: "Miriam Libre", sans-serif;
 	--font-sans:
-		"Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-		sans-serif;
+		ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 	--font-mono:
-		"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono",
-		monospace;
+		ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", monospace;
 
 	--text-xs: 0.75rem;
 	--text-sm: 0.875rem;
