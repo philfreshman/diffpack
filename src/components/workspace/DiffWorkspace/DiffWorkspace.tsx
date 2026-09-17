@@ -9,6 +9,7 @@ import { useDiffView } from "#/components/diff/useDiffView.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { useHighlightTheme } from "#/components/diff/useHighlightTheme.ts";
 import { useIgnoreWhitespace } from "#/components/diff/useIgnoreWhitespace.ts";
+import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
 import { countDifferences } from "#/lib/diff/changes.ts";
@@ -18,13 +19,15 @@ import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import { type ShownFile, shownFile } from "#/lib/session/shownFile.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
+import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
 
 /**
- * The workspace shell: the header assembles a comparison, the body shows the
- * one the URL already names.
+ * The workspace shell: the sidebar navigates a comparison down the left of the
+ * window, and beside it the header assembles one and the body shows the one
+ * the URL already names.
  *
  * The tree and the toolbar are the body's frame, not the comparison's — they
  * stand from the first paint, empty and stood down, so that choosing a package
@@ -102,28 +105,32 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			data-to={slug.to}
 			data-file={slug.file}
 		>
-			<WorkspaceHeader slug={slug} />
-			<main className={styles.body}>
-				{session.status === "error" && (
-					<p className={styles.error} role="alert" data-testid="diff-error">
-						{session.error}
-					</p>
-				)}
+			<TreePanel
+				tree={session.tree}
+				selectedPath={slug.file}
+				onOpenFile={openFile}
+				header={<RegistrySwitcher adapter={adapter} />}
+				footer={
+					<>
+						<TreeStatus
+							changedCount={changed.length}
+							fileCount={files.length}
+							packageName={slug.package}
+							status={session.status}
+						/>
+						<ThemeToggle />
+					</>
+				}
+			/>
+			<div className={styles.column}>
+				<WorkspaceHeader slug={slug} />
+				<main className={styles.body}>
+					{session.status === "error" && (
+						<p className={styles.error} role="alert" data-testid="diff-error">
+							{session.error}
+						</p>
+					)}
 
-				<div className={styles.panels}>
-					<TreePanel
-						tree={session.tree}
-						selectedPath={slug.file}
-						onOpenFile={openFile}
-						footer={
-							<TreeStatus
-								changedCount={changed.length}
-								fileCount={files.length}
-								packageName={slug.package}
-								status={session.status}
-							/>
-						}
-					/>
 					<section className={styles.file} data-testid="diff-file">
 						<DiffToolbar
 							path={session.file?.path ?? ""}
@@ -153,8 +160,8 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 							viewer={viewer}
 						/>
 					</section>
-				</div>
-			</main>
+				</main>
+			</div>
 		</div>
 	);
 }
