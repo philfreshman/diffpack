@@ -1,21 +1,13 @@
 {
 	"$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
 
-	// `src/lib/worker/diff.worker.ts:6` imports the wasm binary as a URL:
-	//   import wasmUrl from "diff-wasm/diff_wasm_bg.wasm?url"
-	// `diff-wasm` is an alias declared in `vite.config.ts` (`resolve.alias`)
-	// pointing at `wasm/diff-wasm/pkg`, which `bun run build:wasm` generates and
-	// which is deliberately NOT a package.json dependency: a `file:` dep breaks
-	// `bun install` in toolchain-less environments and breaks Renovate lockfile
-	// updates. See the comment on the alias in `vite.config.ts` for the full
-	// rationale. fallow does not read Vite aliases, so it is told here.
-	//
-	// The bare `diff-wasm` specifier on line 5 is NOT listed: #114 added a
-	// checked-in declaration at `wasm/diff-wasm/types/diff-wasm.d.ts` and a
-	// tsconfig `paths` entry for it, so fallow resolves that one on its own.
-	// The `?url` suffix on line 6 is a Vite query, which no tsconfig path can
-	// describe — it stays here.
-	"ignoreUnresolvedImports": ["diff-wasm/diff_wasm_bg.wasm?url"],
+	// `src/lib/worker/diff.worker.ts` imports the engine's wasm binary as a URL:
+	//   import wasmUrl from "@philfreshman/diff-wasm/diff_wasm_bg.wasm?url"
+	// The bare `@philfreshman/diff-wasm` specifier above it is a normal
+	// dependency and resolves on its own. This one carries a `?url` suffix — a
+	// Vite query, not part of the path — which nothing in the module graph can
+	// describe, so it is told here.
+	"ignoreUnresolvedImports": ["@philfreshman/diff-wasm/diff_wasm_bg.wasm?url"],
 
 	// `public/` is copied to the site root verbatim; nothing imports it and
 	// nothing should. `public/nightfall.css` is fetched at runtime from a string
@@ -37,9 +29,9 @@
 		"maxCrap": 1000000,
 
 		// Decision 7 on #111, and #118's first task. `scripts/` is dev-only
-		// tooling — `capture-screenshots.mjs` and `check-wasm-types.mjs` are run
-		// by hand and by CI, and neither is reachable from the app's import
-		// graph, so nothing in them can ship. It is stated as intent rather than
+		// tooling — `capture-screenshots.mjs` is run by hand and by CI, and is
+		// not reachable from the app's import graph, so nothing in it can ship.
+		// It is stated as intent rather than
 		// as a fix: both of the findings it was written for breached on CRAP
 		// alone and dropped out when `maxCrap` above was neutralized, so it
 		// suppresses nothing today. Note this also takes `scripts/` out of the
@@ -168,13 +160,10 @@
 		"coverage": {
 			"requireAllFiles": true,
 			"allowUnmatched": [
-				// Build and test tooling, and the hand-written declaration that
-				// stands in for the generated wasm bindings (see
-				// `ignoreUnresolvedImports` above).
+				// Build and test tooling.
 				"*.config.ts",
 				"scripts/**",
 				"tests/**",
-				"wasm/**",
 
 				// In `src/`, but none of the three layers: the router instance
 				// the entry point constructs, the file `tsr generate` writes,

@@ -1,5 +1,4 @@
 {
 	"$schema": "https://openapi.vercel.sh/vercel.json",
-	"installCommand": "rustup target add wasm32-unknown-unknown && bun run build:wasm && bun install",
 	"buildCommand": "bun run build"
 }

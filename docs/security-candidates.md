@@ -42,7 +42,7 @@ bunx fallow security
 | 5 | `src/routes/__root.tsx:95` | XSS (CWE-79) | **not attacker-reachable** |
 | 6 | `src/routes/__root.tsx:97` | XSS (CWE-79) | **not attacker-reachable** |
 | 7 | `src/routes/__root.tsx:100` | XSS (CWE-79) | **not attacker-reachable** |
-| 8 | `scripts/check-wasm-types.mjs:35` | Path traversal (CWE-22) | **not attacker-reachable** |
+| 8 | `scripts/check-wasm-types.mjs:35` | Path traversal (CWE-22) | **closed — file deleted** |
 
 ### 1–2 · Non-literal URL passed to `request()`
 
@@ -80,7 +80,7 @@ That escalation is also why the CI gate is `newly-reachable` and not `new`: it t
 on the pull request that added the test.
 
 Note that this covers the TypeScript layer only — search, version lists and download links. Package
-*content* is fetched by the Rust module (`wasm/diff-wasm/src/package.rs`), which builds its URLs the
+*content* is fetched by the Rust module ([`src/package.rs`](https://github.com/philfreshman/diffpack-engine/blob/main/src/package.rs) in diffpack-engine), which builds its URLs the
 same way and is outside every JavaScript analysis.
 
 ### 3–4 · `dangerouslySetInnerHTML` in the diff rows
@@ -107,12 +107,16 @@ They are inline because they have to be: the first two run before the first pain
 `data-theme` and the tree width, which is what stops the page rendering in one theme and flipping;
 the third is gtag.js's bootstrap queue, which must exist before the async library lands.
 
-### 8 · `path.join()` in `check-wasm-types.mjs`
+### 8 · `path.join()` in `check-wasm-types.mjs` — closed
 
-`file` is one of two module-level string constants naming the generated and checked-in declaration
-files. The script takes no arguments and reads no environment, and fallow itself puts its blast
-radius at 0 — it is not reachable from any runtime entry point, because it is dev tooling that CI
-runs by hand after `build:wasm`.
+The script is gone. It guarded a hand-written TypeScript declaration against the one wasm-pack
+generates, and both went away when the engine moved to
+[its own repository](https://github.com/philfreshman/diffpack-engine) and started shipping its real
+declarations in the published package. The row is kept so a reader of an older report can see what
+became of the candidate rather than wondering whether it was ever triaged.
+
+It was never reachable in any case: `file` was one of two module-level string constants, the script
+took no arguments and read no environment, and fallow put its blast radius at 0.
 
 ## Blind spots
 

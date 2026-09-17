@@ -20,9 +20,9 @@ env:
   BUN_VERSION: 1.3.14
 
 jobs:
-  # Everything that needs neither a Rust toolchain nor a browser, so a broken
-  # type or a failing unit test is red in well under a minute rather than
-  # behind a wasm compile.
+  # Everything that needs no browser, so a broken type or a failing unit test
+  # is red in well under a minute rather than behind a Chromium download and
+  # a production build.
   checks:
     name: typecheck, lint, unit tests
     runs-on: ubuntu-latest
@@ -42,9 +42,6 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # The contributor smoke test from CONTRIBUTING.md, asserted rather than
-      # trusted: this job never builds the wasm, so a `typecheck` that needs
-      # `wasm/diff-wasm/pkg/` fails here.
       - run: bun run typecheck
 
       - run: bun run lint
@@ -54,50 +51,9 @@ jobs:
       - run: bun run test
 
       # The README's health badge is a committed SVG, so it can go stale
-      # silently — unless something notices. This is that something, and it is
-      # the same contract `check:wasm-types` holds for the wasm declaration.
+      # silently — unless something notices. This is that something.
       # When it fails: `bun run badge`, and commit the result.
       - run: bun run check:badge
-
-  # The engine's own tests and its formatting. Separate from `end-to-end`
-  # below, which is where they used to live: they need a Rust toolchain but no
-  # browser and no wasm build, so behind those they were minutes late telling
-  # anyone a diff had changed shape. Warm, this job is well under a minute.
-  rust:
-    name: rustfmt, engine tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: wasm/diff-wasm
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: wasm/diff-wasm
-
-      # Before the tests: `cargo fmt --check` needs no compile at all, so a
-      # formatting failure is reported in seconds rather than after the crate
-      # and its dependency tree have been built. `--all` covers the crate's
-      # `examples/` and `tests/` as well as `src/`.
-      #
-      # When this fails: `cd wasm/diff-wasm && cargo fmt --all`, and commit.
-      - name: cargo fmt --check
-        run: cargo fmt --all --check
-
-      # The unit tests over the engine: extraction, path normalisation, the
-      # URL builders, rename detection, the tree's statuses and counts, and
-      # the serialised shape TypeScript reads. They compile for the host
-      # rather than for `wasm32`, so they are neither `bun run test` nor
-      # anything the e2e suite exercises. `examples/bench.rs` carries its own
-      # tests too (`test = true` in `Cargo.toml`), which is why this is not
-      # `--lib`.
-      - name: cargo test
-        run: cargo test
 
   e2e:
     name: end-to-end
@@ -118,24 +74,13 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
 
+      # The engine arrives prebuilt from npm (`@philfreshman/diff-wasm`), so
+      # this is the whole of it: no Rust toolchain, no wasm-pack, no cargo
+      # cache. What that buys in minutes it costs in coupling — a change to
+      # philfreshman/diffpack-engine is not proved against the app until its
+      # version is bumped here, which is what makes the Renovate PR for that
+      # bump the run to read rather than rubber-stamp.
       - run: bun install --frozen-lockfile
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      # Without this every run recompiles the crate and its dependency tree from
-      # scratch, which is minutes; warm, `build:wasm` is about a second.
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: wasm/diff-wasm
-
-      - run: bun run build:wasm
-
-      # `tsc` reads the checked-in declaration and Vite reads the generated
-      # `pkg/`, so this is the only place the two can be compared. It needs
-      # `build:wasm` above, which is why it cannot live in the pre-commit hook.
-      - run: bun run check:wasm-types
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium

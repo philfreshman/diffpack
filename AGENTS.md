@@ -60,10 +60,11 @@ around it is not, so do not let that command overwrite this file wholesale.
 
 ## Two things fallow will not tell you
 
-- **The engine is Rust.** `wasm/diff-wasm/` is outside every analysis on this page. It has its own
-  tests and its own formatter (`cd wasm/diff-wasm && cargo test`, `cargo fmt --all`), both gated by
-  the `rustfmt, engine tests` CI job, and the checked-in TypeScript declaration for it drifts
-  unless `bun run check:wasm-types` is run after `bun run build:wasm`.
+- **The engine is Rust, and it is not in this repo.** Extraction and diffing live in
+  [philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine) and arrive here
+  as the npm package `@philfreshman/diff-wasm`, with its own tests, its own formatter and its own
+  CI. Nothing on this page analyses it. A change to how a diff is *computed* is a PR there, a
+  release, and a version bump here — not an edit you can make from this checkout.
 - **The DOM, the worker and the wasm are covered by Playwright, not by unit tests**, because the
   engine only runs in a browser. `fallow health --coverage-gaps` cannot see that coverage, so treat
   "untested" on a component as a question, not a verdict.
