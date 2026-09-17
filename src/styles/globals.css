@@ -355,3 +355,57 @@ body {
 		scroll-behavior: auto;
 	}
 }
+
+/*
+ * Page transitions. The router runs a view transition, typed `page`, only when
+ * the page changes (see router.tsx). A browser that cannot match view
+ * transition types gets an untyped transition on every navigation instead,
+ * file clicks included — so the document is not captured at all unless the
+ * `page` type is active, and those browsers simply swap instantly.
+ *
+ * The animations are written as longhands: fallow does not follow the
+ * `animation` shorthand into view-transition pseudo-elements, and reports the
+ * keyframes as unreferenced.
+ */
+html {
+	view-transition-name: none;
+}
+
+html:active-view-transition-type(page) {
+	view-transition-name: root;
+}
+
+@keyframes page-out {
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes page-in {
+	from {
+		opacity: 0;
+		transform: translateY(0.5rem);
+	}
+}
+
+::view-transition-old(root) {
+	animation-name: page-out;
+	animation-duration: var(--duration-fast);
+	animation-timing-function: ease-in;
+	animation-fill-mode: both;
+}
+
+::view-transition-new(root) {
+	animation-name: page-in;
+	animation-duration: 250ms;
+	animation-timing-function: ease-out;
+	animation-delay: var(--duration-fast);
+	animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-old(root),
+	::view-transition-new(root) {
+		animation: none;
+	}
+}
