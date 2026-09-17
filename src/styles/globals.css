@@ -33,6 +33,25 @@
 	font-display: block;
 }
 
+/* Geist, Vercel's typeface (SIL OFL, see /fonts/Geist-LICENSE.txt). Variable
+ * files cover every weight; `swap` keeps body and code text readable while
+ * they load, unlike the display face above. */
+@font-face {
+	font-family: "Geist";
+	src: url("/fonts/Geist-Variable.woff2") format("woff2");
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Geist Mono";
+	src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+}
+
 :root {
 	color-scheme: light;
 
@@ -82,6 +101,9 @@
 	--color-border: var(--gray-light-200);
 	--color-surface: var(--gray-light-bg-200);
 	--color-surface-hover: rgb(0 0 0 / 0.05);
+	/* A text field's ground. Light keeps it white; dark lifts it one step off the
+	   background, the way Vercel's fields sit on its page. */
+	--color-input: #ffffff;
 	/* A translucent pane over the background — the landing tiles sit on the star
 	   field and need to dim it without hiding it. */
 	--color-surface-veil: rgb(255 255 255 / 0.65);
@@ -126,9 +148,11 @@
 	/* --- Type ----------------------------------------------------------- */
 	--font-display: "Miriam Libre", sans-serif;
 	--font-sans:
-		ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+		"Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+		sans-serif;
 	--font-mono:
-		ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", monospace;
+		"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono",
+		monospace;
 
 	--text-xs: 0.75rem;
 	--text-sm: 0.875rem;
@@ -195,6 +219,7 @@
 	--color-border: var(--gray-dark-200);
 	--color-surface: var(--gray-dark-100);
 	--color-surface-hover: rgb(255 255 255 / 0.06);
+	--color-input: #141414;
 	--color-surface-veil: rgb(10 10 10 / 0.4);
 	--color-focus-ring: var(--gray-dark-1000);
 	--color-accent: var(--gray-dark-1000);
