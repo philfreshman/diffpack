@@ -1,6 +1,6 @@
 {
 	"include": ["**/*.ts", "**/*.tsx"],
-	"exclude": ["dist", "wasm", "node_modules"],
+	"exclude": ["dist", "node_modules"],
 	"compilerOptions": {
 		"target": "ES2022",
 		"jsx": "react-jsx",
@@ -8,9 +8,7 @@
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
 		"types": ["vite/client", "bun"],
 		"paths": {
-			"#/*": ["./src/*"],
-			"diff-wasm": ["./wasm/diff-wasm/types/diff-wasm.d.ts"],
-			"diff-wasm/*": ["./wasm/diff-wasm/pkg/*"]
+			"#/*": ["./src/*"]
 		},
 
 		"moduleResolution": "bundler",

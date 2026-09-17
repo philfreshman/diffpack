@@ -40,8 +40,9 @@ export default defineConfig({
 				command: `bun run build && bunx vite preview --port ${port} --strictPort`,
 				url: baseURL,
 				reuseExistingServer: false,
-				// Cold `build:wasm` compiles the Rust crate from scratch; warm it is
-				// about a second.
+				// The engine arrives prebuilt from npm, so this is a Vite build and
+				// nothing more — but the ceiling stays generous: a cold CI runner is
+				// installing dependencies behind it.
 				timeout: 600_000,
 			},
 });

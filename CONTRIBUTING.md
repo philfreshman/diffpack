@@ -7,9 +7,11 @@ Thank you for your interest in contributing to diffpack! This document provides 
 ### Prerequisites
 
 - [Bun](https://bun.sh) (v1.x or later)
-- A Rust toolchain with the `wasm32-unknown-unknown` target — needed to **run or build** the app,
-  not only for Rust work, because the app will not start without the compiled module. Typechecking,
-  linting and the unit tests do not need it.
+
+That is the whole list. The diffing engine is Rust, but it arrives prebuilt from npm as
+[`@philfreshman/diff-wasm`](https://www.npmjs.com/package/@philfreshman/diff-wasm) — a Rust
+toolchain is needed only to work on [the engine itself](https://github.com/philfreshman/diffpack-engine),
+in its own repository.
 
 ### Setup
 
@@ -18,52 +20,48 @@ Thank you for your interest in contributing to diffpack! This document provides 
    ```bash
    bun install
    ```
-3. Build the WebAssembly module — **required before the first `dev`**:
-   ```bash
-   bun run build:wasm
-   ```
-4. Start the development server:
+3. Start the development server:
    ```bash
    bun run dev
    ```
 
-Steps 1 and 2 alone are enough to check that a clone is sound:
+There is no build step in front of that, and no toolchain to install for it. `bun install` brings
+the compiled engine down with everything else.
+
+### The engine
+
+The extraction and diffing logic — everything that downloads an archive, unpacks it and compares
+two versions — is Rust compiled to WebAssembly. It lives in
+**[philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine)** and is consumed
+here as an ordinary dependency, `@philfreshman/diff-wasm`, pinned in `package.json`. It is a
+`wasm-pack --target web` module: `src/lib/worker/diff.worker.ts` imports its three entry points and
+initialises it against the `.wasm` URL Vite fingerprints.
+
+Two consequences worth knowing:
+
+- It is excluded from Vite's dependency pre-bundler (`optimizeDeps.exclude` in `vite.config.ts`).
+  The pre-bundler rewrites the relationship between the JS glue and its `.wasm`, which is exactly
+  what `init({ module_or_path: wasmUrl })` depends on.
+- Its TypeScript declarations are wasm-pack's own, shipped in the package. There is nothing
+  hand-written to keep in sync — the stand-in declaration and the `check:wasm-types` script that
+  guarded it were both deleted when the engine moved out.
+
+**Changing the engine** means a PR there, a release, and a version bump here. To try a change
+before publishing it, point the build at a local `wasm-pack` output:
 
 ```bash
-git clone && bun install && bun run typecheck   # must exit 0, no Rust toolchain
+cd ../diffpack-engine && wasm-pack build --release --target web --scope philfreshman
+cd ../diffpack && DIFF_WASM_LOCAL=../diffpack-engine/pkg bun run dev
 ```
 
-That is the contributor smoke test, and the pre-commit hook holds to the same standard: neither
-needs `wasm/diff-wasm/pkg/`. `bun run build:wasm` is only required to actually run (`dev`,
-`preview`) or build the app.
+`DIFF_WASM_LOCAL` aliases the package to that directory for the run. Unset — every CI run, every
+deploy, and every command you have not deliberately prefixed — it does nothing. Note that `dev`
+does not rebuild the crate either way: re-run `wasm-pack build` and restart.
 
-### WASM development
-
-The extraction and diffing logic is Rust, compiled to WebAssembly with
-[`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/), and it is the module — not the
-TypeScript — that downloads and unpacks the archives.
-
-`bun run dev` does **not** rebuild it. After editing anything under `wasm/diff-wasm/src`, re-run
-`bun run build:wasm` and restart the dev server.
-
-Its output, `wasm/diff-wasm/pkg/`, is generated and gitignored, and is deliberately **not** a
-`package.json` dependency: a `file:` dependency breaks `bun install` in environments without a Rust
-toolchain, and breaks Renovate's lockfile updates. The `diff-wasm` specifier resolves through the
-`paths` entry in `tsconfig.json` and the `resolve.alias` entry in `vite.config.ts` instead.
-
-Those two resolve it to different places, on purpose. Vite aliases it to the generated `pkg/`, the
-real module. `tsc` reads the checked-in `wasm/diff-wasm/types/diff-wasm.d.ts` instead, so
-`bun run typecheck` never depends on output only a Rust toolchain can produce.
-
-That declaration is hand-written, so it can fall behind `wasm/diff-wasm/src/lib.rs`. **After
-changing any `#[wasm_bindgen]` signature, update it** and check it:
-
-```bash
-bun run build:wasm && bun run check:wasm-types
-```
-
-The check compares the declared signatures against the generated `pkg/diff_wasm.d.ts` and fails on
-any divergence. It needs the toolchain, so it runs in CI rather than in the pre-commit hook.
+The cost of the split is that a change over there is not proved against the app until the version
+moves here. That is why the engine's own CI runs `wasm-pack test --headless --chrome` over its
+`#[wasm_bindgen]` boundary, and why the Renovate PR that bumps `@philfreshman/diff-wasm` — which
+runs the full end-to-end suite — is one to read rather than rubber-stamp.
 
 ### Tests
 
@@ -77,8 +75,8 @@ WebAssembly actually runs, which is why the coverage lives there rather than in 
 
 `test:e2e` builds and serves the app itself — a **production** build, never `vite dev`. Three
 defects have reached `development` past a green dev-only run (`7bd9d90`), so the build is part of
-the command rather than a prerequisite you might forget. That means it needs the Rust toolchain,
-and that each run pays for a rebuild (about a second once cargo is warm).
+the command rather than a prerequisite you might forget. Each run pays for that build; since the
+engine moved out it is a Vite build and nothing more.
 
 It also serves with `--strictPort`, and that is not a detail. Left to itself `vite preview` shrugs
 at a busy port and moves to the next one while Playwright goes on polling the original — so the
@@ -94,22 +92,10 @@ bun run preview                                       # or point at a server you
 BASE_URL=http://localhost:4321 bunx playwright test    # running, and skip the rebuild
 ```
 
-The Rust engine has its own tests, which no `bun` script runs — they compile for the host, not for
-`wasm32`, and are the fastest way to pin what a diff renders. They cover everything the engine does
-without a browser in front of it: archive extraction and path normalisation, the registry URL
-builders, rename detection, the tree's statuses and counts, and the serialised shape TypeScript
-reads. What they cannot reach is the handful of functions that *are* the JS boundary — `fetch`,
-and the `#[wasm_bindgen]` entry points — because constructing a `JsValue` off `wasm32` aborts the
-process. Those are what `tests/web.rs` is for, under `wasm-pack test`.
-
-The engine is formatted by `rustfmt`, checked in CI. There is no pre-commit hook for it, so run it
-yourself before pushing:
-
-```bash
-cd wasm/diff-wasm
-cargo test
-cargo fmt --all          # `--all --check` to see what it would change, which is what CI runs
-```
+The engine's own tests — the host-side suite over extraction, rename detection and the tree, and the
+browser suite over its `#[wasm_bindgen]` boundary — live with the engine, in
+[philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine), and run in its CI.
+Nothing here builds or tests Rust.
 
 ### The pre-commit hook
 
@@ -139,25 +125,22 @@ Code commits are gated separately (`.claude/hooks/fallow-gate.sh`, installed via
 ### CI
 
 `.github/workflows/ci.yml` runs on every pull request to `development` and on every push to it, in
-five jobs:
+four jobs — none of which needs a Rust toolchain, since the engine arrives prebuilt:
 
 | Job | Runs | Needs |
 | :--- | :--- | :--- |
 | `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge` | bun only |
-| `rustfmt, engine tests` | `cargo fmt --all --check`, `cargo test` | Rust only |
-| `end-to-end` | `build:wasm`, `check:wasm-types`, `test:e2e` | bun + Rust + Chromium |
+| `end-to-end` | `test:e2e` | bun + Chromium |
 | `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, SARIF upload | bun, PRs only |
 | `fallow (full repo)` | full-repo `fallow`, the type-aware pass, the health grade, SARIF upload, baseline artifact | bun, pushes to `development` only |
 
-The first three are split so a broken type, a failing unit test or an unformatted Rust file goes
-red in under a minute rather than behind a wasm compile and a browser download — which is why
-`cargo test` runs in its own job rather than in `end-to-end`, where it used to sit. The first job deliberately never builds the wasm, which makes it the
-enforcement of the toolchain-less smoke test above: a `typecheck` that starts needing
-`wasm/diff-wasm/pkg/` fails there.
+The first two are split so a broken type or a failing unit test goes red in under a minute rather
+than behind a Chromium download and a production build. On an e2e failure the Playwright HTML
+report and traces are uploaded as a `playwright-report` artifact on the run.
 
-`check:wasm-types` runs only in CI, because it is the one place both the checked-in declaration and
-the generated `pkg/` exist at once. On an e2e failure the Playwright HTML report and traces are
-uploaded as a `playwright-report` artifact on the run.
+Rust — `cargo fmt --all --check`, `cargo test`, and `wasm-pack test --headless --chrome` — runs in
+[the engine's CI](https://github.com/philfreshman/diffpack-engine/blob/main/.github/workflows/ci.yml),
+not here.
 
 The two `fallow` jobs mirror the pre-commit hook's `--gate new-only` behavior on PRs and add a
 full-repo run on `development` itself, which catches drift on files no PR touched — something
@@ -230,8 +213,7 @@ bunx fallow dead-code --type-aware --symbol-impact src/lib/theme.ts:THEME_STORAG
 **The health grade** is the badge at the top of the README, and it is a committed SVG rather than a
 service call — `fallow health --format badge` emits the image itself, not a shields.io URL. So it
 can go stale, and something has to notice: `bun run check:badge` regenerates the badge and diffs it
-against the committed one, and it runs in the `typecheck, lint, unit tests` job. That is the same
-contract `check:wasm-types` already holds for the wasm declaration.
+against the committed one, and it runs in the `typecheck, lint, unit tests` job.
 
 It cannot be refreshed by CI on your behalf — pushes from a workflow to `development` are rejected
 by its own required checks, which is the wall the baselines above already hit. So when a change

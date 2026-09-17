@@ -8,9 +8,6 @@ dist/
 .tanstack/
 .vite/
 
-# Generated wasm package
-wasm/diff-wasm/pkg/
-
 # Test artefacts
 test-results/
 playwright-report/
