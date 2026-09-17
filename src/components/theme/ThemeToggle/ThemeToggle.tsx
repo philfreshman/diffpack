@@ -35,11 +35,9 @@ export function ThemeToggle({ floating = false }: { floating?: boolean }) {
 	// disabled — pre-hydration it would show a possibly-wrong icon and swallow
 	// the click.
 	const [selection, setSelection] = useState<ThemeSelection>(DEFAULT_SELECTION);
-	const [mounted, setMounted] = useState(false);
 
 	useEffect(() => {
 		setSelection(readSelection());
-		setMounted(true);
 	}, []);
 
 	useEffect(() => {
@@ -60,9 +58,10 @@ export function ThemeToggle({ floating = false }: { floating?: boolean }) {
 
 	return (
 		<IconButton
-			className={floating ? styles.floating : undefined}
+			className={
+				floating ? `${styles.toggle} ${styles.floating}` : styles.toggle
+			}
 			aria-label={LABELS[selection]}
-			disabled={!mounted}
 			onClick={handleClick}
 		>
 			{ICONS[selection]}
