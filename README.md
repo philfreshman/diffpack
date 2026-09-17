@@ -113,7 +113,7 @@ unpublished change to it, point the build at a local `wasm-pack` output with
 <br>
 
 <details>
-<summary><b>Deployment</b> — Vercel, and two things to know before editing deploy config</summary>
+<summary><b>Deployment</b> — Vercel, and three things to know before editing deploy config</summary>
 
 <br>
 
@@ -122,10 +122,18 @@ tree to `.vercel/output/` — static assets plus one server function — which V
 
 **Routing and headers belong in `nitro({ routeRules })` in `vite.config.ts`, not `vercel.json`.**
 A build that writes `.vercel/output/config.json` brings its own routing table, so rules left in
-`vercel.json` are read by nobody. All `vercel.json` still carries is the build command — the
+`vercel.json` are read by nobody. What `vercel.json` still carries is the build command — the
 install command it used to need, which installed a Rust target and compiled the engine before
-`bun install` could run, went away when the engine became a published package. Confirm a change
-landed by reading `.vercel/output/config.json` after `VERCEL=1 bun run build`.
+`bun install` could run, went away when the engine became a published package — and the rule
+below. Confirm a change landed by reading `.vercel/output/config.json` after
+`VERCEL=1 bun run build`.
+
+**Only `main` deploys.** `git.deploymentEnabled` turns every other branch off, so pushing to
+`development` or opening a PR no longer builds a preview. Previews were not being used and each
+one was a full production build, so the cost was real and the output was read by nobody. The
+pattern is `"**": false` with `"main": true` on top of it: Vercel matches branch names with
+minimatch and deploys when *any* matching rule is true, so the specific entry wins over the
+wildcard. A branch that needs a URL gets one from `vercel deploy` rather than from a push.
 
 **The `www.diffpack.io` → `diffpack.io` redirect is a domain setting in the Vercel project**, not
 something this repo configures — `routeRules` match on path, not host.
