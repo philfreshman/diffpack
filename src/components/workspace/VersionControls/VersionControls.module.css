@@ -3,4 +3,5 @@
 .compare {
 	flex: 0 0 auto;
 	min-width: 8rem;
+	height: var(--control-height);
 }

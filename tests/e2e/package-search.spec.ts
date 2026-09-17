@@ -90,7 +90,9 @@ test("selecting a result becomes the URL", async ({ page }) => {
 	);
 });
 
-test("shows search, then a spinner, then a reset", async ({ page }) => {
+test("shows search, then a spinner, then clears on Escape", async ({
+	page,
+}) => {
 	// A stub that answers instantly makes the in-flight state impossible to see.
 	await stubNpmSearch(page, [], 2_000);
 	await page.goto("/npm");
@@ -105,13 +107,40 @@ test("shows search, then a spinner, then a reset", async ({ page }) => {
 	await option(page, "express").click();
 	await expect(slot).toHaveAttribute("data-state", "selected");
 
-	await page
-		.getByRole("button", { name: "Clear the selected package" })
-		.click();
+	// Focusing the field opens its list, and the first Escape only closes that;
+	// the second, with the list shut, is the one that clears.
+	await field(page).press("Escape");
+	await page.keyboard.press("Escape");
 
 	await expect(page).toHaveURL("/npm");
 	await expect(field(page)).toHaveValue("");
 	await expect(slot).toHaveAttribute("data-state", "idle");
+});
+
+test("/ reaches the field; Escape closes the list, then empties it", async ({
+	page,
+}) => {
+	await stubNpmSearch(page);
+	await page.goto("/npm");
+	await ready(page);
+	const slot = page.getByTestId("package-search-state");
+	await expect(slot).toContainText("/");
+
+	await page.locator("body").press("/");
+	await expect(field(page)).toBeFocused();
+	// The / went nowhere: it moved focus, it was not typed.
+	await expect(field(page)).toHaveValue("");
+
+	await page.keyboard.type("expr");
+	await expect(slot).toContainText("esc");
+	await expect(option(page, "express")).toBeVisible();
+
+	await page.keyboard.press("Escape");
+	await expect(page.getByRole("option")).toHaveCount(0);
+	await expect(field(page)).toHaveValue("expr");
+
+	await page.keyboard.press("Escape");
+	await expect(field(page)).toHaveValue("");
 });
 
 test("offers the packages this registry has been asked for before", async ({

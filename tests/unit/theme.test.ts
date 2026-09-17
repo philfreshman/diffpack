@@ -44,7 +44,7 @@ describe("nextSelection", () => {
 
 describe("themeColor", () => {
 	test("matches the page background so browser chrome blends in", () => {
-		expect(themeColor("light")).toBe("#ffffff");
-		expect(themeColor("dark")).toBe("#0a0a0a");
+		expect(themeColor("light")).toBe("#fafafa");
+		expect(themeColor("dark")).toBe("#000000");
 	});
 });

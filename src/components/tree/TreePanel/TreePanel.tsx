@@ -89,17 +89,19 @@ export function TreePanel({
 			    past the minimum slides it out of the window instead of crushing it. */}
 			<div className={styles.content} ref={contentRef}>
 				{header && <div className={styles.head}>{header}</div>}
-				<TreeFilter
-					filter={filter}
-					onFilterChange={(next) => narrow(() => setFilter(next))}
-					onlyModified={onlyModified}
-					onOnlyModifiedChange={(next) =>
-						narrow(() => {
-							setOnlyModified(next);
-							writeOnlyModified(next);
-						})
-					}
-				/>
+				<div className={styles.filter}>
+					<TreeFilter
+						filter={filter}
+						onFilterChange={(next) => narrow(() => setFilter(next))}
+						onlyModified={onlyModified}
+						onOnlyModifiedChange={(next) =>
+							narrow(() => {
+								setOnlyModified(next);
+								writeOnlyModified(next);
+							})
+						}
+					/>
+				</div>
 				<FileTree
 					rows={rows}
 					selectedPath={selectedPath}
