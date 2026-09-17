@@ -24,7 +24,7 @@ function nameOf(path: string): string {
 }
 
 /** How far each row's fade-in is behind the one above it. */
-const STAGGER_MS = 4;
+const STAGGER_MS = 2;
 /**
  * Where the stagger stops. A comparison can bring thousands of rows and only
  * the first screenful is watched arriving; beyond that the cascade would be a
