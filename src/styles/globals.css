@@ -357,11 +357,12 @@ body {
 }
 
 /*
- * Page transitions. The router runs a view transition, typed `page`, only when
- * the page changes (see router.tsx). A browser that cannot match view
- * transition types gets an untyped transition on every navigation instead,
- * file clicks included — so the document is not captured at all unless the
- * `page` type is active, and those browsers simply swap instantly.
+ * Page transitions. The router runs a view transition, typed `page`, only
+ * between the landing page and a workspace (see router.tsx). A browser that
+ * cannot match view transition types gets an untyped transition on every
+ * navigation instead, file clicks included — so the document is not captured
+ * at all unless the `page` type is active, and those browsers simply swap
+ * instantly.
  *
  * The animations are written as longhands: fallow does not follow the
  * `animation` shorthand into view-transition pseudo-elements, and reports the
