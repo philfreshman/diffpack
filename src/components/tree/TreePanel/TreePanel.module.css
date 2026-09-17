@@ -24,7 +24,7 @@
 	width: 100%;
 	min-width: 220px;
 	padding: var(--space-2);
-	background-color: var(--color-background);
+	background-color: var(--color-canvas);
 }
 
 :global(html[data-tree-collapsed]) .panel {
@@ -56,11 +56,23 @@
 	}
 }
 
+/* Level with the top bar beside it: as tall as the bar less the panel's own
+   top padding, with the switcher standing on the same footing as the package
+   field — the bar's bottom padding and its 1px rule. The space under it is the
+   body's padding, so the filter lines up with the diff toolbar. */
 .head {
 	display: flex;
-	align-items: center;
-	/* Level with the top bar beside it, whatever height the controls give it. */
-	min-height: 2.5rem;
+	flex-shrink: 0;
+	align-items: flex-end;
+	height: calc(var(--workspace-header-height) - var(--space-2));
+	margin-bottom: calc(var(--space-4) - var(--space-2));
+	padding-bottom: calc(var(--space-2) + 1px);
+}
+
+/* Spaced off the tree as the diff toolbar is off the viewer, so the first row
+   starts level with the diff's top edge. */
+.filter {
+	margin-bottom: calc(var(--space-3) - var(--space-2));
 }
 
 /* The panel's footing, ruled off the way a dashboard sets off its account row:

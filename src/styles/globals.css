@@ -36,36 +36,61 @@
 :root {
 	color-scheme: light;
 
-	/* --- Neutral ramp -------------------------------------------------- */
-	--neutral-50: #fafafa;
-	--neutral-100: #f5f5f5;
-	--neutral-200: #e5e5e5;
-	--neutral-300: #d4d4d4;
-	--neutral-400: #a3a3a3;
-	--neutral-500: #737373;
-	--neutral-600: #525252;
-	--neutral-700: #404040;
-	--neutral-800: #262626;
-	--neutral-900: #171717;
-	--neutral-950: #0a0a0a;
+	/* --- Gray ramps -----------------------------------------------------
+	   Vercel's Geist grays, read off the dashboard's computed `--ds-*` tokens
+	   and resolved to sRGB. Geist does not invert one ramp for dark: each theme
+	   has its own steps, so both are kept and the semantic tokens pick a step.
+	   100–400 are grounds and borders, 500–800 are strokes, 900 is secondary
+	   text and 1000 is primary text. */
+	--gray-light-bg-100: #ffffff;
+	--gray-light-bg-200: #fafafa;
+	--gray-light-100: #f2f2f2;
+	--gray-light-200: #ebebeb;
+	--gray-light-300: #e6e6e6;
+	--gray-light-400: #eaeaea;
+	--gray-light-500: #c9c9c9;
+	--gray-light-600: #a8a8a8;
+	--gray-light-700: #8f8f8f;
+	--gray-light-800: #7d7d7d;
+	--gray-light-900: #4d4d4d;
+	--gray-light-1000: #171717;
+
+	--gray-dark-bg-100: #0a0a0a;
+	--gray-dark-bg-200: #000000;
+	--gray-dark-100: #1a1a1a;
+	--gray-dark-200: #1f1f1f;
+	--gray-dark-300: #292929;
+	--gray-dark-400: #2e2e2e;
+	--gray-dark-500: #454545;
+	--gray-dark-600: #878787;
+	--gray-dark-700: #8f8f8f;
+	--gray-dark-800: #7d7d7d;
+	--gray-dark-900: #a1a1a1;
+	--gray-dark-1000: #ededed;
 
 	/* --- Semantic colour ------------------------------------------------
 	   The only colours components should name. Redefined under
 	   :root[data-theme="dark"] below. */
-	--color-background: #ffffff;
-	--color-foreground: var(--neutral-900);
-	--color-muted: var(--neutral-500);
-	--color-border: var(--neutral-200);
-	--color-surface: var(--neutral-50);
+	/* Two grounds, the way Vercel's dashboard is built: the canvas is the page
+	   and the chrome standing on it (sidebar, top bar); the background is the
+	   brighter one under what sits in front of that — fields, the toolbar, the
+	   diff. In dark the canvas is the darker of the two, pure black. */
+	--color-canvas: var(--gray-light-bg-200);
+	--color-background: var(--gray-light-bg-100);
+	--color-foreground: var(--gray-light-1000);
+	--color-muted: var(--gray-light-900);
+	--color-border: var(--gray-light-200);
+	--color-surface: var(--gray-light-bg-200);
 	--color-surface-hover: rgb(0 0 0 / 0.05);
 	/* A translucent pane over the background — the landing tiles sit on the star
 	   field and need to dim it without hiding it. */
 	--color-surface-veil: rgb(255 255 255 / 0.65);
-	--color-focus-ring: var(--neutral-900);
-	/* The one action a screen asks for — today only the Compare button. */
-	--color-accent: #2563eb;
-	--color-accent-hover: #1d4ed8;
-	--color-accent-foreground: #ffffff;
+	--color-focus-ring: var(--gray-light-1000);
+	/* The one action a screen asks for — today only the Compare button. Geist's
+	   primary button: the text colour as a ground, the page colour on it. */
+	--color-accent: var(--gray-light-1000);
+	--color-accent-hover: #383838;
+	--color-accent-foreground: var(--gray-light-bg-100);
 	/* Something the user asked for did not happen — a comparison the engine
 	   could not build, a file it could not read. */
 	--color-danger: #b91c1c;
@@ -75,7 +100,7 @@
 	--color-renamed: #d97706;
 	--color-renamed-surface: #fef3c7;
 	/* The row the URL names, in the tree. */
-	--color-selected-surface: #eff6ff;
+	--color-selected-surface: rgb(0 0 0 / 0.08);
 
 	/* The diff's own surfaces are further down, with the second half of their
 	   set: they follow the syntax theme rather than this one. */
@@ -88,7 +113,7 @@
 	   Kept as raw channels too, because the tile glow composes them into
 	   rgb(… / alpha) at several opacities. A registry with no accent of its
 	   own falls back to the neutral one. */
-	--registry-default-rgb: 115 115 115;
+	--registry-default-rgb: 143 143 143;
 	--registry-npm-rgb: 203 56 55;
 	--registry-crates-rgb: 222 132 44;
 	--registry-go-rgb: 0 173 216;
@@ -144,6 +169,13 @@
 	--header-height-sm: 5rem;
 	--header-height-md: 8rem;
 	--header-height-lg: calc(var(--header-height-md) + 2.25rem);
+	/* The workspace's top bar, and the sidebar's head level with it. Fixed
+	   rather than grown from its labels, because the sidebar sits in another
+	   box and can only line up with a height it can read. */
+	--workspace-header-height: 4.5rem;
+	/* One height for every single-line control — inputs, the registry switcher,
+	   the diff toolbar — so controls side by side share a centre line. */
+	--control-height: 2.25rem;
 
 	/* --- Breakpoints ----------------------------------------------------
 	   `@media` cannot read custom properties, so these are the single written
@@ -156,23 +188,24 @@
 :root[data-theme="dark"] {
 	color-scheme: dark;
 
-	--color-background: var(--neutral-950);
-	--color-foreground: var(--neutral-100);
-	--color-muted: var(--neutral-400);
-	--color-border: var(--neutral-800);
-	--color-surface: var(--neutral-900);
-	--color-surface-hover: rgb(255 255 255 / 0.1);
+	--color-canvas: var(--gray-dark-bg-200);
+	--color-background: var(--gray-dark-bg-100);
+	--color-foreground: var(--gray-dark-1000);
+	--color-muted: var(--gray-dark-900);
+	--color-border: var(--gray-dark-200);
+	--color-surface: var(--gray-dark-100);
+	--color-surface-hover: rgb(255 255 255 / 0.06);
 	--color-surface-veil: rgb(10 10 10 / 0.4);
-	--color-focus-ring: var(--neutral-100);
-	--color-accent: #2563eb;
-	--color-accent-hover: #3b82f6;
-	--color-accent-foreground: #ffffff;
+	--color-focus-ring: var(--gray-dark-1000);
+	--color-accent: var(--gray-dark-1000);
+	--color-accent-hover: #cccccc;
+	--color-accent-foreground: var(--gray-dark-bg-100);
 	--color-danger: #f87171;
 	--color-added: #4ade80;
 	--color-removed: #f87171;
 	--color-renamed: #fbbf24;
 	--color-renamed-surface: rgb(120 53 15 / 0.3);
-	--color-selected-surface: rgb(30 58 138 / 0.2);
+	--color-selected-surface: rgb(255 255 255 / 0.09);
 
 	--cosmic-backdrop:
 		radial-gradient(
@@ -215,10 +248,11 @@
 	--color-removed-surface: #ffeef0;
 	--color-removed-gutter: #ffdce0;
 	--color-removed-gutter-border: #fdaeb7;
-	/* A fold: the lines nothing happened to, stood down out of the way. */
-	--color-fold-surface: #f1f8ff;
-	--color-fold-gutter: #dbedff;
-	--color-fold-gutter-border: #c8e1ff;
+	/* A fold: the lines nothing happened to, stood down out of the way. Grey
+	   rather than GitHub's blue, so the only hues in a diff are the changes. */
+	--color-fold-surface: var(--gray-light-bg-200);
+	--color-fold-gutter: var(--gray-light-100);
+	--color-fold-gutter-border: var(--gray-light-200);
 }
 
 :root[data-theme="dark"],
@@ -229,9 +263,9 @@
 	--color-removed-surface: #442d30;
 	--color-removed-gutter: #61222a;
 	--color-removed-gutter-border: #6e363b;
-	--color-fold-surface: #1e2836;
-	--color-fold-gutter: #263449;
-	--color-fold-gutter-border: #38444d;
+	--color-fold-surface: var(--gray-dark-100);
+	--color-fold-gutter: var(--gray-dark-200);
+	--color-fold-gutter-border: var(--gray-dark-400);
 }
 
 /*
@@ -245,20 +279,20 @@
  * theme, which is the only theme there is out there.
  */
 [data-syntax="light"] {
-	--color-background: #ffffff;
-	--color-muted: var(--neutral-500);
-	--color-border: var(--neutral-200);
-	--color-surface: var(--neutral-50);
+	--color-background: var(--gray-light-bg-100);
+	--color-muted: var(--gray-light-900);
+	--color-border: var(--gray-light-200);
+	--color-surface: var(--gray-light-bg-200);
 	--color-added: #16a34a;
 	--color-removed: #dc2626;
 	--color-renamed: #d97706;
 }
 
 [data-syntax="dark"] {
-	--color-background: var(--neutral-950);
-	--color-muted: var(--neutral-400);
-	--color-border: var(--neutral-800);
-	--color-surface: var(--neutral-900);
+	--color-background: var(--gray-dark-bg-100);
+	--color-muted: var(--gray-dark-900);
+	--color-border: var(--gray-dark-200);
+	--color-surface: var(--gray-dark-100);
 	--color-added: #4ade80;
 	--color-removed: #f87171;
 	--color-renamed: #fbbf24;
@@ -272,7 +306,7 @@
 }
 
 html {
-	background-color: var(--color-background);
+	background-color: var(--color-canvas);
 }
 
 body {

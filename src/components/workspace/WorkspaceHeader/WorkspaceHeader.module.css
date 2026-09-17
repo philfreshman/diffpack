@@ -3,10 +3,15 @@
 .header {
 	position: relative;
 	display: flex;
+	align-items: flex-end;
 	justify-content: center;
-	padding: var(--space-2) var(--space-6);
+	height: var(--workspace-header-height);
+	/* The leading space is the expand button's, held whether or not it shows:
+	   reserving it only while the sidebar is shut moved every control in the
+	   bar sideways each time the sidebar opened or closed. */
+	padding: var(--space-2) var(--space-6) var(--space-2) var(--space-12);
 	border-bottom: 1px solid var(--color-border);
-	background-color: var(--color-background);
+	background-color: var(--color-canvas);
 }
 
 /* Level with the inputs rather than their labels. */
@@ -21,13 +26,11 @@
 	color: var(--color-foreground);
 }
 
-:global(html:not([data-tree-collapsed])) .expand {
+/* Shown from the moment a drag lets go into a snap, not once the panel has
+   finished closing: the way back has to be there as soon as the way out is
+   taken. */
+:global(html:not([data-tree-collapsed], [data-tree-snapping])) .expand {
 	display: none;
-}
-
-/* Room for the button once it shows, so the package field never runs under it. */
-:global(html[data-tree-collapsed]) .header {
-	padding-left: var(--space-12);
 }
 
 .controls {

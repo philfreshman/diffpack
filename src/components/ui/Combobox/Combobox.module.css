@@ -7,13 +7,19 @@
 
 .input {
 	width: 100%;
-	padding: var(--space-2) var(--space-3);
+	height: var(--control-height);
+	padding: 0 var(--space-3);
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-md);
 	background-color: var(--color-background);
 	color: var(--color-foreground);
 	font: inherit;
 	font-size: var(--text-sm);
+}
+
+/* Room for the icon, the way the sidebar's Find leaves it. */
+.field[data-leading="true"] .input {
+	padding-left: var(--space-8);
 }
 
 .input:focus-visible {
@@ -23,6 +29,14 @@
 
 .input:disabled {
 	color: var(--color-muted);
+}
+
+.leading {
+	position: absolute;
+	left: var(--space-2);
+	display: inline-flex;
+	color: var(--color-muted);
+	pointer-events: none;
 }
 
 .trailing {

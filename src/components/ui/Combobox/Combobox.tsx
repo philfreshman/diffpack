@@ -1,5 +1,5 @@
 import { Combobox as Base } from "@base-ui/react/combobox";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 import styles from "./Combobox.module.css";
 
 export interface ComboboxProps<T> {
@@ -32,8 +32,15 @@ export interface ComboboxProps<T> {
 	emptyMessage?: string;
 	placeholder?: string;
 	disabled?: boolean;
+	/** Rendered inside the input's box, ahead of the text: an icon saying what
+	    the field is for. */
+	leading?: ReactNode;
 	/** Rendered inside the input's box: the search/spinner/reset slot. */
 	trailing?: ReactNode;
+	/** The input itself, for a caller that moves focus into it. */
+	inputRef?: Ref<HTMLInputElement>;
+	/** The key that focuses the input, announced as `aria-keyshortcuts`. */
+	keyShortcut?: string;
 	/**
 	 * The list opened or closed. A version selector types into the input to
 	 * filter, so it needs the close in order to put the selected version back;
@@ -82,7 +89,10 @@ export function Combobox<T>({
 	emptyMessage = "No matches",
 	placeholder,
 	disabled = false,
+	leading,
 	trailing,
+	inputRef,
+	keyShortcut,
 	onOpenChange,
 }: ComboboxProps<T>) {
 	// Enter is ambiguous: with a row highlighted it selects that row, with none
@@ -128,10 +138,17 @@ export function Combobox<T>({
 			loopFocus
 			disabled={disabled}
 		>
-			<div className={styles.field} data-ready={ready ? "" : undefined}>
+			<div
+				className={styles.field}
+				data-ready={ready ? "" : undefined}
+				data-leading={Boolean(leading)}
+			>
+				<span className={styles.leading}>{leading}</span>
 				<Base.Input
+					ref={inputRef}
 					className={styles.input}
 					aria-label={label}
+					aria-keyshortcuts={keyShortcut}
 					placeholder={placeholder}
 					onFocus={() => setOpen(true)}
 					onKeyDown={(event) => {

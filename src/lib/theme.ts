@@ -43,11 +43,11 @@ export function nextSelection(selection: ThemeSelection): ThemeSelection {
 /**
  * Tints the mobile browser chrome (iOS Safari status/toolbar) so it blends with
  * the page instead of falling back to its default grey. These two values are
- * the literal `--color-background` tokens; they cannot be read from CSS here
+ * the literal `--color-canvas` tokens; they cannot be read from CSS here
  * because the pre-paint script runs before the stylesheet is applied.
  */
 export function themeColor(resolved: ResolvedTheme): string {
-	return resolved === "light" ? "#ffffff" : "#0a0a0a";
+	return resolved === "light" ? "#fafafa" : "#000000";
 }
 
 const SELECTION_ATTRIBUTE = "data-theme-selection";
