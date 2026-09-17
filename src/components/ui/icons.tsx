@@ -229,3 +229,28 @@ export function SettingsIcon(props: IconProps) {
 		</Icon>
 	);
 }
+
+export function ChevronLeftIcon(props: IconProps) {
+	return (
+		<Icon {...props}>
+			<path d="m15 18-6-6 6-6" />
+		</Icon>
+	);
+}
+
+export function ChevronsUpDownIcon(props: IconProps) {
+	return (
+		<Icon {...props}>
+			<path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
+		</Icon>
+	);
+}
+
+export function SidebarIcon(props: IconProps) {
+	return (
+		<Icon {...props}>
+			<rect x="3" y="4" width="18" height="16" rx="2" />
+			<path d="M9 4v16" />
+		</Icon>
+	);
+}

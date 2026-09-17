@@ -8,7 +8,6 @@ import {
 import { useState } from "react";
 import { Analytics } from "#/components/Analytics.tsx";
 import { NotFound } from "#/components/NotFound/NotFound.tsx";
-import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { GA_SCRIPT, GA_SRC } from "#/lib/analytics.ts";
 import { createQueryClient } from "#/lib/query/queryClient.ts";
 import { THEME_SCRIPT } from "#/lib/themeScript.ts";
@@ -112,7 +111,6 @@ function RootDocument() {
 			</head>
 			<body>
 				<QueryClientProvider client={queryClient}>
-					<ThemeToggle />
 					<Outlet />
 					<Analytics />
 				</QueryClientProvider>

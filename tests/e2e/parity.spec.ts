@@ -198,9 +198,8 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 	);
 	await page.goto("/npm");
 	await expect(page.getByTestId("workspace")).toBeVisible();
-	// Visible is not hydrated. Until React attaches, the wordmark is a plain
-	// `<a href="/">`: hovering preloads nothing and clicking is a full page
-	// load. `data-ready` is the handshake the comboboxes already publish.
+	// Visible is not hydrated. Until React attaches, the registry switcher
+	// opens nothing, and a link reached before then is a full page load. `data-ready` is the handshake the comboboxes already publish.
 	await expect(page.locator("[data-ready]").first()).toBeAttached();
 
 	const dataLayer = () =>
@@ -220,7 +219,10 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 	// what fetches the route's chunk, and a click that arrives before it lands
 	// hard-navigates instead. Waiting for the fetch to settle beats guessing at
 	// a delay — a cold CI runner is nothing like a warm laptop.
-	const home = page.getByRole("link", { name: "diffpack" });
+	// Home is in the sidebar's registry switcher now that the workspace has no
+	// wordmark.
+	await page.getByRole("button", { name: /Switch registry/ }).click();
+	const home = page.getByRole("menuitem", { name: "All registries" });
 	await home.hover();
 	await page.waitForLoadState("networkidle");
 

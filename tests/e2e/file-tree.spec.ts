@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { TREE_WIDTH_KEY } from "#/lib/tree/prefs.ts";
+import { TREE_COLLAPSED_KEY, TREE_WIDTH_KEY } from "#/lib/tree/prefs.ts";
 
 /**
  * express 4.18.2 → 5.1.0: a real, nested, thoroughly changed comparison, which
@@ -265,7 +265,8 @@ test("the panel is resizable, within limits, and stays where it was put", async 
 		width: 0,
 		height: 0,
 	};
-	const grip = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+	// Above the middle: the middle of the edge is the collapse button's.
+	const grip = { x: box.x + box.width / 2, y: box.y + box.height / 4 };
 	await page.mouse.move(grip.x, grip.y);
 	await page.mouse.down();
 	await page.mouse.move(grip.x + 120, grip.y, { steps: 5 });
@@ -310,4 +311,167 @@ test("the resizer answers the keyboard too", async ({ page }) => {
 	).toBe(352);
 	// A slider-like control has to say where it is, not just look draggable.
 	await expect(handle).toHaveAttribute("aria-valuenow", "352");
+});
+
+test("the sidebar collapses from its edge, reopens from the header, and stays how it was left", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+	const panel = page.getByTestId("tree-panel");
+	const expand = page.getByRole("button", { name: "Expand sidebar" });
+
+	// The way back in only exists while there is somewhere to go back to.
+	await expect(expand).toBeHidden();
+
+	// Out of sight until the edge is reached for, like a dashboard's.
+	const collapse = page.getByRole("button", { name: "Collapse sidebar" });
+	await expect(collapse).toHaveCSS("opacity", "0");
+	await collapse.hover();
+	await expect(collapse).toHaveCSS("opacity", "1");
+	await collapse.click();
+
+	await expect(panel).toBeHidden();
+	await expect(expand).toBeVisible();
+
+	await page.reload();
+	await ready(page);
+	await expect(panel).toBeHidden();
+
+	await expand.click();
+	await expect(panel).toBeVisible();
+	await expect(expand).toBeHidden();
+	expect(
+		await page.evaluate((key) => localStorage.getItem(key), TREE_COLLAPSED_KEY),
+	).toBe("false");
+});
+
+test("a collapsed sidebar is applied before the first paint", async ({
+	page,
+}) => {
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "true");
+	}, TREE_COLLAPSED_KEY);
+	await page.goto(EXPRESS);
+
+	expect(
+		await page.evaluate(() =>
+			document.documentElement.hasAttribute("data-tree-collapsed"),
+		),
+	).toBe(true);
+});
+
+test("F finds: it opens a shut sidebar and lands in the filter", async ({
+	page,
+}) => {
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "true");
+	}, TREE_COLLAPSED_KEY);
+	await page.goto(EXPRESS);
+	await ready(page);
+
+	await page.locator("body").press("f");
+
+	const filter = page.getByRole("searchbox", {
+		name: "Filter files and folders",
+	});
+	await expect(filter).toBeFocused();
+	await expect(page.getByTestId("tree-panel")).toBeVisible();
+
+	// Typing it is not asking for it: the F went into the field.
+	await page.keyboard.press("f");
+	await expect(filter).toHaveValue("f");
+});
+
+test("dragged past its minimum the sidebar slides out, and let go there it snaps shut", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+	const panel = page.getByTestId("tree-panel");
+	const content = panel.locator(":scope > div").first();
+	const handle = page.getByRole("separator", { name: "Resize file tree" });
+	const box = (await handle.boundingBox()) ?? {
+		x: 0,
+		y: 0,
+		width: 0,
+		height: 0,
+	};
+	const grip = { x: box.x + box.width / 2, y: box.y + box.height / 4 };
+
+	await page.mouse.move(grip.x, grip.y);
+	await page.mouse.down();
+	await page.mouse.move(150, grip.y, { steps: 5 });
+
+	// Held: the box follows the pointer, and what is in it holds the minimum
+	// and slides out, fading and blurring — but nothing has shut.
+	await expect(panel).toBeVisible();
+	expect(
+		await panel.evaluate((node) => node.getBoundingClientRect().width),
+	).toBeLessThan(160);
+	expect(
+		await content.evaluate((node) => node.getBoundingClientRect().width),
+	).toBe(220);
+	expect(
+		Number(await content.evaluate((node) => getComputedStyle(node).opacity)),
+	).toBeLessThan(1);
+	await expect(content).toHaveCSS("filter", /blur/);
+
+	await page.mouse.up();
+	await expect(panel).toBeHidden();
+
+	await page.getByRole("button", { name: "Expand sidebar" }).click();
+	// Back at the width it had before the drag, not the sliver it was left at.
+	await expect(panel).toHaveCSS("width", "320px");
+	await expect(content).toHaveCSS("opacity", "1");
+	await expect(content).not.toHaveCSS("filter", /blur/);
+});
+
+test("let go the moment it starts to slide, the sidebar still snaps shut", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+	const panel = page.getByTestId("tree-panel");
+	const handle = page.getByRole("separator", { name: "Resize file tree" });
+	const box = (await handle.boundingBox()) ?? {
+		x: 0,
+		y: 0,
+		width: 0,
+		height: 0,
+	};
+	const grip = { x: box.x + box.width / 2, y: box.y + box.height / 4 };
+
+	await page.mouse.move(grip.x, grip.y);
+	await page.mouse.down();
+	// Just past the 220px minimum, and still held: barely sliding, still open.
+	await page.mouse.move(grip.x - 110, grip.y, { steps: 5 });
+	await expect(panel).toBeVisible();
+
+	await page.mouse.up();
+	await expect(panel).toBeHidden();
+});
+
+test("let go at its minimum, the sidebar stays open at that width", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+	const panel = page.getByTestId("tree-panel");
+	const handle = page.getByRole("separator", { name: "Resize file tree" });
+	const box = (await handle.boundingBox()) ?? {
+		x: 0,
+		y: 0,
+		width: 0,
+		height: 0,
+	};
+	const grip = { x: box.x + box.width / 2, y: box.y + box.height / 4 };
+
+	await page.mouse.move(grip.x, grip.y);
+	await page.mouse.down();
+	await page.mouse.move(grip.x - 100, grip.y, { steps: 5 });
+	await page.mouse.up();
+
+	await expect(panel).toBeVisible();
+	await expect(panel).toHaveCSS("width", "220px");
 });

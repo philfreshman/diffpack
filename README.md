@@ -1,93 +1,140 @@
-# diffpack
+<div align="center">
 
-Compare package versions across ecosystems. Clean. Fast. Source-aware.
+<img src="public/web-app-manifest-192x192.png" alt="" width="72" height="72">
 
-[diffpack.io](https://diffpack.io)
+### diffpack
+
+**Compare package versions across ecosystems.**<br>
+Clean. Fast. Source-aware.
+
+[**diffpack.io**](https://diffpack.io) · [Contributing](CONTRIBUTING.md) · [Agent guide](AGENTS.md)
 
 [![Codebase health](.github/badges/fallow-health.svg)](CONTRIBUTING.md#what-fallow-enforces-here)
 
-Paste two versions of a package and read what actually changed between them — the files, the
-lines, the renames — without cloning anything or trusting a changelog.
+</div>
 
-## How it works
+<br>
 
-**The diff happens in your browser.** diffpack downloads both archives from the registry, unpacks
-them and diffs them in a WebAssembly module running in a Web Worker. Package contents never reach
-diffpack's own server, which renders the page shell and nothing else — the archives travel
-directly between your browser and the registry.
+Paste two versions of a package and read what actually changed — the files, the lines, the
+renames — without cloning anything or trusting a changelog.
 
-A comparison is a URL — `/{registry}/{package}/{from}/{to}/{file...}` — so any diff you are
-looking at is a link you can send to someone.
+<br>
 
-## Supported registries
+### A diff is a URL
 
-| Registry | Packages | Search |
-| --- | --- | --- |
-| **npm** | JavaScript & TypeScript | yes |
-| **crates.io** | Rust | yes |
-| **PyPI** | Python | yes |
-| **Go** | Go modules | no — type a full module path |
+```
+diffpack.io / npm / zod / 3.25.76 / 4.0.0 / src/types.ts
+              │     │     │         │       │
+              │     │     │         │       └── file to open   (optional)
+              │     │     │         └────────── to
+              │     │     └──────────────────── from
+              │     └────────────────────────── package
+              └──────────────────────────────── registry
+```
 
-Go has no discovery search: `proxy.golang.org` offers no CORS-enabled search-by-name API, so the
-field takes a complete module path (`github.com/go-chi/chi/v5`) instead of a name.
+Every state of the app is addressable, so whatever you are looking at is a link you can send to
+someone.
 
-🚧 More registries coming soon. 🚧
+<br>
 
-## Getting started
+### It runs in your browser
 
-Prerequisites: [Bun](https://bun.sh), and — only if you intend to touch the Rust — a Rust
-toolchain with the `wasm32-unknown-unknown` target.
+```
+   registry ──────── tarballs ───────▶ your browser
+                                            │
+                                       wasm worker
+                                            │
+                                          diff ──▶ you
+```
+
+Both archives travel straight from the registry to your machine, where a Rust/WebAssembly module
+unpacks and diffs them inside a Web Worker. diffpack's server renders the page shell and nothing
+else — package contents never reach it.
+
+<br>
+
+### Registries
+
+| | Registry | Language | Search |
+| :-- | :-- | :-- | :-- |
+| ⬢ | **npm** | JavaScript & TypeScript | yes |
+| ⬢ | **crates.io** | Rust | yes |
+| ⬢ | **PyPI** | Python | yes |
+| ⬡ | **Go** | Go modules | type a full module path |
+
+> Go has no discovery search — `proxy.golang.org` exposes no CORS-enabled search-by-name API — so
+> the field takes a complete module path (`github.com/go-chi/chi/v5`) rather than a name.
+
+More registries are on the way.
+
+<br>
+
+### Quick start
+
+Needs [Bun](https://bun.sh), plus a Rust toolchain with the `wasm32-unknown-unknown` target if you
+intend to touch the engine.
 
 ```bash
 bun install
-bun run build:wasm   # required once: the app will not start without it
+bun run build:wasm   # required once — the app will not start without it
 bun run dev          # http://localhost:4321
 ```
 
-`build:wasm` compiles `wasm/diff-wasm` into `wasm/diff-wasm/pkg/`, which is generated, gitignored,
-and **not** a package.json dependency — the specifier `diff-wasm` resolves through `tsconfig.json`
-paths and a Vite alias instead. `bun run dev` does not rebuild it; after editing anything under
-`wasm/diff-wasm/src`, re-run `build:wasm` and restart the dev server.
+`build:wasm` compiles `wasm/diff-wasm` into `wasm/diff-wasm/pkg/`, which is generated, gitignored
+and **not** a package.json dependency: the `diff-wasm` specifier resolves through `tsconfig.json`
+paths and a Vite alias. `bun run dev` never rebuilds it — after editing `wasm/diff-wasm/src`,
+re-run `build:wasm` and restart the dev server.
 
-## Scripts
+<br>
 
-| Script | What it does |
-| --- | --- |
-| `bun run dev` | Vite dev server on :4321 |
+### Scripts
+
+| | |
+| :-- | :-- |
+| `bun run dev` | Vite dev server on `:4321` |
 | `bun run build` | `build:wasm` + `vite build` |
 | `bun run preview` | serve the production build |
 | `bun run test` | unit tests (`bun test tests/unit`) |
-| `bun run test:e2e` | Playwright suite — hits the real registries, so it is slow and needs a network |
-| `bun run screenshots` | recapture the reference screenshot set (see `scripts/capture-screenshots.mjs`) |
+| `bun run test:e2e` | Playwright — hits the real registries, so slow and online |
+| `bun run screenshots` | recapture the reference set (`scripts/capture-screenshots.mjs`) |
 | `bun run typecheck` | `tsc --noEmit` |
-| `bun run lint` / `format` | Biome |
+| `bun run lint` · `format` | Biome |
 
-## Tech stack
+<br>
 
-- [TanStack Start](https://tanstack.com/start) + [Router](https://tanstack.com/router) on Vite —
-  full-document SSR of the shell, with the diff engine strictly client-side
-- [TanStack Query](https://tanstack.com/query) for registry calls,
-  [Store](https://tanstack.com/store) for the diff session
-- [Base UI](https://base-ui.com) primitives, wrapped in `src/components/ui`
-- CSS Modules over a custom-property token layer — no Tailwind
-- Rust → WebAssembly (`wasm-pack --target web`) for extraction and diffing
-- [Biome](https://biomejs.dev) for linting and formatting
+### Stack
 
-## Deployment
+| | |
+| :-- | :-- |
+| **App** | [TanStack Start](https://tanstack.com/start) + [Router](https://tanstack.com/router) on Vite — the shell is SSR'd whole, the diff engine stays strictly client-side |
+| **State** | [Query](https://tanstack.com/query) for registry calls, [Store](https://tanstack.com/store) for the diff session |
+| **UI** | [Base UI](https://base-ui.com) primitives wrapped in `src/components/ui`, CSS Modules over a custom-property token layer — no Tailwind |
+| **Engine** | Rust → WebAssembly (`wasm-pack --target web`) for extraction and diffing |
+| **Tooling** | [Biome](https://biomejs.dev), [fallow](https://fallow.tools) |
 
-Vercel, via the [Nitro](https://nitro.build) Vite plugin: `vite build` writes a Build Output API
-v3 tree to `.vercel/output/` — static assets plus one server function — which Vercel serves as-is.
+<br>
 
-Two consequences worth knowing before editing deploy config:
+<details>
+<summary><b>Deployment</b> — Vercel, and two things to know before editing deploy config</summary>
 
-- **Routing and headers belong in `nitro({ routeRules })` in `vite.config.ts`, not `vercel.json`.**
-  A build that writes `.vercel/output/config.json` brings its own routing table, so rules left in
-  `vercel.json` are read by nobody. What `vercel.json` still carries is the build itself: the
-  install command (which adds the Rust wasm target and compiles the module) and the build command.
-  Check a change landed by reading `.vercel/output/config.json` after `VERCEL=1 bun run build`.
-- **The `www.diffpack.io` → `diffpack.io` redirect is a domain setting in the Vercel project**, not
-  something this repo configures. `routeRules` match on path, not host.
+<br>
 
-## Contributing
+Vercel via the [Nitro](https://nitro.build) Vite plugin: `vite build` writes a Build Output API v3
+tree to `.vercel/output/` — static assets plus one server function — which Vercel serves as-is.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+**Routing and headers belong in `nitro({ routeRules })` in `vite.config.ts`, not `vercel.json`.**
+A build that writes `.vercel/output/config.json` brings its own routing table, so rules left in
+`vercel.json` are read by nobody. What `vercel.json` still carries is the build itself: the install
+command (which adds the Rust wasm target and compiles the module) and the build command. Confirm a
+change landed by reading `.vercel/output/config.json` after `VERCEL=1 bun run build`.
+
+**The `www.diffpack.io` → `diffpack.io` redirect is a domain setting in the Vercel project**, not
+something this repo configures — `routeRules` match on path, not host.
+
+</details>
+
+<br>
+
+<div align="center">
+<sub>Contributions welcome — start at <a href="CONTRIBUTING.md">CONTRIBUTING.md</a>.</sub>
+</div>

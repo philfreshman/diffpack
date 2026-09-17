@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RegistryGrid } from "#/components/landing/RegistryGrid/RegistryGrid.tsx";
 import { StarField } from "#/components/landing/StarField/StarField.tsx";
+import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { GithubIcon } from "#/components/ui/icons.tsx";
 import styles from "./index.module.css";
 
@@ -21,6 +22,7 @@ function Home() {
 			    reading diffs, and a pulsing background competes with them. */}
 			<div className={styles.cosmos} aria-hidden="true" data-testid="cosmos" />
 			<StarField />
+			<ThemeToggle floating />
 			<main className={styles.page}>
 				<header className={styles.intro}>
 					<h1 className={styles.title}>diffpack</h1>
