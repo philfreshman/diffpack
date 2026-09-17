@@ -6,7 +6,6 @@
 .panel {
 	position: relative;
 	flex: 0 0 auto;
-	margin-top: 10px;
 	min-height: 0;
 	width: var(--tree-panel-width, 320px);
 	border-right: 1px solid var(--color-border);
@@ -19,6 +18,7 @@
 .content {
 	position: absolute;
 	inset: 0 0 0 auto;
+	margin-top: 10px;
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);
