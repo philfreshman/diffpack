@@ -83,3 +83,23 @@ test("404s a bare unknown registry too", async ({ page }) => {
 	expect(response?.status()).toBe(404);
 	await expect(page.getByTestId("not-found")).toBeVisible();
 });
+
+test("the sidebar's switcher moves between registries and back home", async ({
+	page,
+}) => {
+	await page.goto("/npm");
+	await expect(page.locator("[data-ready]").first()).toBeAttached();
+
+	// No wordmark in the workspace: the switcher is the way out of it.
+	await expect(page.getByRole("link", { name: "diffpack" })).toHaveCount(0);
+
+	const switcher = page.getByRole("button", { name: /Switch registry/ });
+	await expect(switcher).toHaveAccessibleName(/npm/);
+	await switcher.click();
+	await page.getByRole("menuitem", { name: "crates.io" }).click();
+	await expect(page).toHaveURL("/crates");
+
+	await switcher.click();
+	await page.getByRole("menuitem", { name: "All registries" }).click();
+	await expect(page).toHaveURL("/");
+});

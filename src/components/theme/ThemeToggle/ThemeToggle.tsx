@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
-import { MoonIcon, SunIcon, SystemIcon } from "#/components/ui/icons.tsx";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
+import { MoonIcon, SunIcon, SystemIcon } from "#/components/ui/icons.tsx";
 import {
 	applyTheme,
 	DEFAULT_SELECTION,
@@ -24,7 +24,12 @@ const LABELS: Record<ThemeSelection, string> = {
 	system: "Switch to light theme",
 };
 
-export function ThemeToggle() {
+/**
+ * `floating` pins it to the top corner of a page with no chrome of its own to
+ * hold it — the landing page and the 404. The workspace keeps it in the
+ * sidebar's footing instead.
+ */
+export function ThemeToggle({ floating = false }: { floating?: boolean }) {
 	// Renders the default first and corrects on mount: the real selection lives
 	// in localStorage, which the server cannot see. Until then the button is
 	// disabled — pre-hydration it would show a possibly-wrong icon and swallow
@@ -55,7 +60,7 @@ export function ThemeToggle() {
 
 	return (
 		<IconButton
-			className={styles.toggle}
+			className={floating ? styles.floating : undefined}
 			aria-label={LABELS[selection]}
 			disabled={!mounted}
 			onClick={handleClick}

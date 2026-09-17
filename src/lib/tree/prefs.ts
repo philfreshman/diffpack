@@ -82,3 +82,25 @@ export const TREE_WIDTH_PROPERTY = "--tree-panel-width";
 export function applyTreeWidth(doc: Document, width: number): void {
 	doc.documentElement.style.setProperty(TREE_WIDTH_PROPERTY, `${width}px`);
 }
+
+/** Open unless the visitor shut it: only the literal `"true"` collapses it. */
+export const TREE_COLLAPSED_KEY = "tree_panel_collapsed";
+export const TREE_COLLAPSED_ATTRIBUTE = "data-tree-collapsed";
+
+/**
+ * Collapsed is an attribute on `<html>`, for the same reason the width is a
+ * custom property there: the pre-paint script sets it, the stylesheet hides
+ * the panel off it, and the two buttons that flip it never need a render to
+ * agree on which of them is showing.
+ */
+export function toggleTreeCollapsed(doc: Document): boolean {
+	const collapsed = !doc.documentElement.hasAttribute(TREE_COLLAPSED_ATTRIBUTE);
+	doc.documentElement.toggleAttribute(TREE_COLLAPSED_ATTRIBUTE, collapsed);
+	try {
+		localStorage.setItem(TREE_COLLAPSED_KEY, String(collapsed));
+	} catch {
+		// Not persisted; the panel still collapses for the session.
+	}
+
+	return collapsed;
+}

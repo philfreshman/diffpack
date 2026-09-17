@@ -2,20 +2,18 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FileTree } from "#/components/tree/FileTree/FileTree.tsx";
 import { TreeFilter } from "#/components/tree/TreeFilter/TreeFilter.tsx";
+import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
 import {
-	applyTreeWidth,
-	clampTreeWidth,
-	DEFAULT_TREE_WIDTH,
 	MAX_TREE_WIDTH,
 	MIN_TREE_WIDTH,
 	readOnlyModified,
-	readTreeWidth,
+	toggleTreeCollapsed,
 	writeOnlyModified,
-	writeTreeWidth,
 } from "#/lib/tree/prefs.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./TreePanel.module.css";
+import { usePanelResize } from "./usePanelResize.ts";
 
 const EMPTY: ReadonlySet<string> = new Set();
 
@@ -23,6 +21,8 @@ export interface TreePanelProps {
 	tree: DiffFileEntry | null;
 	selectedPath: string;
 	onOpenFile(path: string): void;
+	/** What stands over the panel: where a dashboard keeps its team switcher. */
+	header?: ReactNode;
 	/**
 	 * What the tree amounts to, stated at its foot — the count belongs to the
 	 * list it counts, so it sits under it rather than over the whole body.
@@ -31,14 +31,16 @@ export interface TreePanelProps {
 }
 
 /**
- * The left panel: how the comparison is navigated. It owns what the tree shows
- * — the filter, only-modified, and which folders the user has opened or closed
- * by hand — and hands `visibleRows` the whole of that state at once.
+ * The sidebar: how the comparison is navigated, full height down the left of
+ * the window the way a dashboard keeps its navigation. It owns what the tree
+ * shows — the filter, only-modified, and which folders the user has opened or
+ * closed by hand — and hands `visibleRows` the whole of that state at once.
  */
 export function TreePanel({
 	tree,
 	selectedPath,
 	onOpenFile,
+	header,
 	footer,
 }: TreePanelProps) {
 	const [filter, setFilter] = useState("");
@@ -77,85 +79,63 @@ export function TreePanel({
 		change();
 	}
 
-	// The width is a custom property on `<html>`, written before paint and
-	// rewritten by the drag; keeping it out of React state is what stops the
-	// panel flashing at its default width on every load. The state copy below
-	// exists only so the handle can announce where it is.
-	const panelRef = useRef<HTMLDivElement>(null);
-	const [width, setWidth] = useState(DEFAULT_TREE_WIDTH);
-	useEffect(() => setWidth(readTreeWidth()), []);
-
-	function resizeTo(next: number) {
-		const clamped = clampTreeWidth(next);
-		applyTreeWidth(document, clamped);
-		setWidth(clamped);
-
-		return clamped;
-	}
-
-	function startResize(event: React.PointerEvent<HTMLDivElement>) {
-		event.preventDefault();
-		const startX = event.clientX;
-		const startWidth = panelRef.current?.getBoundingClientRect().width ?? width;
-		let last = startWidth;
-
-		function onMove(move: PointerEvent) {
-			last = resizeTo(startWidth + move.clientX - startX);
-		}
-
-		function onUp() {
-			window.removeEventListener("pointermove", onMove);
-			window.removeEventListener("pointerup", onUp);
-			writeTreeWidth(last);
-		}
-
-		window.addEventListener("pointermove", onMove);
-		window.addEventListener("pointerup", onUp);
-	}
-
-	/** The same resize, for anyone who is not holding a mouse. */
-	function nudge(event: React.KeyboardEvent<HTMLDivElement>) {
-		const step =
-			event.key === "ArrowRight" ? 16 : event.key === "ArrowLeft" ? -16 : 0;
-		if (!step) return;
-		event.preventDefault();
-		writeTreeWidth(resizeTo(width + step));
-	}
+	const panelRef = useRef<HTMLElement>(null);
+	const contentRef = useRef<HTMLDivElement>(null);
+	const { width, startResize, nudge } = usePanelResize(panelRef, contentRef);
 
 	return (
-		<div className={styles.panel} ref={panelRef} data-testid="tree-panel">
-			<TreeFilter
-				filter={filter}
-				onFilterChange={(next) => narrow(() => setFilter(next))}
-				onlyModified={onlyModified}
-				onOnlyModifiedChange={(next) =>
-					narrow(() => {
-						setOnlyModified(next);
-						writeOnlyModified(next);
-					})
-				}
-			/>
-			<FileTree
-				rows={rows}
-				selectedPath={selectedPath}
-				onOpenFile={onOpenFile}
-				onToggleFolder={toggleFolder}
-			/>
-			{footer && <div className={styles.foot}>{footer}</div>}
-			{/* biome-ignore lint/a11y/useSemanticElements: an <hr> cannot be dragged */}
-			<div
-				className={styles.resizer}
-				role="separator"
-				aria-label="Resize file tree"
-				aria-orientation="vertical"
-				aria-valuenow={width}
-				aria-valuemin={MIN_TREE_WIDTH}
-				aria-valuemax={MAX_TREE_WIDTH}
-				tabIndex={0}
-				onPointerDown={startResize}
-				onKeyDown={nudge}
-			/>
-		</div>
+		<aside className={styles.panel} ref={panelRef} data-testid="tree-panel">
+			{/* Held at the panel's minimum and pinned to its right edge, so a drag
+			    past the minimum slides it out of the window instead of crushing it. */}
+			<div className={styles.content} ref={contentRef}>
+				{header && <div className={styles.head}>{header}</div>}
+				<TreeFilter
+					filter={filter}
+					onFilterChange={(next) => narrow(() => setFilter(next))}
+					onlyModified={onlyModified}
+					onOnlyModifiedChange={(next) =>
+						narrow(() => {
+							setOnlyModified(next);
+							writeOnlyModified(next);
+						})
+					}
+				/>
+				<FileTree
+					rows={rows}
+					selectedPath={selectedPath}
+					onOpenFile={onOpenFile}
+					onToggleFolder={toggleFolder}
+				/>
+				{footer && <div className={styles.foot}>{footer}</div>}
+			</div>
+			{/* The edge is a grip and, on hover, the way to shut the panel: the
+			    button sits across the rule rather than inside the panel, so it
+			    takes nothing from the tree's width. */}
+			<div className={styles.edge}>
+				{/* biome-ignore lint/a11y/useSemanticElements: an <hr> cannot be dragged */}
+				<div
+					className={styles.resizer}
+					role="separator"
+					aria-label="Resize file tree"
+					aria-orientation="vertical"
+					aria-valuenow={width}
+					aria-valuemin={MIN_TREE_WIDTH}
+					aria-valuemax={MAX_TREE_WIDTH}
+					tabIndex={0}
+					onPointerDown={startResize}
+					onKeyDown={nudge}
+				/>
+				<button
+					type="button"
+					className={styles.collapse}
+					aria-label="Collapse sidebar"
+					title="Collapse sidebar"
+					onClick={() => toggleTreeCollapsed(document)}
+				>
+					<ChevronLeftIcon width="14" height="14" />
+				</button>
+			</div>
+		</aside>
 	);
 }
 
