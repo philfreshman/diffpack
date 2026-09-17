@@ -71,19 +71,17 @@ More registries are on the way.
 
 ### Quick start
 
-Needs [Bun](https://bun.sh), plus a Rust toolchain with the `wasm32-unknown-unknown` target if you
-intend to touch the engine.
+Needs [Bun](https://bun.sh). Nothing else — no Rust toolchain, no build step in front of `dev`.
 
 ```bash
 bun install
-bun run build:wasm   # required once — the app will not start without it
 bun run dev          # http://localhost:4321
 ```
 
-`build:wasm` compiles `wasm/diff-wasm` into `wasm/diff-wasm/pkg/`, which is generated, gitignored
-and **not** a package.json dependency: the `diff-wasm` specifier resolves through `tsconfig.json`
-paths and a Vite alias. `bun run dev` never rebuilds it — after editing `wasm/diff-wasm/src`,
-re-run `build:wasm` and restart the dev server.
+The engine is a separate repository, **[philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine)**,
+consumed here as the npm package `@philfreshman/diff-wasm` and pinned in `package.json`. To try an
+unpublished change to it, point the build at a local `wasm-pack` output with
+`DIFF_WASM_LOCAL=../diffpack-engine/pkg`; see [CONTRIBUTING.md](CONTRIBUTING.md#the-engine).
 
 <br>
 
@@ -92,7 +90,7 @@ re-run `build:wasm` and restart the dev server.
 | | |
 | :-- | :-- |
 | `bun run dev` | Vite dev server on `:4321` |
-| `bun run build` | `build:wasm` + `vite build` |
+| `bun run build` | `vite build` (Nitro writes `.vercel/output/`) |
 | `bun run preview` | serve the production build |
 | `bun run test` | unit tests (`bun test tests/unit`) |
 | `bun run test:e2e` | Playwright — hits the real registries, so slow and online |
@@ -109,7 +107,7 @@ re-run `build:wasm` and restart the dev server.
 | **App** | [TanStack Start](https://tanstack.com/start) + [Router](https://tanstack.com/router) on Vite — the shell is SSR'd whole, the diff engine stays strictly client-side |
 | **State** | [Query](https://tanstack.com/query) for registry calls, [Store](https://tanstack.com/store) for the diff session |
 | **UI** | [Base UI](https://base-ui.com) primitives wrapped in `src/components/ui`, CSS Modules over a custom-property token layer — no Tailwind |
-| **Engine** | Rust → WebAssembly (`wasm-pack --target web`) for extraction and diffing |
+| **Engine** | Rust → WebAssembly for extraction and diffing, in its own repo: [diffpack-engine](https://github.com/philfreshman/diffpack-engine) |
 | **Tooling** | [Biome](https://biomejs.dev), [fallow](https://fallow.tools) |
 
 <br>
@@ -124,9 +122,10 @@ tree to `.vercel/output/` — static assets plus one server function — which V
 
 **Routing and headers belong in `nitro({ routeRules })` in `vite.config.ts`, not `vercel.json`.**
 A build that writes `.vercel/output/config.json` brings its own routing table, so rules left in
-`vercel.json` are read by nobody. What `vercel.json` still carries is the build itself: the install
-command (which adds the Rust wasm target and compiles the module) and the build command. Confirm a
-change landed by reading `.vercel/output/config.json` after `VERCEL=1 bun run build`.
+`vercel.json` are read by nobody. All `vercel.json` still carries is the build command — the
+install command it used to need, which installed a Rust target and compiled the engine before
+`bun install` could run, went away when the engine became a published package. Confirm a change
+landed by reading `.vercel/output/config.json` after `VERCEL=1 bun run build`.
 
 **The `www.diffpack.io` → `diffpack.io` redirect is a domain setting in the Vercel project**, not
 something this repo configures — `routeRules` match on path, not host.
