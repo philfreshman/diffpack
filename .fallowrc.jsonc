@@ -55,10 +55,10 @@
 			{
 				"files": ["src/components/ui/Combobox/Combobox.tsx"],
 				"functions": ["Combobox"],
-				"maxCognitive": 19,
-				// 19 breaks down as 12 points of fallow's prop-count penalty (16
+				"maxCognitive": 22,
+				// 22 breaks down as 15 points of fallow's prop-count penalty (19
 				// props), 4 for its four hooks, and 3 for branching — so a body
-				// with no branching in it at all would still score 16, and no
+				// with no branching in it at all would still score 19, and no
 				// refactor of the body can reach the default 15. Only the prop
 				// count can, and the prop count is the component: this is the one
 				// combobox behind package search and both version selectors, which
@@ -68,8 +68,11 @@
 				// an options object to hide them from the count, would both trade a
 				// real property of the code for a number. The nested-ternary filter
 				// that was the one genuinely hard part of the body has been lifted
-				// out to `resolveFilter`; what is left is the prop list.
-				"reason": "16 props on the shared combobox contribute 12 of its 19 cognitive points via fallow's prop-count penalty; branching accounts for 3, so no refactor of the body can reach the default ceiling. The props are the point — one component replaces three hand-rolled copies, and every prop is a difference one of the three call sites needs."
+				// out to `resolveFilter`; what is left is the prop list. It went from
+				// 16 to 19 props with package search's leading icon and its `/`
+				// shortcut (`leading`, `inputRef`, `keyShortcut`), each of which
+				// only that call site uses, and no branch was added to the body.
+				"reason": "19 props on the shared combobox contribute 15 of its 22 cognitive points via fallow's prop-count penalty; branching accounts for 3, so no refactor of the body can reach the default ceiling. The props are the point — one component replaces three hand-rolled copies, and every prop is a difference one of the three call sites needs."
 			}
 		],
 	},

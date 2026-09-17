@@ -1,6 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import { FilterIcon, SearchIcon } from "#/components/ui/icons.tsx";
+import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
+import { useKeyShortcut } from "#/components/ui/useKeyShortcut.ts";
 import {
 	TREE_COLLAPSED_ATTRIBUTE,
 	toggleTreeCollapsed,
@@ -28,7 +30,13 @@ export function TreeFilter({
 	onOnlyModifiedChange,
 }: TreeFilterProps) {
 	const input = useRef<HTMLInputElement>(null);
-	useFindShortcut(input);
+	// A shut sidebar is opened first: a hidden field cannot take focus.
+	useKeyShortcut(SHORTCUT, () => {
+		if (document.documentElement.hasAttribute(TREE_COLLAPSED_ATTRIBUTE)) {
+			toggleTreeCollapsed(document);
+		}
+		input.current?.focus();
+	});
 
 	return (
 		<div className={styles.controls}>
@@ -44,7 +52,7 @@ export function TreeFilter({
 					value={filter}
 					onChange={(event) => onFilterChange(event.target.value)}
 				/>
-				<kbd className={styles.shortcut}>{SHORTCUT.toUpperCase()}</kbd>
+				<Kbd className={styles.shortcut} keys={SHORTCUT.toUpperCase()} />
 			</div>
 			<IconButton
 				aria-label="Show only modified files"
@@ -56,37 +64,5 @@ export function TreeFilter({
 				<FilterIcon width="16" height="16" />
 			</IconButton>
 		</div>
-	);
-}
-
-/**
- * `F` anywhere on the page, other than while typing, lands in the field —
- * opening the sidebar first if it was shut, since a hidden field cannot take
- * focus.
- */
-function useFindShortcut(input: React.RefObject<HTMLInputElement | null>) {
-	useEffect(() => {
-		function onKeyDown(event: KeyboardEvent) {
-			if (event.key.toLowerCase() !== SHORTCUT) return;
-			if (event.metaKey || event.ctrlKey || event.altKey) return;
-			if (isEditable(event.target)) return;
-			event.preventDefault();
-			if (document.documentElement.hasAttribute(TREE_COLLAPSED_ATTRIBUTE)) {
-				toggleTreeCollapsed(document);
-			}
-			input.current?.focus();
-		}
-
-		document.addEventListener("keydown", onKeyDown);
-		return () => document.removeEventListener("keydown", onKeyDown);
-	}, [input]);
-}
-
-function isEditable(target: EventTarget | null): boolean {
-	if (!(target instanceof HTMLElement)) return false;
-
-	return (
-		target.isContentEditable ||
-		target.matches("input, textarea, select, [role='combobox']")
 	);
 }

@@ -1,9 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
-import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
-import { CloseIcon, SearchIcon } from "#/components/ui/icons.tsx";
+import { SearchIcon } from "#/components/ui/icons.tsx";
+import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
+import { useKeyShortcut } from "#/components/ui/useKeyShortcut.ts";
 import type { RegistryAdapter, SearchResult } from "#/lib/registries/types.ts";
 import {
 	addToHistory,
@@ -13,6 +14,11 @@ import {
 import { buildPath } from "#/lib/url/slug.ts";
 import { usePackageSearch } from "../usePackageSearch.ts";
 import styles from "./PackageCombobox.module.css";
+
+/** The key that jumps to the field, the way a search box is reached on the web. */
+const SHORTCUT = "/";
+/** The key that empties it, once there is something in it to empty. */
+const CLEAR = "Escape";
 
 export interface PackageComboboxProps {
 	adapter: RegistryAdapter;
@@ -29,6 +35,9 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState(selected);
 	const [history, setHistory] = useState<SearchResult[]>([]);
+
+	const input = useShortcutFocus();
+	useEscapeToClear(input, reset);
 
 	// The URL can change without this field: back/forward, or a link elsewhere in
 	// the app. Whatever the address says is what the input shows.
@@ -59,34 +68,16 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 		navigate({ to: buildPath(adapter, { package: trimmed }) });
 	}
 
+	// Clearing the field lets go of the package too, and of the versions and the
+	// file that depended on it.
 	function reset() {
 		setInputValue("");
 		navigate({ to: buildPath(adapter, {}) });
 	}
 
 	// Three states, one slot: a package is locked in, the registry is answering,
-	// or the field is waiting to be typed in. An open popup makes the rest of the
-	// document inert (Base UI's answer to outside clicks), so the slot carries a
-	// test id — inside that subtree there is no accessible role to find it by.
+	// or the field is waiting to be typed in.
 	const state = selected ? "selected" : loading ? "searching" : "idle";
-
-	const trailing = (
-		<span data-testid="package-search-state" data-state={state}>
-			{state === "selected" ? (
-				<IconButton
-					aria-label="Clear the selected package"
-					className={styles.reset}
-					onClick={reset}
-				>
-					<CloseIcon width="18" height="18" />
-				</IconButton>
-			) : state === "searching" ? (
-				<Spinner label="Searching packages" />
-			) : (
-				<SearchIcon />
-			)}
-		</span>
-	);
 
 	return (
 		<div className={styles.field}>
@@ -121,8 +112,83 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 					(searching ? "No packages found" : "Type to search")
 				}
 				placeholder={adapter.capabilities.searchPlaceholder}
-				trailing={trailing}
+				leading={<SearchIcon width="16" height="16" />}
+				trailing={<SearchState state={state} filled={inputValue !== ""} />}
+				inputRef={input}
+				keyShortcut={SHORTCUT}
 			/>
 		</div>
+	);
+}
+
+/**
+ * Selected as well as focused, so the next keystroke replaces the package
+ * rather than adding to its name: jumping to the field is asking for another.
+ */
+function useShortcutFocus() {
+	const input = useRef<HTMLInputElement>(null);
+	useKeyShortcut(SHORTCUT, () => {
+		input.current?.focus();
+		input.current?.select();
+	});
+
+	return input;
+}
+
+/**
+ * Escape is layered: an open list closes first and keeps what was typed (the
+ * combobox's own behaviour), and Escape with the list shut empties the field.
+ * Read on the input itself, ahead of Base UI's handler, so `aria-expanded`
+ * still says whether this press is the one that closes the list.
+ */
+function useEscapeToClear(
+	input: RefObject<HTMLInputElement | null>,
+	onClear: () => void,
+) {
+	const handler = useRef(onClear);
+	handler.current = onClear;
+
+	useEffect(() => {
+		const element = input.current;
+		if (!element) return;
+
+		function onKeyDown(event: KeyboardEvent) {
+			if (event.key !== CLEAR || !element?.value) return;
+			if (element.getAttribute("aria-expanded") === "true") return;
+			handler.current();
+		}
+
+		element.addEventListener("keydown", onKeyDown);
+		return () => element.removeEventListener("keydown", onKeyDown);
+	}, [input]);
+}
+
+/**
+ * The input's trailing slot: the key that does something next. `/` reaches an
+ * empty field, esc empties a full one. An open popup makes the rest of the
+ * document inert (Base UI's answer to outside clicks), so the slot carries a
+ * test id — inside that subtree there is no accessible role to find it by.
+ */
+function SearchState({
+	state,
+	filled,
+}: {
+	state: "selected" | "searching" | "idle";
+	filled: boolean;
+}) {
+	return (
+		<span
+			className={styles.trailing}
+			data-testid="package-search-state"
+			data-state={state}
+		>
+			{state === "searching" && <Spinner label="Searching packages" />}
+			{filled ? (
+				<Kbd keys="esc" />
+			) : (
+				// Stood down while the field has focus: by then it has been found.
+				<Kbd className={styles.shortcut} keys={SHORTCUT} />
+			)}
+		</span>
 	);
 }

@@ -60,7 +60,9 @@ export function ThemeToggle({ floating = false }: { floating?: boolean }) {
 
 	return (
 		<IconButton
-			className={floating ? styles.floating : undefined}
+			className={
+				floating ? `${styles.toggle} ${styles.floating}` : styles.toggle
+			}
 			aria-label={LABELS[selection]}
 			disabled={!mounted}
 			onClick={handleClick}

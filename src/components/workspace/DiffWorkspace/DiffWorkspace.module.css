@@ -52,3 +52,7 @@
 	min-height: 0;
 	flex-direction: column;
 }
+
+.column {
+	margin-top: 10px;
+}
