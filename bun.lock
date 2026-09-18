@@ -6,7 +6,7 @@
       "name": "node-diff",
       "dependencies": {
         "@base-ui/react": "1.7.0",
-        "@philfreshman/diff-wasm": "0.1.0",
+        "@philfreshman/diff-wasm": "0.1.1",
         "@tanstack/react-query": "5.101.4",
         "@tanstack/react-router": "1.170.31",
         "@tanstack/react-start": "1.168.48",
@@ -139,7 +139,7 @@
 
     "@oxc-project/types": ["@oxc-project/types@0.146.0", "", {}, "sha512-XC0QsnnhVe7sLIWmYmdPw7x5P0h4W8vUU3Nv1ySgWXtvCz8NizoAEpGXA0sOYoJQV2Rl13LgURAHQ5cI5ILCSA=="],
 
-    "@philfreshman/diff-wasm": ["@philfreshman/diff-wasm@0.1.0", "", {}, "sha512-VKX4zDaV3c0R9zZODbuLoBJ02swIARZ2ZxgiIDIUJdOgmw4rugpvrWHlFNaSt2gndqZACuCsXxiB0LQKLOuIQA=="],
+    "@philfreshman/diff-wasm": ["@philfreshman/diff-wasm@0.1.1", "", {}, "sha512-C098ET12bH4pz8CEHpPItSZ7z270La0+c4uvR75HrtPX0gPjQGXgkR5R1kEjJVOuhbWfOZkqZe0H69fO3Il4kg=="],
 
     "@playwright/test": ["@playwright/test@1.62.1", "", { "dependencies": { "playwright": "1.62.1" }, "bin": { "playwright": "cli.js" } }, "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ=="],
 

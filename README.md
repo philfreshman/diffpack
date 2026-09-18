@@ -78,10 +78,37 @@ bun install
 bun run dev          # http://localhost:4321
 ```
 
-The engine is a separate repository, **[philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine)**,
-consumed here as the npm package `@philfreshman/diff-wasm` and pinned in `package.json`. To try an
-unpublished change to it, point the build at a local `wasm-pack` output with
-`DIFF_WASM_LOCAL=../diffpack-engine/pkg`; see [CONTRIBUTING.md](CONTRIBUTING.md#the-engine).
+That is the whole setup. `bun install` brings the compiled diff engine down with everything else.
+
+<br>
+
+### The engine is a separate repo
+
+Extraction and diffing — everything that fetches a tarball, unpacks it and compares two versions —
+is Rust compiled to WebAssembly, and it lives in
+**[philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine)**. This repo
+consumes it and never builds it:
+
+```
+  diffpack-engine  ──▶  @philfreshman/diff-wasm  ──▶  diffpack
+   Rust crate            npm · wasm-pack              a dependency
+   its own CI            provenance-signed            pinned in package.json
+```
+
+| To | |
+| :-- | :-- |
+| change what you see | a PR here |
+| change how a diff is computed | a PR in **diffpack-engine** |
+| try an engine change before releasing it | `DIFF_WASM_LOCAL=../diffpack-engine/pkg bun run dev` |
+| ship an engine change | tag `v*` there, then bump the version here |
+
+Nothing here compiles Rust — not `dev`, not `build`, not CI, not the Vercel deploy. The cost of
+that is a seam: an engine change is not proved against the app until its version moves in
+`package.json`. The engine's own CI runs its `#[wasm_bindgen]` boundary in a real browser to cover
+the gap, and the bump PR here runs the full end-to-end suite, which makes it one to read rather
+than wave through.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md#the-engine) for the detail.
 
 <br>
 
@@ -113,7 +140,7 @@ unpublished change to it, point the build at a local `wasm-pack` output with
 <br>
 
 <details>
-<summary><b>Deployment</b> — Vercel, and two things to know before editing deploy config</summary>
+<summary><b>Deployment</b> — Vercel, and three things to know before editing deploy config</summary>
 
 <br>
 
@@ -122,10 +149,18 @@ tree to `.vercel/output/` — static assets plus one server function — which V
 
 **Routing and headers belong in `nitro({ routeRules })` in `vite.config.ts`, not `vercel.json`.**
 A build that writes `.vercel/output/config.json` brings its own routing table, so rules left in
-`vercel.json` are read by nobody. All `vercel.json` still carries is the build command — the
+`vercel.json` are read by nobody. What `vercel.json` still carries is the build command — the
 install command it used to need, which installed a Rust target and compiled the engine before
-`bun install` could run, went away when the engine became a published package. Confirm a change
-landed by reading `.vercel/output/config.json` after `VERCEL=1 bun run build`.
+`bun install` could run, went away when the engine became a published package — and the rule
+below. Confirm a change landed by reading `.vercel/output/config.json` after
+`VERCEL=1 bun run build`.
+
+**Only `main` deploys.** `git.deploymentEnabled` turns every other branch off, so pushing to
+`development` or opening a PR no longer builds a preview. Previews were not being used and each
+one was a full production build, so the cost was real and the output was read by nobody. The
+pattern is `"**": false` with `"main": true` on top of it: Vercel matches branch names with
+minimatch and deploys when *any* matching rule is true, so the specific entry wins over the
+wildcard. A branch that needs a URL gets one from `vercel deploy` rather than from a push.
 
 **The `www.diffpack.io` → `diffpack.io` redirect is a domain setting in the Vercel project**, not
 something this repo configures — `routeRules` match on path, not host.
