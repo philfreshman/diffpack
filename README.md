@@ -112,6 +112,31 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#the-engine) for the detail.
 
 <br>
 
+### The three repositories
+
+diffpack is split across three repositories that are meant to be cloned as siblings under one
+parent directory — which is what `DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg` and every relative
+path below assumes:
+
+```
+<parent>/
+├── diffpack/          github.com/philfreshman/diffpack
+├── diffpack-engine/   github.com/philfreshman/diffpack-engine
+└── diffpack-server/   github.com/philfreshman/diffpack-server
+```
+
+| Repo | What lives there |
+| :-- | :-- |
+| **diffpack** | The web app — TanStack Start, the UI, the registry adapters, the worker that drives the engine. Deployed to [diffpack.io](https://diffpack.io). |
+| **diffpack-engine** | The Rust crate compiled to WebAssembly: fetching archives, extraction, the diff and the file tree. Published to npm as `@philfreshman/diffpack-engine` and consumed by the app as a pinned dependency; the app never builds it. |
+| **diffpack-server** | Initialised and still empty — one commit, a one-line README, nothing depending on it yet. |
+
+Nothing links the three at build time except that npm package, so a change that crosses a boundary
+crosses a release: see [the engine section](#the-engine-is-a-separate-repo) for how an engine change
+reaches the app.
+
+<br>
+
 ### Scripts
 
 | | |

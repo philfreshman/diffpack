@@ -68,3 +68,21 @@ around it is not, so do not let that command overwrite this file wholesale.
 - **The DOM, the worker and the wasm are covered by Playwright, not by unit tests**, because the
   engine only runs in a browser. `fallow health --coverage-gaps` cannot see that coverage, so treat
   "untested" on a component as a question, not a verdict.
+
+## The sibling repositories
+
+Three repositories carry diffpack, and they are meant to be checked out as siblings of this one —
+`../diffpack-engine`, `../diffpack-server` — which is the layout every relative path in the docs
+assumes (`DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg` among them).
+
+| Repo | Sibling path | Remote | What it is |
+| :--- | :--- | :--- | :--- |
+| diffpack | *this checkout* | `philfreshman/diffpack` | The app: routes, components, `src/lib`, the diff worker. |
+| diffpack-engine | `../diffpack-engine` | `philfreshman/diffpack-engine` | The Rust → WebAssembly engine, consumed here as the pinned npm package `@philfreshman/diffpack-engine`. |
+| diffpack-server | `../diffpack-server` | `philfreshman/diffpack-server` | Empty so far — one commit, a one-line README. Nothing here imports or calls it. |
+
+The boundary is real: nothing in this checkout compiles or tests the engine, and editing
+`../diffpack-engine` from a diffpack task changes nothing the app runs until a release moves the
+version in `package.json`. If a task is about how a diff is computed, say so and work in that repo
+rather than reaching across from here. See [README.md](README.md#the-engine-is-a-separate-repo) and
+[CONTRIBUTING.md](CONTRIBUTING.md#the-engine).
