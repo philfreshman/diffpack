@@ -65,19 +65,19 @@ export default defineConfig({
 	resolve: {
 		tsconfigPaths: true,
 		// Iterating on the engine without publishing a version. Point
-		// `DIFF_WASM_LOCAL` at a `wasm-pack` output directory — in a checkout of
+		// `DIFFPACK_ENGINE_LOCAL` at a `wasm-pack` output directory — in a checkout of
 		// philfreshman/diffpack-engine, that is its `pkg/` — and the build reads
 		// that instead of the installed package:
 		//
-		//   DIFF_WASM_LOCAL=../diffpack-engine/pkg bun run dev
+		//   DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg bun run dev
 		//
 		// Unset, which is every CI run and every deploy, this is absent entirely
 		// and the dependency resolves normally.
-		...(process.env.DIFF_WASM_LOCAL
+		...(process.env.DIFFPACK_ENGINE_LOCAL
 			? {
 					alias: {
-						"@philfreshman/diff-wasm": path.resolve(
-							process.env.DIFF_WASM_LOCAL,
+						"@philfreshman/diffpack-engine": path.resolve(
+							process.env.DIFFPACK_ENGINE_LOCAL,
 						),
 					},
 				}
@@ -89,7 +89,7 @@ export default defineConfig({
 		// Vite's dependency pre-bundler rewrites that relationship. Excluded, it
 		// is served as authored — which is what `init({ module_or_path: wasmUrl })`
 		// in `src/lib/worker/diff.worker.ts` is written against.
-		exclude: ["@philfreshman/diff-wasm"],
+		exclude: ["@philfreshman/diffpack-engine"],
 	},
 	worker: {
 		format: "es",

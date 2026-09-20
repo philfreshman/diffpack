@@ -2,12 +2,12 @@
 	"$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
 
 	// `src/lib/worker/diff.worker.ts` imports the engine's wasm binary as a URL:
-	//   import wasmUrl from "@philfreshman/diff-wasm/diff_wasm_bg.wasm?url"
-	// The bare `@philfreshman/diff-wasm` specifier above it is a normal
+	//   import wasmUrl from "@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url"
+	// The bare `@philfreshman/diffpack-engine` specifier above it is a normal
 	// dependency and resolves on its own. This one carries a `?url` suffix — a
 	// Vite query, not part of the path — which nothing in the module graph can
 	// describe, so it is told here.
-	"ignoreUnresolvedImports": ["@philfreshman/diff-wasm/diff_wasm_bg.wasm?url"],
+	"ignoreUnresolvedImports": ["@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url"],
 
 	// `public/` is copied to the site root verbatim; nothing imports it and
 	// nothing should. `public/nightfall.css` is fetched at runtime from a string
