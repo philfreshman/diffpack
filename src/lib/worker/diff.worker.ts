@@ -2,8 +2,8 @@ import init, {
 	build_diff_tree_for_package,
 	get_diff_for_path,
 	prefetch_package,
-} from "@philfreshman/diff-wasm";
-import wasmUrl from "@philfreshman/diff-wasm/diff_wasm_bg.wasm?url";
+} from "@philfreshman/diffpack-engine";
+import wasmUrl from "@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url";
 import type { WorkerRequest, WorkerResponse } from "./protocol.ts";
 
 /** Rename detection threshold, as a content-similarity ratio. */

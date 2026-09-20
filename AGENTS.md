@@ -62,8 +62,8 @@ around it is not, so do not let that command overwrite this file wholesale.
 
 - **The engine is Rust, and it is not in this repo.** Extraction and diffing live in
   [philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine) and arrive here
-  as the npm package `@philfreshman/diff-wasm`, with its own tests, its own formatter and its own
-  CI. Nothing on this page analyses it. A change to how a diff is *computed* is a PR there, a
+  as the npm package `@philfreshman/diffpack-engine`, with its own tests, its own formatter and
+  its own CI. Nothing on this page analyses it. A change to how a diff is *computed* is a PR there, a
   release, and a version bump here — not an edit you can make from this checkout.
 - **The DOM, the worker and the wasm are covered by Playwright, not by unit tests**, because the
   engine only runs in a browser. `fallow health --coverage-gaps` cannot see that coverage, so treat

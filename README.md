@@ -90,16 +90,16 @@ is Rust compiled to WebAssembly, and it lives in
 consumes it and never builds it:
 
 ```
-  diffpack-engine  ──▶  @philfreshman/diff-wasm  ──▶  diffpack
-   Rust crate            npm · wasm-pack              a dependency
-   its own CI            provenance-signed            pinned in package.json
+  diffpack-engine  ──▶  @philfreshman/diffpack-engine  ──▶  diffpack
+   Rust crate            npm · wasm-pack                    a dependency
+   its own CI            provenance-signed                  pinned in package.json
 ```
 
 | To | |
 | :-- | :-- |
 | change what you see | a PR here |
 | change how a diff is computed | a PR in **diffpack-engine** |
-| try an engine change before releasing it | `DIFF_WASM_LOCAL=../diffpack-engine/pkg bun run dev` |
+| try an engine change before releasing it | `DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg bun run dev` |
 | ship an engine change | tag `v*` there, then bump the version here |
 
 Nothing here compiles Rust — not `dev`, not `build`, not CI, not the Vercel deploy. The cost of

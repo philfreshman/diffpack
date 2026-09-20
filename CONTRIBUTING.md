@@ -9,9 +9,9 @@ Thank you for your interest in contributing to diffpack! This document provides 
 - [Bun](https://bun.sh) (v1.x or later)
 
 That is the whole list. The diffing engine is Rust, but it arrives prebuilt from npm as
-[`@philfreshman/diff-wasm`](https://www.npmjs.com/package/@philfreshman/diff-wasm) — a Rust
-toolchain is needed only to work on [the engine itself](https://github.com/philfreshman/diffpack-engine),
-in its own repository.
+[`@philfreshman/diffpack-engine`](https://www.npmjs.com/package/@philfreshman/diffpack-engine) —
+a Rust toolchain is needed only to work on
+[the engine itself](https://github.com/philfreshman/diffpack-engine), in its own repository.
 
 ### Setup
 
@@ -33,7 +33,7 @@ the compiled engine down with everything else.
 The extraction and diffing logic — everything that downloads an archive, unpacks it and compares
 two versions — is Rust compiled to WebAssembly. It lives in
 **[philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine)** and is consumed
-here as an ordinary dependency, `@philfreshman/diff-wasm`, pinned in `package.json`. It is a
+here as an ordinary dependency, `@philfreshman/diffpack-engine`, pinned in `package.json`. It is a
 `wasm-pack --target web` module: `src/lib/worker/diff.worker.ts` imports its three entry points and
 initialises it against the `.wasm` URL Vite fingerprints.
 
@@ -51,17 +51,18 @@ before publishing it, point the build at a local `wasm-pack` output:
 
 ```bash
 cd ../diffpack-engine && wasm-pack build --release --target web --scope philfreshman
-cd ../diffpack && DIFF_WASM_LOCAL=../diffpack-engine/pkg bun run dev
+cd ../diffpack && DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg bun run dev
 ```
 
-`DIFF_WASM_LOCAL` aliases the package to that directory for the run. Unset — every CI run, every
-deploy, and every command you have not deliberately prefixed — it does nothing. Note that `dev`
-does not rebuild the crate either way: re-run `wasm-pack build` and restart.
+`DIFFPACK_ENGINE_LOCAL` aliases the package to that directory for the run. Unset — every CI run,
+every deploy, and every command you have not deliberately prefixed — it does nothing. Note that
+`dev` does not rebuild the crate either way: re-run `wasm-pack build` and restart.
 
 The cost of the split is that a change over there is not proved against the app until the version
 moves here. That is why the engine's own CI runs `wasm-pack test --headless --chrome` over its
-`#[wasm_bindgen]` boundary, and why the Renovate PR that bumps `@philfreshman/diff-wasm` — which
-runs the full end-to-end suite — is one to read rather than rubber-stamp.
+`#[wasm_bindgen]` boundary, and why the Renovate PR that bumps
+`@philfreshman/diffpack-engine` — which runs the full end-to-end suite — is one to read rather
+than rubber-stamp.
 
 ### Tests
 
