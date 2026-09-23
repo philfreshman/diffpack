@@ -5,9 +5,9 @@ import { historyKey } from "#/lib/storage/searchHistory.ts";
 import {
 	ONLY_MODIFIED,
 	SPLIT_VIEW,
+	THEME_SELECTION,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
-import { THEME_STORAGE_KEY } from "#/lib/theme.ts";
 
 /**
  * Task 15's parity gate. The other specs each prove one feature; this one walks
@@ -102,7 +102,7 @@ test("no file in a Go module reads as its versioned root", async ({ page }) => {
  * same constants, so this object is the only place the literal names appear.
  */
 const STORED = {
-	[THEME_STORAGE_KEY]: "light",
+	[THEME_SELECTION.key]: "light",
 	[SPLIT_VIEW.key]: "true",
 	[HIGHLIGHT_THEME_KEY]: "nightfall",
 	[TREE_WIDTH.key]: "320",

@@ -1,4 +1,5 @@
-import { clampedInteger, flag } from "./storedSetting.ts";
+import { DEFAULT_SELECTION, SELECTIONS } from "#/lib/theme.ts";
+import { clampedInteger, flag, oneOf } from "./storedSetting.ts";
 
 /**
  * Every preference diffpack keeps between visits, each declared once: the key
@@ -11,6 +12,13 @@ import { clampedInteger, flag } from "./storedSetting.ts";
  * drops their choice. `tests/e2e/parity.spec.ts` holds them from outside the
  * page.
  */
+
+/** Light, dark, or whatever the operating system says. */
+export const THEME_SELECTION = oneOf({
+	key: "theme",
+	values: SELECTIONS,
+	fallback: DEFAULT_SELECTION,
+});
 
 /** Unified unless the visitor asked for split. */
 export const SPLIT_VIEW = flag({

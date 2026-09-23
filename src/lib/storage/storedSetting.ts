@@ -51,6 +51,28 @@ export function flag({
 	};
 }
 
+/** One of a fixed list of strings, stored as itself; anything else is `fallback`. */
+export function oneOf<V extends string>({
+	key,
+	values,
+	fallback,
+}: {
+	key: string;
+	values: readonly V[];
+	fallback: V;
+}): HeadSetting<V> {
+	const isValue = (raw: string | null): raw is V =>
+		(values as readonly (string | null)[]).includes(raw);
+
+	return {
+		key,
+		fallback,
+		parse: (raw) => (isValue(raw) ? raw : fallback),
+		parseSource: `function(raw){return ${JSON.stringify(values)}.indexOf(raw)<0?${JSON.stringify(fallback)}:raw}`,
+		serialize: String,
+	};
+}
+
 /**
  * A whole number, stored in decimal. One out of bounds is brought within them;
  * one that is not a number at all is `fallback`.

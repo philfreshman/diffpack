@@ -1,15 +1,10 @@
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { useSetting } from "#/components/storage/useSetting.ts";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import { MoonIcon, SunIcon, SystemIcon } from "#/components/ui/icons.tsx";
-import {
-	applyTheme,
-	DEFAULT_SELECTION,
-	nextSelection,
-	readSelection,
-	type ThemeSelection,
-	writeSelection,
-} from "#/lib/theme.ts";
+import { THEME_SELECTION } from "#/lib/storage/settings.ts";
+import { applyTheme, nextSelection, type ThemeSelection } from "#/lib/theme.ts";
 import styles from "./ThemeToggle.module.css";
 
 const ICONS: Record<ThemeSelection, ReactNode> = {
@@ -30,17 +25,14 @@ const LABELS: Record<ThemeSelection, string> = {
  * sidebar's footing instead.
  */
 export function ThemeToggle({ floating = false }: { floating?: boolean }) {
-	// Renders the default first and corrects on mount: the real selection lives
-	// in localStorage, which the server cannot see. Until then the button is
-	// disabled — pre-hydration it would show a possibly-wrong icon and swallow
-	// the click.
-	const [selection, setSelection] = useState<ThemeSelection>(DEFAULT_SELECTION);
-	const [mounted, setMounted] = useState(false);
-
-	useEffect(() => {
-		setSelection(readSelection());
-		setMounted(true);
-	}, []);
+	// Renders the default first and corrects on mount: the real selection is
+	// stored, and the server cannot see it. Until then the button is disabled —
+	// pre-hydration it would show a possibly-wrong icon and swallow the click.
+	const {
+		value: selection,
+		known,
+		set: storeSelection,
+	} = useSetting(THEME_SELECTION);
 
 	useEffect(() => {
 		// Only "system" tracks the OS, and only until the visitor picks a theme.
@@ -52,11 +44,10 @@ export function ThemeToggle({ floating = false }: { floating?: boolean }) {
 	}, [selection]);
 
 	const handleClick = useCallback(() => {
-		const next = nextSelection(readSelection());
-		writeSelection(next);
+		const next = nextSelection(selection);
+		storeSelection(next);
 		applyTheme(document, next);
-		setSelection(next);
-	}, []);
+	}, [selection, storeSelection]);
 
 	return (
 		<IconButton
@@ -64,7 +55,7 @@ export function ThemeToggle({ floating = false }: { floating?: boolean }) {
 				floating ? `${styles.toggle} ${styles.floating}` : styles.toggle
 			}
 			aria-label={LABELS[selection]}
-			disabled={!mounted}
+			disabled={!known}
 			onClick={handleClick}
 		>
 			{ICONS[selection]}

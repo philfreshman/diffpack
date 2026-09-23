@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { THEME_STORAGE_KEY } from "#/lib/theme.ts";
+import { THEME_SELECTION } from "#/lib/storage/settings.ts";
 
 /**
  * The sky is a WebGL canvas, so there is nothing to read back out of it: its
@@ -91,7 +91,7 @@ test("draws no sky in the light theme, and brings it back with the toggle", asyn
 }) => {
 	await page.addInitScript(
 		(key) => localStorage.setItem(key, "light"),
-		THEME_STORAGE_KEY,
+		THEME_SELECTION.key,
 	);
 	await page.goto("/");
 

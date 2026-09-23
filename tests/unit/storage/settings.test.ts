@@ -3,6 +3,7 @@ import {
 	IGNORE_WHITESPACE,
 	ONLY_MODIFIED,
 	SPLIT_VIEW,
+	THEME_SELECTION,
 	TREE_COLLAPSED,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
@@ -30,6 +31,20 @@ function reading<T>(
 }
 
 const CASES: Case[] = [
+	reading(
+		THEME_SELECTION,
+		[
+			["light", "light"],
+			["dark", "dark"],
+			["system", "system"],
+		],
+		[
+			// diffpack is dark for anyone who has not chosen otherwise.
+			["solarized", "dark"],
+			["Light", "dark"],
+			["", "dark"],
+		],
+	),
 	reading(
 		SPLIT_VIEW,
 		[
