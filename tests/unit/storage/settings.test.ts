@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	HIGHLIGHT_THEME,
 	IGNORE_WHITESPACE,
 	ONLY_MODIFIED,
 	SPLIT_VIEW,
@@ -66,6 +67,22 @@ const CASES: Case[] = [
 		[
 			["1", false],
 			["", false],
+		],
+	),
+	reading(
+		HIGHLIGHT_THEME,
+		[
+			["nord", "nord"],
+			["base16/dracula", "base16/dracula"],
+			["nightfall", "nightfall"],
+		],
+		[
+			// No longer offered — `"github"` was the old app's light default,
+			// and never one of its own options — so no choice at all, which
+			// follows the page theme.
+			["github", null],
+			["solarized", null],
+			["", null],
 		],
 	),
 	reading(

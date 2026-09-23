@@ -51,16 +51,20 @@ export function flag({
 	};
 }
 
-/** One of a fixed list of strings, stored as itself; anything else is `fallback`. */
-export function oneOf<V extends string>({
+/**
+ * One of a fixed list of strings, stored as itself; anything else is
+ * `fallback`. That can be `null`, for a setting whose default is not in the
+ * list at all but worked out by whoever reads it.
+ */
+export function oneOf<V extends string, F extends V | null>({
 	key,
 	values,
 	fallback,
 }: {
 	key: string;
 	values: readonly V[];
-	fallback: V;
-}): HeadSetting<V> {
+	fallback: F;
+}): HeadSetting<V | F> {
 	const isValue = (raw: string | null): raw is V =>
 		(values as readonly (string | null)[]).includes(raw);
 

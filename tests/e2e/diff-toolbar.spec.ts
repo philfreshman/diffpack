@@ -1,6 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
-import { HIGHLIGHT_THEME_KEY } from "#/lib/diff/highlightThemes.ts";
-import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
+import {
+	HIGHLIGHT_THEME,
+	IGNORE_WHITESPACE,
+	SPLIT_VIEW,
+} from "#/lib/storage/settings.ts";
 
 /**
  * express 4.18.2 → 5.1.0, the same comparison the viewer suite reads:
@@ -290,7 +293,7 @@ test("themes the code, and remembers which theme", async ({ page }) => {
 	expect(
 		await page.evaluate(
 			(key) => localStorage.getItem(key),
-			HIGHLIGHT_THEME_KEY,
+			HIGHLIGHT_THEME.key,
 		),
 	).toBe("nord");
 });

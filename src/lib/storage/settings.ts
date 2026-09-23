@@ -1,3 +1,4 @@
+import { HIGHLIGHT_THEMES } from "#/lib/diff/highlightThemes.ts";
 import { DEFAULT_SELECTION, SELECTIONS } from "#/lib/theme.ts";
 import { clampedInteger, flag, oneOf } from "./storedSetting.ts";
 
@@ -33,6 +34,19 @@ export const SPLIT_VIEW = flag({
 export const IGNORE_WHITESPACE = flag({
 	key: "ignore-whitespace-preference",
 	fallback: false,
+});
+
+/**
+ * The highlight.js theme the visitor chose, or `null` for one who has not:
+ * that default follows the page theme, so it is worked out where the page
+ * theme is known (`defaultHighlightTheme`) rather than stored. A value that is
+ * no longer one of the offered themes — the old app's `"github"` among them —
+ * is not a choice that can be honoured, so it reads as no choice at all.
+ */
+export const HIGHLIGHT_THEME = oneOf({
+	key: "highlight_theme",
+	values: HIGHLIGHT_THEMES.map((theme) => theme.value),
+	fallback: null,
 });
 
 /**

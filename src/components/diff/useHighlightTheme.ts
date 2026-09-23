@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useSetting } from "#/components/storage/useSetting.ts";
 import { useResolvedTheme } from "#/components/theme/useResolvedTheme.ts";
 import { themeStylesheet } from "#/lib/diff/highlightStylesheet.ts";
 import type { HighlightAppearance } from "#/lib/diff/highlightThemes.ts";
 import {
+	defaultHighlightTheme,
 	highlightAppearance,
-	readHighlightTheme,
-	writeHighlightTheme,
 } from "#/lib/diff/highlightThemes.ts";
+import { HIGHLIGHT_THEME } from "#/lib/storage/settings.ts";
 
 /** The one `<link>` the picker owns, created the first time it is needed. */
 const LINK_ID = "highlight-theme";
@@ -33,16 +34,14 @@ export interface HighlightThemeControls {
  */
 export function useHighlightTheme(): HighlightThemeControls {
 	const pageTheme = useResolvedTheme();
-	// Null until mounted: the stored choice cannot be read on the server, and
-	// guessing at it in the first client render is a hydration mismatch.
-	const [theme, setTheme] = useState<string | null>(null);
-
-	// Re-read on a page-theme change as well as on mount, so a visitor who has
-	// never chosen follows light/dark — and one who has keeps what they chose.
-	useEffect(() => {
-		if (!pageTheme) return;
-		setTheme(readHighlightTheme(pageTheme));
-	}, [pageTheme]);
+	const chosen = useSetting(HIGHLIGHT_THEME);
+	// Null until both are known: neither can be read on the server, and guessing
+	// at them in the first client render is a hydration mismatch. A visitor who
+	// has never chosen follows light/dark; one who has keeps what they chose.
+	const theme =
+		chosen.known && pageTheme
+			? (chosen.value ?? defaultHighlightTheme(pageTheme))
+			: null;
 
 	useEffect(() => {
 		if (!theme) return;
@@ -53,10 +52,7 @@ export function useHighlightTheme(): HighlightThemeControls {
 	return {
 		theme,
 		appearance: highlightAppearance(theme),
-		choose(next: string) {
-			setTheme(next);
-			writeHighlightTheme(next);
-		},
+		choose: chosen.set,
 	};
 }
 
