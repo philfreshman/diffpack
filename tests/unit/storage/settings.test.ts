@@ -1,0 +1,294 @@
+import { describe, expect, test } from "bun:test";
+import { GA_SCRIPT } from "#/lib/analytics.ts";
+import * as settings from "#/lib/storage/settings.ts";
+import {
+	HIGHLIGHT_THEME,
+	IGNORE_WHITESPACE,
+	ONLY_MODIFIED,
+	SPLIT_VIEW,
+	searchHistory,
+	THEME_SELECTION,
+	TREE_COLLAPSED,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
+import {
+	type HeadSetting,
+	readInHead,
+	readSetting,
+	type StoredSetting,
+} from "#/lib/storage/storedSetting.ts";
+import { THEME_SCRIPT } from "#/lib/themeScript.ts";
+import { TREE_WIDTH_SCRIPT } from "#/lib/tree/widthScript.ts";
+import { buildDiffBootScript } from "#/lib/worker/bootScript.ts";
+
+interface Case {
+	setting: HeadSetting<unknown>;
+	/** Stored spellings the app writes itself, and the value each one is. */
+	valid: Array<[string, unknown]>;
+	/** Anything else that can end up under the key, and what it reads as. */
+	invalid: Array<[string, unknown]>;
+}
+
+/** Keeps each case's expected values the setting's own type. */
+function reading<T>(
+	setting: HeadSetting<T>,
+	valid: Array<[string, T]>,
+	invalid: Array<[string, T]>,
+): Case {
+	return { setting, valid, invalid };
+}
+
+const CASES: Case[] = [
+	reading(
+		THEME_SELECTION,
+		[
+			["light", "light"],
+			["dark", "dark"],
+			["system", "system"],
+		],
+		[
+			// diffpack is dark for anyone who has not chosen otherwise.
+			["solarized", "dark"],
+			["Light", "dark"],
+			["", "dark"],
+		],
+	),
+	reading(
+		SPLIT_VIEW,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["yes", false],
+			["TRUE", false],
+			["", false],
+		],
+	),
+	reading(
+		IGNORE_WHITESPACE,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["1", false],
+			["", false],
+		],
+	),
+	reading(
+		HIGHLIGHT_THEME,
+		[
+			["nord", "nord"],
+			["base16/dracula", "base16/dracula"],
+			["nightfall", "nightfall"],
+		],
+		[
+			// No longer offered — `"github"` was the old app's light default,
+			// and never one of its own options — so no choice at all, which
+			// follows the page theme.
+			["github", null],
+			["solarized", null],
+			["", null],
+		],
+	),
+	reading(
+		TREE_WIDTH,
+		[
+			["420", 420],
+			["220", 220],
+			["640", 640],
+		],
+		[
+			// Brought within bounds: the panel has to stay readable and leave
+			// the diff room, whatever build or screen stored the width.
+			["40", 220],
+			["2000", 640],
+			["-5", 220],
+			// Read the way `parseInt` reads it, in the head as well.
+			["300px", 300],
+			[" 300", 300],
+			["1e3", 220],
+			["wide please", 320],
+			["", 320],
+		],
+	),
+	reading(
+		TREE_COLLAPSED,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["yes", false],
+			["", false],
+		],
+	),
+	reading(
+		ONLY_MODIFIED,
+		[
+			["false", false],
+			["true", true],
+		],
+		[
+			// The stored sense is inverted: only the literal "false" turns it off.
+			["nonsense", true],
+			["FALSE", true],
+			["", true],
+		],
+	),
+];
+
+/** A store holding `raw` under `key`, and nothing under any other. */
+function storeHolding(key: string, raw: string | null) {
+	return { getItem: (asked: string) => (asked === key ? raw : null) };
+}
+
+/** Private mode, or site data blocked: the store is there but refuses. */
+const REFUSING_STORE = {
+	getItem(): never {
+		throw new Error("SecurityError");
+	},
+};
+
+/** Every way a store can have nothing to give for `key`. */
+function storesWithNothingFor(key: string): Array<[string, unknown]> {
+	return [
+		["nothing is stored", storeHolding(key, null)],
+		["the store throws", REFUSING_STORE],
+		["there is no store at all", undefined],
+	];
+}
+
+/**
+ * The head script ships as a string, so the only honest way to test its read
+ * is to run it — against a stubbed store, the way `bootScript.test.ts` runs
+ * the diff boot.
+ */
+function readInHeadFrom(setting: HeadSetting<unknown>, store: unknown) {
+	return new Function("localStorage", `return ${readInHead(setting)};`)(store);
+}
+
+/**
+ * What `useSetting` reads once mounted. It takes no store as a parameter, so
+ * the stub stands in as the global for the length of the read.
+ */
+function readOnceMountedFrom(setting: StoredSetting<unknown>, store: unknown) {
+	const global = globalThis as { localStorage?: unknown };
+	global.localStorage = store;
+	try {
+		return readSetting(setting);
+	} finally {
+		delete global.localStorage;
+	}
+}
+
+/**
+ * The pre-paint scripts and the components read the same stored values before
+ * and after hydration. If they disagree, the page paints one answer and then
+ * flips to the other — or, for the diff boot, builds a tree the session then
+ * throws away.
+ */
+for (const { setting, valid, invalid } of CASES) {
+	describe(`the ${setting.key} setting`, () => {
+		test.each([...valid, ...invalid])(
+			"reads %p as %p in the head and once mounted",
+			(raw, expected) => {
+				const store = storeHolding(setting.key, raw);
+
+				expect(readInHeadFrom(setting, store)).toEqual(expected);
+				expect(readOnceMountedFrom(setting, store)).toEqual(expected);
+			},
+		);
+
+		test.each(storesWithNothingFor(setting.key))(
+			"reads the fallback in both when %s",
+			(_, store) => {
+				expect(readInHeadFrom(setting, store)).toEqual(setting.fallback);
+				expect(readOnceMountedFrom(setting, store)).toEqual(setting.fallback);
+			},
+		);
+
+		// What is written has to read back as itself: the spellings are the
+		// old app's, and returning visitors already have them stored.
+		test.each(valid)(
+			"stores the value %p reads as in that spelling",
+			(raw, value) => {
+				expect(setting.serialize(value)).toBe(raw);
+			},
+		);
+	});
+}
+
+/**
+ * The table is kept by hand, so a setting declared without a row in it would
+ * never be held to its head read — the very drift this file is here to catch.
+ */
+test("has a row for every setting declared in settings.ts", () => {
+	const exported: unknown[] = Object.values(settings);
+	const declared = exported.filter(
+		(it): it is StoredSetting<unknown> =>
+			typeof it === "object" && it !== null && "key" in it,
+	);
+
+	expect(CASES.map((it) => it.setting.key).sort()).toEqual(
+		declared.map((it) => it.key).sort(),
+	);
+});
+
+/**
+ * Every script `__root.tsx` puts in `<head>`. The storage rule in the rule
+ * pack cannot see a call inside a string — that is how the diff boot once read
+ * another module's key unnoticed — so a hand-written read is caught here.
+ */
+const HEAD_SCRIPTS = {
+	THEME_SCRIPT,
+	TREE_WIDTH_SCRIPT,
+	DIFF_BOOT_SCRIPT: buildDiffBootScript("/assets/diff.worker-test.js"),
+	GA_SCRIPT,
+};
+
+test.each(Object.entries(HEAD_SCRIPTS))(
+	"%s reads the store only through readInHead",
+	(_, source) => {
+		const handWritten = CASES.reduce(
+			(rest, { setting }) => rest.replaceAll(readInHead(setting), ""),
+			source,
+		);
+
+		expect(handWritten).not.toContain("localStorage");
+	},
+);
+
+/**
+ * History has no reading in `<head>`, so there is nothing to agree with; what
+ * it has instead is a key per registry and a JSON value. `parseHistory`'s own
+ * suite covers what else can be under the key.
+ */
+describe("the search history setting", () => {
+	test("keeps the key the old app wrote, per registry", () => {
+		expect(searchHistory("npm").key).toBe("search_history_npm");
+		expect(searchHistory("go").key).toBe("search_history_go");
+	});
+
+	test("is the same setting for a registry every time it is asked for", () => {
+		// `useSetting` reads again whenever it is handed a different setting, so
+		// a fresh one per render would be a read per render.
+		expect(searchHistory("npm")).toBe(searchHistory("npm"));
+	});
+
+	test("reads back the list it stores", () => {
+		const setting = searchHistory("npm");
+		const history = [{ name: "express", description: "fast" }];
+		const store = storeHolding(setting.key, setting.serialize(history));
+
+		expect(readOnceMountedFrom(setting, store)).toEqual(history);
+	});
+
+	test.each(storesWithNothingFor(searchHistory("npm").key))(
+		"is empty when %s",
+		(_, store) => {
+			expect(readOnceMountedFrom(searchHistory("npm"), store)).toEqual([]);
+		},
+	);
+});

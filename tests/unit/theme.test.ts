@@ -1,26 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-	nextSelection,
-	parseSelection,
-	resolveTheme,
-	themeColor,
-} from "#/lib/theme.ts";
-
-describe("parseSelection", () => {
-	test("passes a valid stored selection through", () => {
-		expect(parseSelection("light")).toBe("light");
-		expect(parseSelection("dark")).toBe("dark");
-		expect(parseSelection("system")).toBe("system");
-	});
-
-	test("falls back to dark when nothing is stored", () => {
-		expect(parseSelection(null)).toBe("dark");
-	});
-
-	test("falls back to dark when the stored value is not a selection", () => {
-		expect(parseSelection("solarized")).toBe("dark");
-	});
-});
+import { nextSelection, resolveTheme, themeColor } from "#/lib/theme.ts";
 
 describe("resolveTheme", () => {
 	test("uses the OS preference when the selection is system", () => {

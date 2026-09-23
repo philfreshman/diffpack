@@ -182,11 +182,13 @@ bunx fallow list --boundaries                 # the zones, and how many files ea
 
 **House rules.** `rule-packs/diffpack-policy.jsonc` holds two, both currently at zero:
 
-- `localStorage` is reachable only from the module that owns the key. The six key names are a
-  compatibility contract with returning visitors (see CLAUDE.md); they survive only while every read
-  and write goes through the module the e2e suite imports the constant from. The rule is scoped to
-  `src/**` — `tests/e2e/` and `scripts/` drive the *browser's* storage through `page.evaluate`,
-  which is a fixture, not a preference read.
+- `localStorage` is reachable only from `src/lib/storage/storedSetting.ts`. Every stored setting —
+  its key, how a stored value is read, and its default — is declared once in
+  `src/lib/storage/settings.ts`, and components take it through `useSetting`, scripts in `<head>`
+  through `readInHead`. The key names are a compatibility contract with returning visitors (see
+  CLAUDE.md), and the e2e suite takes them from those declarations. The rule is scoped to `src/**`
+  — `tests/e2e/` and `scripts/` drive the *browser's* storage through `page.evaluate`, which is a
+  fixture, not a preference read.
 - Registry adapters take the injected `Fetcher` rather than calling the global `fetch`, which is
   what keeps `tests/unit/registries/` able to run without a network.
 
@@ -208,7 +210,7 @@ otherwise. It is deliberately not in the pre-commit hook: the hook's whole argum
 around five seconds. Locally:
 
 ```bash
-bunx fallow dead-code --type-aware --symbol-impact src/lib/theme.ts:THEME_STORAGE_KEY
+bunx fallow dead-code --type-aware --symbol-impact src/lib/storage/settings.ts:THEME_SELECTION
 ```
 
 **The health grade** is the badge at the top of the README, and it is a committed SVG rather than a

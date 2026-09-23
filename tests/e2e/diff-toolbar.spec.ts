@@ -1,6 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
-import { HIGHLIGHT_THEME_KEY } from "#/lib/diff/highlightThemes.ts";
-import { IGNORE_WHITESPACE_KEY, SPLIT_VIEW_KEY } from "#/lib/diff/prefs.ts";
+import {
+	HIGHLIGHT_THEME,
+	IGNORE_WHITESPACE,
+	SPLIT_VIEW,
+} from "#/lib/storage/settings.ts";
 
 /**
  * express 4.18.2 → 5.1.0, the same comparison the viewer suite reads:
@@ -210,7 +213,7 @@ test("the choice survives a reload, the way the layout does", async ({
 	expect(
 		await page.evaluate(
 			(key) => localStorage.getItem(key),
-			IGNORE_WHITESPACE_KEY,
+			IGNORE_WHITESPACE.key,
 		),
 	).toBe("true");
 });
@@ -254,7 +257,7 @@ test("puts the old file beside the new one, and remembers that it was asked", as
 	// The preference outlives the page: it is the same key the old app wrote,
 	// so a returning visitor's choice still stands.
 	expect(
-		await page.evaluate((key) => localStorage.getItem(key), SPLIT_VIEW_KEY),
+		await page.evaluate((key) => localStorage.getItem(key), SPLIT_VIEW.key),
 	).toBe("true");
 
 	await toolbar(page)
@@ -263,7 +266,7 @@ test("puts the old file beside the new one, and remembers that it was asked", as
 
 	await expect(splitRows(page)).toHaveCount(0);
 	expect(
-		await page.evaluate((key) => localStorage.getItem(key), SPLIT_VIEW_KEY),
+		await page.evaluate((key) => localStorage.getItem(key), SPLIT_VIEW.key),
 	).toBe("false");
 });
 
@@ -290,7 +293,7 @@ test("themes the code, and remembers which theme", async ({ page }) => {
 	expect(
 		await page.evaluate(
 			(key) => localStorage.getItem(key),
-			HIGHLIGHT_THEME_KEY,
+			HIGHLIGHT_THEME.key,
 		),
 	).toBe("nord");
 });

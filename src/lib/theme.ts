@@ -10,17 +10,12 @@ export type ResolvedTheme = "light" | "dark";
 /** What an unconfigured visitor gets — diffpack is dark by default. */
 export const DEFAULT_SELECTION: ThemeSelection = "dark";
 
-const SELECTIONS: readonly ThemeSelection[] = ["light", "dark", "system"];
-
-function isSelection(value: string): value is ThemeSelection {
-	return (SELECTIONS as readonly string[]).includes(value);
-}
-
-/** Narrows whatever `localStorage` handed back, which is `string | null`. */
-export function parseSelection(raw: string | null): ThemeSelection {
-	if (raw !== null && isSelection(raw)) return raw;
-	return DEFAULT_SELECTION;
-}
+/** Every selection there is, in the order the toggle cycles through them. */
+export const SELECTIONS: readonly ThemeSelection[] = [
+	"light",
+	"dark",
+	"system",
+];
 
 /**
  * `prefersDark` is passed in rather than read from `matchMedia` so this stays
@@ -86,28 +81,4 @@ export function readAppliedTheme(doc: Document): ResolvedTheme {
 	return doc.documentElement.getAttribute(THEME_ATTRIBUTE) === "light"
 		? "light"
 		: "dark";
-}
-
-export const THEME_STORAGE_KEY = "theme";
-
-/**
- * Reading and writing are separated from `applyTheme` so a caller can change the
- * stored choice without touching the DOM, and vice versa. Storage can throw
- * (private mode, blocked cookies); a visitor who cannot persist a preference
- * should still get a working toggle for the session.
- */
-export function readSelection(): ThemeSelection {
-	try {
-		return parseSelection(localStorage.getItem(THEME_STORAGE_KEY));
-	} catch {
-		return DEFAULT_SELECTION;
-	}
-}
-
-export function writeSelection(selection: ThemeSelection): void {
-	try {
-		localStorage.setItem(THEME_STORAGE_KEY, selection);
-	} catch {
-		// Preference is not persisted; the in-page theme still changes.
-	}
 }

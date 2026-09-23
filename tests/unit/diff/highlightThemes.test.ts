@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+	defaultHighlightTheme,
 	HIGHLIGHT_THEMES,
 	type HighlightTheme,
 	highlightAppearance,
-	parseHighlightTheme,
 } from "#/lib/diff/highlightThemes.ts";
 
 describe("HIGHLIGHT_THEMES", () => {
@@ -72,24 +72,19 @@ describe("every theme's declared appearance is the one it paints", () => {
 	});
 });
 
-describe("parseHighlightTheme", () => {
-	test("follows the page theme until the visitor picks one", () => {
-		expect(parseHighlightTheme(null, "dark")).toBe("github-dark");
-		expect(parseHighlightTheme(null, "light")).toBe("base16/github");
+describe("defaultHighlightTheme", () => {
+	test("follows the page theme, for a visitor who has not picked one", () => {
+		expect(defaultHighlightTheme("dark")).toBe("github-dark");
+		expect(defaultHighlightTheme("light")).toBe("base16/github");
 	});
 
-	test("keeps a theme the visitor chose, whatever the page theme is", () => {
-		expect(parseHighlightTheme("nord", "light")).toBe("nord");
-		expect(parseHighlightTheme("base16/dracula", "dark")).toBe(
-			"base16/dracula",
-		);
-	});
+	test("is always one of the themes on offer", () => {
+		// The old app's light default was `"github"`, which was never one of its
+		// own options, so a light-mode visitor saw an empty select.
+		const offered = HIGHLIGHT_THEMES.map((theme) => theme.value);
 
-	test("drops a stored value that is no longer offered", () => {
-		// `"github"` is exactly that: the old app's light default, which was
-		// never one of its own options.
-		expect(parseHighlightTheme("github", "light")).toBe("base16/github");
-		expect(parseHighlightTheme("solarized", "dark")).toBe("github-dark");
+		expect(offered).toContain(defaultHighlightTheme("dark"));
+		expect(offered).toContain(defaultHighlightTheme("light"));
 	});
 });
 

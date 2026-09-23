@@ -118,3 +118,31 @@ test("a deep link opened with ignore-whitespace on is built that way once", asyn
 		expect.objectContaining({ ignoreWhitespace: true }),
 	]);
 });
+
+test("a store that refuses to be read still builds the comparison once", async ({
+	page,
+}) => {
+	// Chrome with site data blocked: touching `localStorage` at all throws. The
+	// head script and the session both read that as the fallback, so the session
+	// adopts the boot's request rather than sending one of its own.
+	await page.addInitScript(() =>
+		Object.defineProperty(window, "localStorage", {
+			get() {
+				throw new DOMException("The operation is insecure.", "SecurityError");
+			},
+		}),
+	);
+	await recordWorkerRequests(page);
+	const errors: Error[] = [];
+	page.on("pageerror", (error) => errors.push(error));
+
+	await page.goto(NODE);
+	await expect(status(page)).toHaveAttribute("data-state", "ready", ENGINE);
+
+	// Booted from the head, and nothing sent after it: one request, the boot's.
+	expect(await page.evaluate(() => "__diffpackDiffBoot" in window)).toBe(true);
+	expect(await buildTreeRequests(page)).toEqual([
+		expect.objectContaining({ ignoreWhitespace: false }),
+	]);
+	expect(errors).toEqual([]);
+});

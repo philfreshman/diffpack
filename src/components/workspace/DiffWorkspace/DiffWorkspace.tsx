@@ -8,7 +8,7 @@ import type { DiffViewControls } from "#/components/diff/useDiffView.ts";
 import { useDiffView } from "#/components/diff/useDiffView.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { useHighlightTheme } from "#/components/diff/useHighlightTheme.ts";
-import { useIgnoreWhitespace } from "#/components/diff/useIgnoreWhitespace.ts";
+import { useSetting } from "#/components/storage/useSetting.ts";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
@@ -18,6 +18,7 @@ import { requireAdapter } from "#/lib/registries/index.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import { type ShownFile, shownFile } from "#/lib/session/shownFile.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
+import { IGNORE_WHITESPACE } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
@@ -46,12 +47,20 @@ import styles from "./DiffWorkspace.module.css";
 export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const adapter = requireAdapter(slug.registry);
 	const navigate = useNavigate();
-	const whitespace = useIgnoreWhitespace();
+	// Whether whitespace counts as a change is a reading habit, like split view
+	// and the highlight theme, so it is remembered rather than asked per file.
+	const whitespace = useSetting(IGNORE_WHITESPACE);
 	// Held here rather than in the gear that changes it: the viewer takes its
 	// own surfaces from the same choice, and a second copy of the hook would be
 	// a second answer to one question.
 	const highlight = useHighlightTheme();
-	const session = useDiffSession(slug, whitespace.ignore);
+	// No answer rather than the fallback until the stored one is read: a deep
+	// link opened with the setting on would otherwise build the whole tree
+	// whitespace-exact first and immediately throw it away.
+	const session = useDiffSession(
+		slug,
+		whitespace.known ? whitespace.value : null,
+	);
 	const files = flattenFiles(session.tree);
 	// The files the toolbar's arrows walk: the unchanged ones are what the tree
 	// hides by default, and stepping into one would look like a broken button.
@@ -146,7 +155,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 							onExpandAllChange={viewer.setExpandAll}
 							split={viewer.split}
 							onSplitChange={viewer.setSplit}
-							ignoreWhitespace={whitespace.ignore === true}
+							ignoreWhitespace={whitespace.value}
 							onIgnoreWhitespaceChange={whitespace.set}
 							highlight={highlight}
 						/>
