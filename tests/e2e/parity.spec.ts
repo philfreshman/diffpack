@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
-import { historyKey } from "#/lib/storage/searchHistory.ts";
 import {
 	HIGHLIGHT_THEME,
 	ONLY_MODIFIED,
 	SPLIT_VIEW,
+	searchHistory,
 	THEME_SELECTION,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
@@ -107,7 +107,7 @@ const STORED = {
 	[HIGHLIGHT_THEME.key]: "nightfall",
 	[TREE_WIDTH.key]: "320",
 	[ONLY_MODIFIED.key]: "false",
-	[historyKey("npm")]: JSON.stringify([{ name: "express" }]),
+	[searchHistory("npm").key]: JSON.stringify([{ name: "express" }]),
 };
 
 /**

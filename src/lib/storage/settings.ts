@@ -1,6 +1,13 @@
 import { HIGHLIGHT_THEMES } from "#/lib/diff/highlightThemes.ts";
+import type { RegistryId, SearchResult } from "#/lib/registries/types.ts";
 import { DEFAULT_SELECTION, SELECTIONS } from "#/lib/theme.ts";
-import { clampedInteger, flag, oneOf } from "./storedSetting.ts";
+import { parseHistory } from "./searchHistory.ts";
+import {
+	clampedInteger,
+	flag,
+	oneOf,
+	type StoredSetting,
+} from "./storedSetting.ts";
 
 /**
  * Every preference diffpack keeps between visits, each declared once: the key
@@ -77,3 +84,28 @@ export const ONLY_MODIFIED = flag({
 	key: "tree_show_only_modified",
 	fallback: true,
 });
+
+const histories = new Map<RegistryId, StoredSetting<readonly SearchResult[]>>();
+
+/**
+ * Recent picks, one list per registry, kept as JSON under the old app's keys —
+ * `search_history_npm` and its siblings. No script in `<head>` reads it, so it
+ * has no source to carry. The same object for a registry every time, so a
+ * component reads it once on mount rather than on every render.
+ */
+export function searchHistory(
+	registry: RegistryId,
+): StoredSetting<readonly SearchResult[]> {
+	let setting = histories.get(registry);
+	if (!setting) {
+		setting = {
+			key: `search_history_${registry}`,
+			fallback: [],
+			parse: parseHistory,
+			serialize: (history) => JSON.stringify(history),
+		};
+		histories.set(registry, setting);
+	}
+
+	return setting;
+}

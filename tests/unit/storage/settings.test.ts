@@ -4,6 +4,7 @@ import {
 	IGNORE_WHITESPACE,
 	ONLY_MODIFIED,
 	SPLIT_VIEW,
+	searchHistory,
 	THEME_SELECTION,
 	TREE_COLLAPSED,
 	TREE_WIDTH,
@@ -12,6 +13,7 @@ import {
 	type HeadSetting,
 	readInHead,
 	readSetting,
+	type StoredSetting,
 } from "#/lib/storage/storedSetting.ts";
 
 interface Case {
@@ -144,6 +146,15 @@ const REFUSING_STORE = {
 	},
 };
 
+/** Every way a store can have nothing to give for `key`. */
+function storesWithNothingFor(key: string): Array<[string, unknown]> {
+	return [
+		["nothing is stored", storeHolding(key, null)],
+		["the store throws", REFUSING_STORE],
+		["there is no store at all", undefined],
+	];
+}
+
 /**
  * The head script ships as a string, so the only honest way to test its read
  * is to run it — against a stubbed store, the way `bootScript.test.ts` runs
@@ -157,7 +168,7 @@ function readInHeadFrom(setting: HeadSetting<unknown>, store: unknown) {
  * What `useSetting` reads once mounted. It takes no store as a parameter, so
  * the stub stands in as the global for the length of the read.
  */
-function readOnceMountedFrom(setting: HeadSetting<unknown>, store: unknown) {
+function readOnceMountedFrom(setting: StoredSetting<unknown>, store: unknown) {
 	const global = globalThis as { localStorage?: unknown };
 	global.localStorage = store;
 	try {
@@ -185,14 +196,13 @@ for (const { setting, valid, invalid } of CASES) {
 			},
 		);
 
-		test.each([
-			["nothing is stored", storeHolding(setting.key, null)],
-			["the store throws", REFUSING_STORE],
-			["there is no store at all", undefined],
-		])("reads the fallback in both when %s", (_, store) => {
-			expect(readInHeadFrom(setting, store)).toEqual(setting.fallback);
-			expect(readOnceMountedFrom(setting, store)).toEqual(setting.fallback);
-		});
+		test.each(storesWithNothingFor(setting.key))(
+			"reads the fallback in both when %s",
+			(_, store) => {
+				expect(readInHeadFrom(setting, store)).toEqual(setting.fallback);
+				expect(readOnceMountedFrom(setting, store)).toEqual(setting.fallback);
+			},
+		);
 
 		// What is written has to read back as itself: the spellings are the
 		// old app's, and returning visitors already have them stored.
@@ -204,3 +214,36 @@ for (const { setting, valid, invalid } of CASES) {
 		);
 	});
 }
+
+/**
+ * History has no reading in `<head>`, so there is nothing to agree with; what
+ * it has instead is a key per registry and a JSON value. `parseHistory`'s own
+ * suite covers what else can be under the key.
+ */
+describe("the search history setting", () => {
+	test("keeps the key the old app wrote, per registry", () => {
+		expect(searchHistory("npm").key).toBe("search_history_npm");
+		expect(searchHistory("go").key).toBe("search_history_go");
+	});
+
+	test("is the same setting for a registry every time it is asked for", () => {
+		// `useSetting` reads again whenever it is handed a different setting, so
+		// a fresh one per render would be a read per render.
+		expect(searchHistory("npm")).toBe(searchHistory("npm"));
+	});
+
+	test("reads back the list it stores", () => {
+		const setting = searchHistory("npm");
+		const history = [{ name: "express", description: "fast" }];
+		const store = storeHolding(setting.key, setting.serialize(history));
+
+		expect(readOnceMountedFrom(setting, store)).toEqual(history);
+	});
+
+	test.each(storesWithNothingFor(searchHistory("npm").key))(
+		"is empty when %s",
+		(_, store) => {
+			expect(readOnceMountedFrom(searchHistory("npm"), store)).toEqual([]);
+		},
+	);
+});

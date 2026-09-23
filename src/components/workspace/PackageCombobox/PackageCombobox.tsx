@@ -1,16 +1,14 @@
 import { useNavigate } from "@tanstack/react-router";
 import { type RefObject, useEffect, useRef, useState } from "react";
+import { useSetting } from "#/components/storage/useSetting.ts";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
 import { SearchIcon } from "#/components/ui/icons.tsx";
 import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
 import { useKeyShortcut } from "#/components/ui/useKeyShortcut.ts";
-import type { RegistryAdapter, SearchResult } from "#/lib/registries/types.ts";
-import {
-	addToHistory,
-	readHistory,
-	writeHistory,
-} from "#/lib/storage/searchHistory.ts";
+import type { RegistryAdapter } from "#/lib/registries/types.ts";
+import { addToHistory } from "#/lib/storage/searchHistory.ts";
+import { searchHistory } from "#/lib/storage/settings.ts";
 import { buildPath } from "#/lib/url/slug.ts";
 import { usePackageSearch } from "../usePackageSearch.ts";
 import styles from "./PackageCombobox.module.css";
@@ -34,7 +32,9 @@ export interface PackageComboboxProps {
 export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState(selected);
-	const [history, setHistory] = useState<SearchResult[]>([]);
+	// Stored, which the server cannot see, so history arrives after mount.
+	// Until then the list is empty rather than wrong.
+	const history = useSetting(searchHistory(adapter.id));
 
 	const input = useShortcutFocus();
 	useEscapeToClear(input, reset);
@@ -43,14 +43,10 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 	// the app. Whatever the address says is what the input shows.
 	useEffect(() => setInputValue(selected), [selected]);
 
-	// `localStorage` is invisible to the server, so history arrives after mount.
-	// Until then the list is empty rather than wrong.
-	useEffect(() => setHistory(readHistory(adapter.id)), [adapter.id]);
-
 	const { results, loading, searching } = usePackageSearch(adapter, inputValue);
 	// An empty field offers where the user has been; a typed one, what the
 	// registry answered.
-	const items = searching ? results : history;
+	const items = searching ? results : history.value;
 
 	function choose(name: string) {
 		const trimmed = name.trim();
@@ -59,9 +55,7 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 		const entry = results.find((result) => result.name === trimmed) ?? {
 			name: trimmed,
 		};
-		const next = addToHistory(history, entry);
-		setHistory(next);
-		writeHistory(adapter.id, next);
+		history.set(addToHistory(history.value, entry));
 
 		setInputValue(trimmed);
 		// A new package invalidates the versions and the file that were in the URL.
