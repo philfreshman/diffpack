@@ -1,7 +1,7 @@
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import { SidebarIcon } from "#/components/ui/icons.tsx";
 import { requireAdapter } from "#/lib/registries/index.ts";
-import { toggleTreeCollapsed } from "#/lib/tree/prefs.ts";
+import { sidebar } from "#/lib/tree/sidebar.ts";
 import type { DiffSlug } from "#/lib/url/slug.ts";
 import { PackageCombobox } from "../PackageCombobox/PackageCombobox.tsx";
 import { VersionControls } from "../VersionControls/VersionControls.tsx";
@@ -25,7 +25,7 @@ export function WorkspaceHeader({ slug }: { slug: DiffSlug }) {
 				className={styles.expand}
 				aria-label="Expand sidebar"
 				title="Expand sidebar"
-				onClick={() => toggleTreeCollapsed(document)}
+				onClick={() => sidebar.open()}
 			>
 				<SidebarIcon width="16" height="16" />
 			</IconButton>

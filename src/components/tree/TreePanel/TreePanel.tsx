@@ -5,7 +5,7 @@ import { FileTree } from "#/components/tree/FileTree/FileTree.tsx";
 import { TreeFilter } from "#/components/tree/TreeFilter/TreeFilter.tsx";
 import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
 import { ONLY_MODIFIED, TREE_WIDTH } from "#/lib/storage/settings.ts";
-import { toggleTreeCollapsed } from "#/lib/tree/prefs.ts";
+import { sidebar } from "#/lib/tree/sidebar.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./TreePanel.module.css";
@@ -120,7 +120,7 @@ export function TreePanel({
 					className={styles.collapse}
 					aria-label="Collapse sidebar"
 					title="Collapse sidebar"
-					onClick={() => toggleTreeCollapsed(document)}
+					onClick={() => sidebar.close()}
 				>
 					<ChevronLeftIcon width="14" height="14" />
 				</button>

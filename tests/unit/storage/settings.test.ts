@@ -16,10 +16,12 @@ import {
 	readInHead,
 	readSetting,
 	type StoredSetting,
+	writeSetting,
 } from "#/lib/storage/storedSetting.ts";
 import { THEME_SCRIPT } from "#/lib/themeScript.ts";
 import { TREE_WIDTH_SCRIPT } from "#/lib/tree/widthScript.ts";
 import { buildDiffBootScript } from "#/lib/worker/bootScript.ts";
+import { memoryStore, REFUSING_STORE } from "./storeStub.ts";
 
 interface Case {
 	setting: HeadSetting<unknown>;
@@ -144,13 +146,6 @@ function storeHolding(key: string, raw: string | null) {
 	return { getItem: (asked: string) => (asked === key ? raw : null) };
 }
 
-/** Private mode, or site data blocked: the store is there but refuses. */
-const REFUSING_STORE = {
-	getItem(): never {
-		throw new Error("SecurityError");
-	},
-};
-
 /** Every way a store can have nothing to give for `key`. */
 function storesWithNothingFor(key: string): Array<[string, unknown]> {
 	return [
@@ -170,7 +165,7 @@ function readInHeadFrom(setting: HeadSetting<unknown>, store: unknown) {
 }
 
 /**
- * What `useSetting` reads once mounted. It takes no store as a parameter, so
+ * What `useSetting` reads once mounted. It hands `readSetting` no store, so
  * the stub stands in as the global for the length of the read.
  */
 function readOnceMountedFrom(setting: StoredSetting<unknown>, store: unknown) {
@@ -234,6 +229,27 @@ test("has a row for every setting declared in settings.ts", () => {
 	expect(CASES.map((it) => it.setting.key).sort()).toEqual(
 		declared.map((it) => it.key).sort(),
 	);
+});
+
+/**
+ * A module that keeps a setting can hand in the store it is kept in — a test
+ * does, to run that module against a store it controls — and the guard around
+ * the page's own store holds around that one too.
+ */
+describe("a store handed in", () => {
+	test("is the one read from and written to", () => {
+		const store = memoryStore();
+
+		writeSetting(TREE_WIDTH, 420, store);
+
+		expect(store.getItem(TREE_WIDTH.key)).toBe("420");
+		expect(readSetting(TREE_WIDTH, store)).toBe(420);
+	});
+
+	test("that refuses reads as the fallback, and takes nothing down", () => {
+		expect(() => writeSetting(TREE_WIDTH, 420, REFUSING_STORE)).not.toThrow();
+		expect(readSetting(TREE_WIDTH, REFUSING_STORE)).toBe(TREE_WIDTH.fallback);
+	});
 });
 
 /**
