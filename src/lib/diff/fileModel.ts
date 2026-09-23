@@ -37,9 +37,10 @@ export interface ParsedFile {
 export interface FileModel extends ParsedFile {
 	/** The rows on screen: folded, and paired into two columns when split. */
 	rows: DiffRow[] | SplitRow[];
-	/** The first row of each difference: the rows the arrows stop at. */
-	stops: number[];
-	/** How many differences the file has — its stops, counted. */
+	/**
+	 * How many differences the file has: the rows `nextDifference` stops at,
+	 * counted. Which rows those are is the model's own business.
+	 */
 	differences: number;
 	/** Whether the whole file is open, folds and all. */
 	expandAll: boolean;
@@ -85,7 +86,6 @@ export function fileModel(
 	return {
 		...file,
 		rows,
-		stops,
 		// Counted from the stops, so the number and the arrows cannot disagree.
 		// It is the same number whichever way the file is shown: a fold only
 		// ever holds untouched lines, and pairing keeps a run of changes

@@ -56,14 +56,14 @@ const VIEWS: [string, FileView, boolean][] = [
 ];
 
 /** Every row the arrows stop at, pressing "next" from above the first row. */
-function walkDown(model: FileModel): number[] {
-	const stops: number[] = [];
+function stops(model: FileModel): number[] {
+	const visited: number[] = [];
 	let at = model.nextDifference(-1, 1);
 	while (at !== undefined) {
-		stops.push(at);
+		visited.push(at);
 		at = model.nextDifference(at, 1);
 	}
-	return stops;
+	return visited;
 }
 
 /** The first line of the file a row shows, on either side of it. */
@@ -86,13 +86,12 @@ describe.each(VIEWS)("%s", (_, view, split) => {
 	test("counts exactly the differences the arrows stop at", () => {
 		// The count and the arrows come from the same rows, so however the file
 		// is shown, pressing "next" from the top visits as many as it says.
-		expect(walkDown(model)).toEqual(model.stops);
-		expect(model.differences).toBe(model.stops.length);
+		expect(model.differences).toBe(stops(model).length);
 		expect(model.differences).toBe(DIFFERENCES.length);
 	});
 
 	test("stops at the first line of each difference", () => {
-		expect(model.stops.map((stop) => firstLine(model, stop))).toEqual(
+		expect(stops(model).map((stop) => firstLine(model, stop))).toEqual(
 			DIFFERENCES,
 		);
 	});
@@ -102,7 +101,7 @@ describe.each(VIEWS)("%s", (_, view, split) => {
 		// scrollbar left unmarked.
 		const starts = model.markers(evenSpans(model)).map((it) => it.start);
 
-		for (const stop of model.stops) {
+		for (const stop of stops(model)) {
 			expect(starts).toContain(stop / model.rows.length);
 		}
 	});
@@ -110,7 +109,7 @@ describe.each(VIEWS)("%s", (_, view, split) => {
 
 describe("stepping through the differences", () => {
 	const model = fileModel(FILE, FOLDED, false);
-	const [first = 0, second = 0, last = 0] = model.stops;
+	const [first = 0, second = 0, last = 0] = stops(model);
 
 	test("goes to the next difference below the row the reader is on", () => {
 		// The reader part-way into a difference has read its start already, so
@@ -149,8 +148,8 @@ describe("expanding and folding the whole file", () => {
 
 		// Every line is its own row once nothing is folded, so the stops are the
 		// lines themselves — further down than the folded rows put them.
-		expect(expanded.stops).toEqual(DIFFERENCES);
-		expect(folded.stops).not.toEqual(expanded.stops);
+		expect(stops(expanded)).toEqual(DIFFERENCES);
+		expect(stops(folded)).not.toEqual(stops(expanded));
 		expect(expanded.expandAll).toBe(true);
 	});
 
@@ -158,8 +157,8 @@ describe("expanding and folding the whole file", () => {
 		const opened = withExpandAll(emptyMemory(), PATH, true);
 		const refolded = withExpandAll(opened, PATH, false);
 
-		expect(fileModel(FILE, fileView(refolded, PATH), false).stops).toEqual(
-			fileModel(FILE, FOLDED, false).stops,
+		expect(stops(fileModel(FILE, fileView(refolded, PATH), false))).toEqual(
+			stops(fileModel(FILE, FOLDED, false)),
 		);
 	});
 });
@@ -180,8 +179,8 @@ describe("opening a fold", () => {
 		const opened = fileModel(FILE, fileView(memory, PATH), false);
 
 		// One fold row became one row per line it held.
-		const [above = 0, ...below] = folded.stops;
-		expect(opened.stops).toEqual([
+		const [above = 0, ...below] = stops(folded);
+		expect(stops(opened)).toEqual([
 			above,
 			...below.map((stop) => stop + fold.count - 1),
 		]);
