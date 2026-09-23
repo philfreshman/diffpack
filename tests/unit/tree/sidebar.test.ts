@@ -44,6 +44,10 @@ function fakeClock() {
 		elapse() {
 			for (const { then } of waiting.splice(0)) then();
 		},
+		/** Only the first thing waiting has waited long enough. */
+		elapseFirst() {
+			waiting.shift()?.then();
+		},
 	};
 }
 
@@ -251,6 +255,23 @@ describe("snapping shut", () => {
 		expect(snapping()).toBe(false);
 		expect(shownWidth()).toBe("400px");
 		expect(store.getItem(TREE_COLLAPSED.key)).toBeNull();
+	});
+
+	test("a snap taken back does not cut short the next one", () => {
+		// Opened mid-snap and dragged shut again at once: the first snap's
+		// wait runs out while the second is still animating.
+		const { sidebar, clock, snapping, shut } = letGoPastTheMinimum();
+		sidebar.open();
+		sidebar.startDrag();
+		sidebar.dragTo(100);
+		sidebar.endDrag(100);
+
+		clock.elapseFirst();
+		expect(shut()).toBe(false);
+		expect(snapping()).toBe(true);
+
+		clock.elapse();
+		expect(shut()).toBe(true);
 	});
 
 	test("waits exactly as long as the stylesheet takes to animate it", async () => {
