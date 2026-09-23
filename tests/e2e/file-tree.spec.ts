@@ -1,5 +1,10 @@
+import { gzipSync } from "node:zlib";
 import { expect, type Page, test } from "@playwright/test";
-import { TREE_COLLAPSED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import {
+	ONLY_MODIFIED,
+	TREE_COLLAPSED,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
 
 /**
  * express 4.18.2 → 5.1.0: a real, nested, thoroughly changed comparison, which
@@ -21,6 +26,72 @@ async function ready(page: Page) {
 		"ready",
 		ENGINE,
 	);
+}
+
+/**
+ * A package made up for a tree that is one folder deep, which no real registry
+ * serves: every npm, crates.io and PyPI archive keeps its manifest at the root,
+ * beside whatever folders it has. Its version list and its tarballs are
+ * answered from here, and the engine unpacks them like any others.
+ */
+const MADE_UP = "diffpack-made-up";
+
+const MADE_UP_FILES: Record<string, Record<string, string>> = {
+	// Loose at the root, beside a folder there is to open by hand.
+	"1.0.0": { "README.md": "one\n", "lib/index.js": "one\n" },
+	// Everything under `src/`, and nothing beside it.
+	"2.0.0": { "src/index.js": "two\n" },
+	"3.0.0": { "src/index.js": "three\n" },
+};
+
+async function serveMadeUpPackage(page: Page) {
+	const registry = `https://registry.npmjs.org/${MADE_UP}`;
+	const versions = Object.fromEntries(
+		Object.keys(MADE_UP_FILES).map((version) => [version, {}]),
+	);
+	await page.route(registry, (route) => route.fulfill({ json: { versions } }));
+	// The engine fetches from its worker, and a worker's requests are routed
+	// like the page's.
+	await page.route(`${registry}/-/*`, (route) => {
+		const version = /-([\d.]+)\.tgz$/.exec(route.request().url())?.[1] ?? "";
+		const files = MADE_UP_FILES[version];
+		return files ? route.fulfill({ body: tarball(files) }) : route.abort();
+	});
+}
+
+/**
+ * `files` packed the way npm packs a package: each under `package/`, which the
+ * engine strips. A tar is a 512-byte header per file, the file padded out to
+ * whole blocks, and two empty blocks to end on.
+ */
+function tarball(files: Record<string, string>): Buffer {
+	const blocks = Object.entries(files).flatMap(([path, text]) => {
+		const content = Buffer.from(text);
+		const padding = (512 - (content.length % 512)) % 512;
+		return [
+			tarHeader(`package/${path}`, content.length),
+			content,
+			Buffer.alloc(padding),
+		];
+	});
+
+	return gzipSync(Buffer.concat([...blocks, Buffer.alloc(1024)]));
+}
+
+function tarHeader(path: string, size: number): Buffer {
+	const header = Buffer.alloc(512);
+	header.write(path, 0);
+	header.write("0000644", 100);
+	header.write(size.toString(8).padStart(11, "0"), 124);
+	header.write("0", 156); // a regular file
+	header.write("ustar\u000000", 257);
+	// The checksum is the sum of the header's bytes, its own field counted as
+	// eight spaces.
+	header.write(" ".repeat(8), 148);
+	const sum = header.reduce((total, byte) => total + byte, 0);
+	header.write(`${sum.toString(8).padStart(6, "0")}\u0000 `, 148);
+
+	return header;
 }
 
 test("shows the comparison as a tree of folders and files", async ({
@@ -132,6 +203,39 @@ test("a folder opens and shuts on click, and stays shut", async ({ page }) => {
 	await middleware.click();
 
 	await expect(row(page, "query.js")).toBeVisible();
+});
+
+test("a new comparison starts with no folders chosen, and opens its only folder", async ({
+	page,
+}) => {
+	await serveMadeUpPackage(page);
+	// Showing everything: with only-modified on, every folder with a change in
+	// it opens itself, and `src` would open whatever had carried over.
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "false");
+	}, ONLY_MODIFIED.key);
+	await page.goto(`/npm/${MADE_UP}/1.0.0/3.0.0`);
+	await ready(page);
+	const lib = row(page, "lib");
+	await expect(lib).toHaveAttribute("aria-expanded", "false");
+
+	await lib.click();
+	await expect(lib).toHaveAttribute("aria-expanded", "true");
+
+	// Other versions, chosen in the page rather than by loading another: a new
+	// page forgets every folder anyway, so only this way can one carry over.
+	const from = page.getByRole("combobox", { name: "From Version" });
+	await from.fill("2.0.0");
+	await page.getByRole("option", { name: "2.0.0", exact: true }).click();
+	await page.getByRole("button", { name: "Compare" }).click();
+	await expect(page).toHaveURL(`/npm/${MADE_UP}/2.0.0/3.0.0`);
+
+	// `lib` was opened in a comparison that had it. This one is all `src`, and
+	// a tree that is one folder deep opens that folder, but only while no
+	// folder has been chosen by hand.
+	await expect(row(page, "index.js")).toBeVisible();
+	await expect(row(page, "src")).toHaveAttribute("aria-expanded", "true");
+	await expect(lib).toHaveCount(0);
 });
 
 test("shows at a glance which rows open and which are files", async ({
