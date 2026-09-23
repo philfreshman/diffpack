@@ -4,6 +4,7 @@ import { type FileModel, fileModel, parseFile } from "#/lib/diff/fileModel.ts";
 import {
 	emptyMemory,
 	fileView,
+	type ViewMemory,
 	withExpandAll,
 	withRevealed,
 	withScrollTop,
@@ -114,32 +115,46 @@ function useShownFile(open: OpenFile | null): ShownFile | null {
  * been opened in the old ones means nothing in them.
  */
 function useFileMemory(comparisonKey: string | null, path: string) {
-	const [memory, setMemory] = useState(emptyMemory);
+	// The memory and the comparison it belongs to, held as one.
+	const [held, setHeld] = useState(() => ({
+		comparisonKey,
+		memory: emptyMemory(),
+	}));
 	// Dropping the memory as the comparison changes is an adjustment to a prop,
 	// not a side effect of one: doing it in an effect would leave one render
 	// showing the previous comparison's folds against this comparison's files.
-	const [remembering, setRemembering] = useState(comparisonKey);
-	if (remembering !== comparisonKey) {
-		setRemembering(comparisonKey);
-		setMemory(emptyMemory());
+	if (held.comparisonKey !== comparisonKey) {
+		setHeld({ comparisonKey, memory: emptyMemory() });
 	}
 
+	// A change lands only in the comparison it was made in. The viewer hands
+	// its scroll back as it unmounts, which is after the comparison has moved
+	// on: let into the new memory, it would open the file there partway down,
+	// at a place that meant something only in the old one.
+	const change = useCallback(
+		(update: (memory: ViewMemory) => ViewMemory) =>
+			setHeld((it) =>
+				it.comparisonKey === comparisonKey
+					? { comparisonKey, memory: update(it.memory) }
+					: it,
+			),
+		[comparisonKey],
+	);
+
 	return {
-		view: fileView(memory, path),
+		view: fileView(held.memory, path),
 		reveal: useCallback(
-			(expander: Expander) =>
-				setMemory((it) => withRevealed(it, path, expander)),
-			[path],
+			(expander: Expander) => change((it) => withRevealed(it, path, expander)),
+			[change, path],
 		),
 		setExpandAll: useCallback(
 			(expandAll: boolean) =>
-				setMemory((it) => withExpandAll(it, path, expandAll)),
-			[path],
+				change((it) => withExpandAll(it, path, expandAll)),
+			[change, path],
 		),
 		rememberScroll: useCallback(
-			(scrollTop: number) =>
-				setMemory((it) => withScrollTop(it, path, scrollTop)),
-			[path],
+			(scrollTop: number) => change((it) => withScrollTop(it, path, scrollTop)),
+			[change, path],
 		),
 	};
 }

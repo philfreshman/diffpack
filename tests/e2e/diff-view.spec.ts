@@ -208,11 +208,34 @@ test("a new comparison is a new file, opened at the top", async ({ page }) => {
 	const fold = folds(page).first();
 	const start = await fold.getAttribute("data-start");
 	await fold.getByRole("button", { name: "Expand all lines" }).click();
+	await page.getByTestId("diff-scroller").evaluate((node) => {
+		node.scrollTop = 900;
+	});
+
+	// Other versions, chosen in the page rather than by loading another: a new
+	// page forgets everything anyway, and what must not reach the new
+	// comparison is the viewer handing its place back as it closes.
+	const from = page.getByRole("combobox", { name: "From Version" });
+	await expect(from).toBeEnabled();
+	await from.fill("4.17.19");
+	await page.getByRole("option", { name: "4.17.19", exact: true }).click();
+	await page.getByRole("button", { name: "Compare" }).click();
+	await expect(page).toHaveURL("/npm/lodash/4.17.19/4.17.21/lodash.js");
 
 	// What had been opened in one comparison's file means nothing in another's.
-	await page.goto("/npm/lodash/4.17.19/4.17.21/lodash.js");
-	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
-
+	// The position is read off whichever viewer is up, and there is none while
+	// the new comparison builds, so it is polled until the new file has opened.
+	await expect
+		.poll(
+			() =>
+				page.evaluate(
+					() =>
+						document.querySelector("[data-testid=diff-scroller]")?.scrollTop ??
+						null,
+				),
+			ENGINE,
+		)
+		.toBe(0);
 	await expect(
 		folds(page).and(page.locator(`[data-start="${start}"]`)),
 	).toHaveCount(1);
