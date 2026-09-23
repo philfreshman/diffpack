@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { GA_SCRIPT } from "#/lib/analytics.ts";
 import * as settings from "#/lib/storage/settings.ts";
 import {
 	HIGHLIGHT_THEME,
@@ -16,6 +17,9 @@ import {
 	readSetting,
 	type StoredSetting,
 } from "#/lib/storage/storedSetting.ts";
+import { THEME_SCRIPT } from "#/lib/themeScript.ts";
+import { TREE_WIDTH_SCRIPT } from "#/lib/tree/widthScript.ts";
+import { buildDiffBootScript } from "#/lib/worker/bootScript.ts";
 
 interface Case {
 	setting: HeadSetting<unknown>;
@@ -231,6 +235,30 @@ test("has a row for every setting declared in settings.ts", () => {
 		declared.map((it) => it.key).sort(),
 	);
 });
+
+/**
+ * Every script `__root.tsx` puts in `<head>`. The storage rule in the rule
+ * pack cannot see a call inside a string — that is how the diff boot once read
+ * another module's key unnoticed — so a hand-written read is caught here.
+ */
+const HEAD_SCRIPTS = {
+	THEME_SCRIPT,
+	TREE_WIDTH_SCRIPT,
+	DIFF_BOOT_SCRIPT: buildDiffBootScript("/assets/diff.worker-test.js"),
+	GA_SCRIPT,
+};
+
+test.each(Object.entries(HEAD_SCRIPTS))(
+	"%s reads the store only through readInHead",
+	(_, source) => {
+		const handWritten = CASES.reduce(
+			(rest, { setting }) => rest.replaceAll(readInHead(setting), ""),
+			source,
+		);
+
+		expect(handWritten).not.toContain("localStorage");
+	},
+);
 
 /**
  * History has no reading in `<head>`, so there is nothing to agree with; what
