@@ -236,9 +236,14 @@ test("a new comparison starts with no folders chosen, and opens its only folder"
 
 	// `lib` was opened in a comparison that had it. This one is all `src`, and
 	// a tree that is one folder deep opens that folder, but only while no
-	// folder has been chosen by hand.
-	await expect(row(page, "index.js")).toBeVisible();
+	// folder has been chosen by hand. Its tree, not the last one's: that had
+	// three files, and its open `lib` showed an `index.js` of its own.
+	await expect(page.getByTestId("diff-status")).toHaveText(
+		"1 file, 1 changed",
+		ENGINE,
+	);
 	await expect(row(page, "src")).toHaveAttribute("aria-expanded", "true");
+	await expect(row(page, "index.js")).toBeVisible();
 	await expect(lib).toHaveCount(0);
 });
 
@@ -259,6 +264,8 @@ test("the same comparison keeps its folders, with another file open or whitespac
 
 	await index.click();
 	await expect(page).toHaveURL(`/npm/${MADE_UP}/0.9.0/1.0.0/lib/index.js`);
+	// The tree has taken the new address in, not only the location bar.
+	await expect(index).toHaveAttribute("aria-selected", "true");
 	await expect(lib).toHaveAttribute("aria-expanded", "true");
 
 	// The tree is built again, and the file that changed only in whitespace
