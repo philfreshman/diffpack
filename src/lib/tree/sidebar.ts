@@ -171,9 +171,9 @@ export function createSidebar({
 	}
 
 	/**
-	 * Ends a snap under way, at the width the panel had before the drag:
-	 * reopening should give back the panel that was there, not the sliver it
-	 * was dragged down to.
+	 * Ends a snap under way, back at the width last chosen — the one the panel
+	 * had before the drag: reopening should give back the panel that was
+	 * there, not the sliver it was dragged down to.
 	 */
 	function settleSnap(): void {
 		if (!snap) return;
