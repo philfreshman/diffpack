@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { dragFrame } from "#/lib/tree/gesture.ts";
 import { TREE_WIDTH } from "#/lib/storage/settings.ts";
+import { dragFrame } from "#/lib/tree/gesture.ts";
 
 describe("dragFrame", () => {
 	test("within limits the panel is simply that wide, and untouched", () => {
