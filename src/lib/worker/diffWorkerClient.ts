@@ -1,30 +1,19 @@
 import { type DiffBoot, readDiffBoot } from "./bootScript.ts";
-import type {
-	DiffFileEntry,
-	DiffRequest,
-	FileDiff,
-	WorkerRequest,
-	WorkerRequestInput,
-	WorkerResponse,
+import {
+	type Comparison,
+	comparisonKey,
+	type DiffFileEntry,
+	type DiffRequest,
+	type FileDiff,
+	type WorkerRequest,
+	type WorkerRequestInput,
+	type WorkerResponse,
 } from "./protocol.ts";
 
 type Pending = {
 	resolve: (value: unknown) => void;
 	reject: (reason: Error) => void;
 };
-
-/** The comparison a `build-tree` request asks for, as the boot script states it. */
-type Comparison = DiffRequest & { ignoreWhitespace: boolean };
-
-function sameComparison(left: Comparison, right: Comparison): boolean {
-	return (
-		left.registry === right.registry &&
-		left.pkg === right.pkg &&
-		left.from === right.from &&
-		left.to === right.to &&
-		left.ignoreWhitespace === right.ignoreWhitespace
-	);
-}
 
 /**
  * The page's one link to the engine.
@@ -47,7 +36,7 @@ export function createDiffClient(
 	 * holds one active diff, so handing this tree back after a second
 	 * `build-tree` has replaced it would leave `getFile` reading the wrong one.
 	 */
-	let adopted: { request: Comparison; tree: Promise<DiffFileEntry> } | null =
+	let adopted: { comparison: Comparison; tree: Promise<DiffFileEntry> } | null =
 		null;
 
 	function receive(message: WorkerResponse) {
@@ -88,7 +77,7 @@ export function createDiffClient(
 		// It may never be claimed — a link opened and abandoned mid-flight — and
 		// an unclaimed failure is not the page's to report.
 		tree.catch(() => {});
-		adopted = { request: booted.request, tree };
+		adopted = { comparison: booted.comparison, tree };
 
 		worker.onmessage = (event) => receive(event.data);
 		// Everything the script's own handler caught while no client existed.
@@ -114,24 +103,20 @@ export function createDiffClient(
 
 	return {
 		/** Downloads both versions, extracts them, and returns the diff tree. */
-		buildTree(
-			request: DiffRequest,
-			ignoreWhitespace: boolean,
-		): Promise<DiffFileEntry> {
+		buildTree(comparison: Comparison): Promise<DiffFileEntry> {
 			getWorker();
 
-			const wanted = { ...request, ignoreWhitespace };
 			const claim = adopted;
 			// Either way the boot's request stops being adoptable here: claimed,
 			// or overtaken by the comparison about to replace it in the engine.
 			adopted = null;
-			if (claim && sameComparison(claim.request, wanted)) return claim.tree;
+			if (
+				claim &&
+				comparisonKey(claim.comparison) === comparisonKey(comparison)
+			)
+				return claim.tree;
 
-			return send<DiffFileEntry>({
-				type: "build-tree",
-				...request,
-				ignoreWhitespace,
-			});
+			return send<DiffFileEntry>({ type: "build-tree", ...comparison });
 		},
 
 		/** Reads one file's diff out of the cache populated by `buildTree`. */

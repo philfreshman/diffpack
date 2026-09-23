@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildDiffBootScript } from "#/lib/worker/bootScript.ts";
+import { buildDiffBootScript, type DiffBoot } from "#/lib/worker/bootScript.ts";
+import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
 
 /** Stands in for the hashed URL Vite interpolates at build time. */
 const WORKER_URL = "/assets/diff.worker-test.js";
@@ -103,6 +104,32 @@ describe("the diff boot script", () => {
 				to: "v5.3.1",
 				ignoreWhitespace: false,
 			},
+		]);
+	});
+
+	test("leaves behind a request the client adopts as the same comparison", () => {
+		// The script spells its comparison out by hand, so this is what holds that
+		// spelling to the one the client compares by: a field named differently
+		// would not be adopted, and the page would build the tree twice.
+		const { posted, window } = boot("/npm/@types/node/26.0.0/26.7.0");
+		const booted = window.__diffpackDiffBoot as DiffBoot;
+		const client = createDiffClient(
+			() => {
+				throw new Error("spawned a second worker");
+			},
+			() => booted,
+		);
+
+		void client.buildTree({
+			registry: "npm",
+			pkg: "@types/node",
+			from: "26.0.0",
+			to: "26.7.0",
+			ignoreWhitespace: false,
+		});
+
+		expect(posted).toEqual([
+			{ id: booted.id, type: "build-tree", ...booted.comparison },
 		]);
 	});
 

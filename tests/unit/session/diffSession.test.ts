@@ -1,15 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import {
-	type ComparisonRequest,
-	createDiffSession,
-} from "#/lib/session/diffSession.ts";
+import { createDiffSession } from "#/lib/session/diffSession.ts";
 import type {
+	Comparison,
 	DiffFileEntry,
 	DiffRequest,
 	FileDiff,
 } from "#/lib/worker/protocol.ts";
 
-const REQUEST: ComparisonRequest = {
+const REQUEST: Comparison = {
 	registry: "npm",
 	pkg: "express",
 	from: "4.18.2",
@@ -189,7 +187,7 @@ describe("ignoring whitespace", () => {
 		const stub = stubClient();
 		const session = createDiffSession(stub.client);
 
-		const ignoring: ComparisonRequest = { ...REQUEST, ignoreWhitespace: true };
+		const ignoring: Comparison = { ...REQUEST, ignoreWhitespace: true };
 		session.prefetch(REQUEST);
 		session.prefetch(ignoring);
 

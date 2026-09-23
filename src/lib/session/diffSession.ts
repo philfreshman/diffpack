@@ -1,9 +1,11 @@
 import { Store } from "@tanstack/react-store";
 import { diffClient } from "#/lib/worker/diffWorkerClient.ts";
-import type {
-	DiffFileEntry,
-	DiffRequest,
-	FileDiff,
+import {
+	type Comparison,
+	comparisonKey,
+	type DiffFileEntry,
+	type DiffRequest,
+	type FileDiff,
 } from "#/lib/worker/protocol.ts";
 import { findFile } from "./tree.ts";
 
@@ -19,7 +21,7 @@ export interface OpenFile {
 }
 
 export interface DiffSessionState {
-	/** The comparison on screen, as `registry/pkg/from/to`; `null` when idle. */
+	/** The comparison on screen, as `comparisonKey` spells it; `null` when idle. */
 	key: string | null;
 	status: SessionStatus;
 	tree: DiffFileEntry | null;
@@ -35,30 +37,6 @@ const IDLE: DiffSessionState = {
 	error: null,
 	file: null,
 };
-
-/**
- * A comparison is the pair of versions *and* the question asked of them:
- * whether whitespace counts changes which lines differ, so it is part of what
- * is being read, not a way of showing what has already been read.
- *
- * Kept off `DiffRequest` because that is also the prefetch payload, and a
- * prefetch only warms the archives — one flag there would split one set of
- * downloads into two.
- */
-export interface ComparisonRequest extends DiffRequest {
-	ignoreWhitespace: boolean;
-}
-
-/** Two requests are the same comparison exactly when this string matches. */
-function sessionKey(request: ComparisonRequest): string {
-	return [
-		request.registry,
-		request.pkg,
-		request.from,
-		request.to,
-		String(request.ignoreWhitespace),
-	].join("\n");
-}
 
 /** The download half of a request: what the engine needs to fetch, and no more. */
 function archives(request: DiffRequest): DiffRequest {
@@ -96,8 +74,8 @@ export function createDiffSession(client: DiffClient) {
 		return store.state.key === key;
 	}
 
-	async function start(request: ComparisonRequest): Promise<void> {
-		const key = sessionKey(request);
+	async function start(request: Comparison): Promise<void> {
+		const key = comparisonKey(request);
 		// Re-entered on every render of the workspace, so asking for the
 		// comparison already on screen has to cost nothing — not two more
 		// archive downloads.
@@ -107,10 +85,7 @@ export function createDiffSession(client: DiffClient) {
 		store.setState(() => ({ ...IDLE, key, status: "loading" }));
 
 		try {
-			const tree = await client.buildTree(
-				archives(request),
-				request.ignoreWhitespace,
-			);
+			const tree = await client.buildTree(request);
 			if (!isCurrent(key)) return;
 			store.setState((state) => ({ ...state, status: "ready", tree }));
 		} catch (error) {
@@ -134,7 +109,7 @@ export function createDiffSession(client: DiffClient) {
 		// The archives alone: a prefetch warms downloads, and the same two serve
 		// either answer to the whitespace question.
 		const warming = archives(request);
-		const key = sessionKey({ ...warming, ignoreWhitespace: false });
+		const key = comparisonKey({ ...warming, ignoreWhitespace: false });
 		if (prefetched.has(key)) return;
 		prefetched.add(key);
 		client.prefetch(warming).catch(() => prefetched.delete(key));

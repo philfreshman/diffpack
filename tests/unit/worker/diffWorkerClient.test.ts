@@ -1,13 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import type { DiffBoot } from "#/lib/worker/bootScript.ts";
 import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
-import type { DiffFileEntry, DiffRequest } from "#/lib/worker/protocol.ts";
+import type { Comparison, DiffFileEntry } from "#/lib/worker/protocol.ts";
 
-const ARCHIVES: DiffRequest = {
+const COMPARISON: Comparison = {
 	registry: "crates",
 	pkg: "linux-raw-sys",
 	from: "0.6.5",
 	to: "0.12.1",
+	ignoreWhitespace: false,
 };
 
 const TREE: DiffFileEntry = {
@@ -35,7 +36,7 @@ function bootOf(worker: FakeWorker, replies: unknown[] = []): DiffBoot {
 	return {
 		worker: worker as unknown as Worker,
 		id: 0,
-		request: { ...ARCHIVES, ignoreWhitespace: false },
+		comparison: COMPARISON,
 		replies,
 	};
 }
@@ -61,7 +62,7 @@ describe("createDiffClient", () => {
 		const booted = new FakeWorker();
 		const { client, spawned } = clientWith(bootOf(booted));
 
-		const tree = client.buildTree(ARCHIVES, false);
+		const tree = client.buildTree(COMPARISON);
 
 		expect(spawned).toEqual([]);
 		expect(booted.posted).toEqual([]);
@@ -76,18 +77,18 @@ describe("createDiffClient", () => {
 			bootOf(booted, [{ id: 0, ok: true, data: TREE }]),
 		);
 
-		expect(await client.buildTree(ARCHIVES, false)).toEqual(TREE);
+		expect(await client.buildTree(COMPARISON)).toEqual(TREE);
 	});
 
 	test("asks for itself when the boot script started another comparison", () => {
 		const booted = new FakeWorker();
 		const { client, spawned } = clientWith(bootOf(booted));
 
-		client.buildTree(ARCHIVES, true);
+		client.buildTree({ ...COMPARISON, ignoreWhitespace: true });
 
 		expect(spawned).toEqual([]);
 		expect(booted.posted).toEqual([
-			{ id: 1, type: "build-tree", ...ARCHIVES, ignoreWhitespace: true },
+			{ id: 1, type: "build-tree", ...COMPARISON, ignoreWhitespace: true },
 		]);
 	});
 
@@ -95,31 +96,25 @@ describe("createDiffClient", () => {
 		const booted = new FakeWorker();
 		const { client } = clientWith(bootOf(booted));
 
-		client.buildTree({ ...ARCHIVES, to: "0.9.0" }, false);
-		client.buildTree(ARCHIVES, false);
+		client.buildTree({ ...COMPARISON, to: "0.9.0" });
+		client.buildTree(COMPARISON);
 
 		// The engine holds one active diff, so the second ask has to be a real
 		// request: the boot's tree would describe a comparison no longer loaded.
 		expect(booted.posted).toEqual([
-			{
-				id: 1,
-				type: "build-tree",
-				...ARCHIVES,
-				to: "0.9.0",
-				ignoreWhitespace: false,
-			},
-			{ id: 2, type: "build-tree", ...ARCHIVES, ignoreWhitespace: false },
+			{ id: 1, type: "build-tree", ...COMPARISON, to: "0.9.0" },
+			{ id: 2, type: "build-tree", ...COMPARISON },
 		]);
 	});
 
 	test("spawns its own worker where nothing was booted", async () => {
 		const { client, spawned } = clientWith(null);
 
-		const tree = client.buildTree(ARCHIVES, false);
+		const tree = client.buildTree(COMPARISON);
 
 		expect(spawned).toHaveLength(1);
 		expect(spawned[0]?.posted).toEqual([
-			{ id: 0, type: "build-tree", ...ARCHIVES, ignoreWhitespace: false },
+			{ id: 0, type: "build-tree", ...COMPARISON },
 		]);
 
 		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
