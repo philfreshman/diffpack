@@ -232,4 +232,25 @@ describe("the engine's one active diff", () => {
 		await expect(failed).rejects.toThrow("404 Not Found");
 		expect(await next).toEqual(TREE);
 	});
+
+	test("a build overtaken while it waited is never sent", async () => {
+		// Toggling whitespace back and forth while a download is in flight: only
+		// the last answer can end up in the engine, so only it is worth building.
+		const { client, spawned } = clientWith(null);
+		void client.buildTree(ANOTHER);
+		await settled();
+		const overtaken = client.buildTree({
+			...COMPARISON,
+			ignoreWhitespace: true,
+		});
+		void client.buildTree(COMPARISON);
+
+		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
+
+		await expect(overtaken).rejects.toThrow("overtaken");
+		expect(spawned[0]?.posted).toEqual([
+			{ id: 0, type: "build-tree", ...ANOTHER },
+			{ id: 1, type: "build-tree", ...COMPARISON },
+		]);
+	});
 });

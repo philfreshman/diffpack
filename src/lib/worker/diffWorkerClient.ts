@@ -54,6 +54,12 @@ export function createDiffClient(
 	 * what a failed build left behind.
 	 */
 	let active: string | null = null;
+	/**
+	 * How many builds have been asked for. One still waiting in the lane when
+	 * a newer one is asked for is not worth sending: whatever it left in the
+	 * engine, the newer one would replace before anything could read it.
+	 */
+	let buildsAsked = 0;
 
 	function receive(message: WorkerResponse) {
 		const entry = pending.get(message.id);
@@ -162,9 +168,14 @@ export function createDiffClient(
 			)
 				return claim.tree;
 
-			return enqueue(() =>
-				built(comparison, send({ type: "build-tree", ...comparison })),
-			);
+			const build = ++buildsAsked;
+			return enqueue(() => {
+				if (build !== buildsAsked)
+					return Promise.reject(
+						new Error("Build overtaken by a newer comparison before it began"),
+					);
+				return built(comparison, send({ type: "build-tree", ...comparison }));
+			});
 		},
 
 		/**
