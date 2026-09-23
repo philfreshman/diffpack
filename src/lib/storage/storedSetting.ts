@@ -31,7 +31,8 @@ export interface HeadSetting<T> extends StoredSetting<T> {
 /**
  * On or off, stored as `"true"` or `"false"`. Only the literal opposite of
  * `fallback` moves it off its default, so anything unreadable is the default —
- * which is how the old app read these keys, whichever way round they default.
+ * which is how each of these keys has always been read, whichever way round
+ * it defaults.
  */
 export function flag({
 	key,

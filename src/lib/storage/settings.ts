@@ -15,10 +15,10 @@ import {
  * nothing stored gets. Read and write them through `storedSetting.ts` — or
  * `useSetting` in a component — and in `<head>` through `readInHead`.
  *
- * The keys and the stored spellings are the old app's, and they are a contract
- * with returning visitors: renaming one, or changing what it stores, silently
- * drops their choice. `tests/e2e/parity.spec.ts` holds them from outside the
- * page.
+ * The keys and the stored spellings are a contract with returning visitors —
+ * most of them are the old app's, kept so its visitors' choices still stand —
+ * and renaming one, or changing what it stores, silently drops their choice.
+ * `tests/e2e/parity.spec.ts` holds them from outside the page.
  */
 
 /** Light, dark, or whatever the operating system says. */
