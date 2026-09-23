@@ -65,7 +65,11 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	// The files the toolbar's arrows walk: the unchanged ones are what the tree
 	// hides by default, and stepping into one would look like a broken button.
 	const changed = changedFiles(session.tree);
-	const fileIndex = changed.findIndex((entry) => entry.path === slug.file);
+	// Where the open file sits among them, as the session has it rather than as
+	// the URL names it: a file is only open once its tree is there to hold it.
+	const fileIndex = changed.findIndex(
+		(entry) => entry.path === session.file?.path,
+	);
 
 	// The file on screen, which is not always the file last asked for — see
 	// `shownFile`. It is state adjusted during render rather than in an effect,
