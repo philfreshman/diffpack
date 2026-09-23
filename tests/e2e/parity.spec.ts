@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import { HIGHLIGHT_THEME_KEY } from "#/lib/diff/highlightThemes.ts";
-import { SPLIT_VIEW_KEY } from "#/lib/diff/prefs.ts";
 import { historyKey } from "#/lib/storage/searchHistory.ts";
+import { SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { THEME_STORAGE_KEY } from "#/lib/theme.ts";
 import { ONLY_MODIFIED_KEY, TREE_WIDTH_KEY } from "#/lib/tree/prefs.ts";
 
@@ -100,7 +100,7 @@ test("no file in a Go module reads as its versioned root", async ({ page }) => {
  */
 const STORED = {
 	[THEME_STORAGE_KEY]: "light",
-	[SPLIT_VIEW_KEY]: "true",
+	[SPLIT_VIEW.key]: "true",
 	[HIGHLIGHT_THEME_KEY]: "nightfall",
 	[TREE_WIDTH_KEY]: "320",
 	[ONLY_MODIFIED_KEY]: "false",

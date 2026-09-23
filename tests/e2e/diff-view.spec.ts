@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { SPLIT_VIEW_KEY } from "#/lib/diff/prefs.ts";
+import { SPLIT_VIEW } from "#/lib/storage/settings.ts";
 
 /**
  * express 4.18.2 → 5.1.0 again: a real comparison from the real registry, since
@@ -147,7 +147,7 @@ test("puts the old file beside the new one when that is the preference", async (
 	// is the other way to set it.
 	await page.addInitScript(
 		(key) => localStorage.setItem(key, "true"),
-		SPLIT_VIEW_KEY,
+		SPLIT_VIEW.key,
 	);
 	await open(page, MANIFEST);
 

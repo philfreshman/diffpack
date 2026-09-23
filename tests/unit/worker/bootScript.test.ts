@@ -9,7 +9,11 @@ const WORKER_URL = "/assets/diff.worker-test.js";
  * test it is to run it — against a document that is entirely stubbed. What it
  * spawns and what it posts is its whole observable behaviour.
  */
-function boot(pathname: string, stored: Record<string, string> = {}) {
+function boot(
+	pathname: string,
+	stored: Record<string, string> = {},
+	store: unknown = { getItem: (key: string) => stored[key] ?? null },
+) {
 	const posted: unknown[] = [];
 	const spawned: Array<{ url: string; options: unknown }> = [];
 
@@ -33,12 +37,7 @@ function boot(pathname: string, stored: Record<string, string> = {}) {
 		"localStorage",
 		"Worker",
 		buildDiffBootScript(WORKER_URL),
-	)(
-		window,
-		{ pathname },
-		{ getItem: (key: string) => stored[key] ?? null },
-		FakeWorker,
-	);
+	)(window, { pathname }, store, FakeWorker);
 
 	return { posted, spawned, window };
 }
@@ -133,5 +132,20 @@ describe("the diff boot script", () => {
 
 			expect(posted).toMatchObject([{ ignoreWhitespace: false }]);
 		}
+	});
+
+	test("still boots, whitespace-exact, when the store refuses to be read", () => {
+		// A private-mode store that throws is no answer, which is the setting's
+		// fallback: the same thing the session reads once mounted, so it adopts
+		// this request rather than issuing its own.
+		const refusing = {
+			getItem() {
+				throw new Error("SecurityError");
+			},
+		};
+
+		const { posted } = boot("/crates/serde/1.0.0/1.0.1", {}, refusing);
+
+		expect(posted).toMatchObject([{ ignoreWhitespace: false }]);
 	});
 });

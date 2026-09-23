@@ -27,9 +27,9 @@
 				"src/lib/themeScript.ts",
 				"src/lib/tree/prefs.ts",
 				"src/lib/tree/widthScript.ts",
-				"src/lib/diff/prefs.ts",
 				"src/lib/diff/highlightThemes.ts",
-				"src/lib/storage/searchHistory.ts"
+				"src/lib/storage/searchHistory.ts",
+				"src/lib/storage/storedSetting.ts"
 			],
 			"message": "Read and write preferences through the module that owns the key (src/lib/**/prefs.ts, theme.ts, highlightThemes.ts, storage/searchHistory.ts). The key names are a compatibility contract — see CLAUDE.md.",
 			"severity": "error"

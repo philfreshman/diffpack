@@ -1,6 +1,7 @@
-import { IGNORE_WHITESPACE_KEY } from "#/lib/diff/prefs.ts";
 import { MODULE_VERSION } from "#/lib/registries/go.ts";
 import { registryAdapters } from "#/lib/registries/index.ts";
+import { IGNORE_WHITESPACE } from "#/lib/storage/settings.ts";
+import { readInHead } from "#/lib/storage/storedSetting.ts";
 import type { DiffRequest } from "./protocol.ts";
 
 /**
@@ -43,9 +44,10 @@ const REGISTRY_IDS = registryAdapters.map((adapter) => adapter.id);
  * Like `THEME_SCRIPT` it cannot import the modules it belongs to — nothing is
  * loaded yet at that point — so two things are restated inline: how far a
  * package name reaches into the path, which is each adapter's `packagePath`,
- * the reading of the stored whitespace answer, which is `parseIgnoreWhitespace`,
  * and the shape of a `build-tree` request, which is `protocol.ts`. The values
  * they turn on are interpolated from those modules so they stay single-sourced.
+ * The stored whitespace answer is not restated at all: `readInHead` writes its
+ * read from the setting's own declaration.
  *
  * Restating is what makes it possible to get this wrong, and the cost of
  * getting it wrong is bounded: a request the session does not recognise as its
@@ -65,7 +67,7 @@ else if(registry==="go"){width=parts.length;
 for(var i=0;i<parts.length;i++)if(GO_VERSION.test(parts[i])){width=i;break}}
 var pkg=parts.slice(0,width).join("/"),from=parts[width],to=parts[width+1];
 if(!pkg||!from||!to)return;
-var ignoreWhitespace=localStorage.getItem(${JSON.stringify(IGNORE_WHITESPACE_KEY)})==="true";
+var ignoreWhitespace=${readInHead(IGNORE_WHITESPACE)};
 var request={registry:registry,pkg:pkg,from:from,to:to,ignoreWhitespace:ignoreWhitespace};
 var worker=new Worker(${JSON.stringify(workerUrl)},{type:"module"});
 var boot={worker:worker,id:0,request:request,replies:[]};
