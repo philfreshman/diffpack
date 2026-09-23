@@ -253,6 +253,18 @@ describe("snapping shut", () => {
 		expect(store.getItem(TREE_COLLAPSED.key)).toBeNull();
 	});
 
+	test("waits exactly as long as the stylesheet takes to animate it", async () => {
+		// The wait is `--duration-fast` written again in TypeScript. Shorter,
+		// and the panel vanishes mid-animation; longer, and it sits at nothing
+		// before it is marked shut.
+		const css = await Bun.file("src/styles/globals.css").text();
+		const duration = css.match(/--duration-fast:\s*(\d+)ms;/)?.[1];
+		const { clock } = letGoPastTheMinimum();
+
+		expect(duration).toBeDefined();
+		expect(clock.waiting.map((it) => it.ms)).toEqual([Number(duration)]);
+	});
+
 	test("shut while it is snapping, it shuts there and then", () => {
 		const { sidebar, clock, snapping, shut, shownWidth } =
 			letGoPastTheMinimum();

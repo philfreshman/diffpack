@@ -38,7 +38,11 @@ const DRAGGING_ATTRIBUTE = "data-tree-dragging";
 /** While the panel animates shut; the stylesheet does the animating. */
 const SNAPPING_ATTRIBUTE = "data-tree-snapping";
 
-/** How long that takes: `--duration-fast`, which the stylesheet transitions over. */
+/**
+ * How long that takes: `--duration-fast` in `src/styles/globals.css`, which
+ * the stylesheet transitions over. It is the same number written twice, and
+ * `tests/unit/tree/sidebar.test.ts` fails if the two drift apart.
+ */
 const SNAP_MS = 150;
 
 interface SidebarOptions {
