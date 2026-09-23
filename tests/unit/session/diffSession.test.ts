@@ -379,6 +379,24 @@ describe("the file the URL names", () => {
 		]);
 	});
 
+	test("is not read again when the URL is told again", async () => {
+		// A remount or a repeated effect tells the session what it already
+		// knows; the file on screen must not drop back to loading for it.
+		const { stub, session } = await readySession();
+		session.follow({ ...SLUG, file: "index.js" });
+		take(stub.fileReplies, 0).resolve({ data: "@@", isDiff: true });
+		await settled();
+
+		session.follow({ ...SLUG, file: "index.js" });
+		session.answerWhitespace(false);
+
+		expect(stub.filesAsked).toHaveLength(1);
+		expect(session.store.state.file).toMatchObject({
+			path: "index.js",
+			status: "ready",
+		});
+	});
+
 	test("closes when the URL stops naming it", async () => {
 		const { stub, session } = await readySession();
 		session.follow({ ...SLUG, file: "index.js" });
