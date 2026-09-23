@@ -2,11 +2,7 @@ import type { RefObject } from "react";
 import { useSetting } from "#/components/storage/useSetting.ts";
 import { TREE_WIDTH } from "#/lib/storage/settings.ts";
 import { dragFrame } from "#/lib/tree/gesture.ts";
-import {
-	applyTreeWidth,
-	clampTreeWidth,
-	toggleTreeCollapsed,
-} from "#/lib/tree/prefs.ts";
+import { applyTreeWidth, toggleTreeCollapsed } from "#/lib/tree/prefs.ts";
 
 /** On `<html>` for the length of a drag: the stylesheet stands the edge's button down. */
 const DRAGGING_ATTRIBUTE = "data-tree-dragging";
@@ -37,7 +33,7 @@ export function usePanelResize(
 
 	/** Sets the panel's width outright, within bounds, and says what it was. */
 	function resizeTo(next: number) {
-		const clamped = clampTreeWidth(next);
+		const clamped = TREE_WIDTH.clamp(next);
 		applyTreeWidth(document, clamped);
 
 		return clamped;

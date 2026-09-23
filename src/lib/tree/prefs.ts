@@ -1,16 +1,11 @@
-import { TREE_COLLAPSED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import { TREE_COLLAPSED } from "#/lib/storage/settings.ts";
 import { writeSetting } from "#/lib/storage/storedSetting.ts";
 
 /**
  * The tree panel's layout on `<html>`: where its stored width and its shut
- * state meet the document. What is stored, and how it is read, is declared
- * with every other setting in `#/lib/storage/settings.ts`.
+ * state meet the document. What is stored, how it is read and the width's
+ * bounds are declared with every other setting in `#/lib/storage/settings.ts`.
  */
-
-/** Within the bounds the stored width is read within. */
-export function clampTreeWidth(width: number): number {
-	return Math.min(TREE_WIDTH.max, Math.max(TREE_WIDTH.min, width));
-}
 
 export const TREE_WIDTH_PROPERTY = "--tree-panel-width";
 

@@ -92,17 +92,25 @@ export function clampedInteger({
 	min: number;
 	max: number;
 	fallback: number;
-}): HeadSetting<number> & { readonly min: number; readonly max: number } {
+}): HeadSetting<number> & {
+	readonly min: number;
+	readonly max: number;
+	/** Within the bounds, the same way a stored value is brought within them. */
+	clamp(value: number): number;
+} {
+	const clamp = (value: number) => Math.min(max, Math.max(min, value));
+
 	return {
 		key,
 		min,
 		max,
 		fallback,
+		clamp,
 		parse(raw) {
 			const parsed = raw === null ? Number.NaN : Number.parseInt(raw, 10);
 			if (Number.isNaN(parsed)) return fallback;
 
-			return Math.min(max, Math.max(min, parsed));
+			return clamp(parsed);
 		},
 		parseSource: `function(raw){var n=parseInt(raw,10);return isNaN(n)?${fallback}:Math.min(${max},Math.max(${min},n))}`,
 		serialize: String,
