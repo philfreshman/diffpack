@@ -2,7 +2,7 @@ import { MODULE_VERSION } from "#/lib/registries/go.ts";
 import { registryAdapters } from "#/lib/registries/index.ts";
 import { IGNORE_WHITESPACE } from "#/lib/storage/settings.ts";
 import { readInHead } from "#/lib/storage/storedSetting.ts";
-import type { DiffRequest } from "./protocol.ts";
+import type { Comparison } from "./protocol.ts";
 
 /**
  * Where the boot script leaves what it started, for `readDiffBoot` to find. A
@@ -20,7 +20,8 @@ const DIFF_BOOT_GLOBAL = "__diffpackDiffBoot";
 export interface DiffBoot {
 	worker: Worker;
 	id: number;
-	request: DiffRequest & { ignoreWhitespace: boolean };
+	/** What its `build-tree` asked for: the message it posted, minus the envelope. */
+	comparison: Comparison;
 	/** Replies buffered by the script's own handler, oldest first. */
 	replies: unknown[];
 }
@@ -42,16 +43,21 @@ const REGISTRY_IDS = registryAdapters.map((adapter) => adapter.id);
  * already downloading by the time React has an opinion about them.
  *
  * Like `THEME_SCRIPT` it cannot import the modules it belongs to — nothing is
- * loaded yet at that point — so two things are restated inline: how far a
- * package name reaches into the path, which is each adapter's `packagePath`,
- * and the shape of a `build-tree` request, which is `protocol.ts`. The values
- * they turn on are interpolated from those modules so they stay single-sourced.
- * The stored whitespace answer is not restated at all: `readInHead` writes its
- * read from the setting's own declaration.
+ * loaded yet at that point — so two things are restated inline. One is how far
+ * a package name reaches into the path, which is each adapter's `packagePath`;
+ * the registry ids and Go's version pattern it turns on are interpolated from
+ * the adapters. The other is the fields of a `Comparison`, from `protocol.ts`,
+ * written out once: the script posts that object inside the same `id`/`type`
+ * envelope the client puts round its own, and leaves it for the client to
+ * adopt. The stored whitespace answer is not restated at all: `readInHead`
+ * writes its read from the setting's own declaration.
  *
  * Restating is what makes it possible to get this wrong, and the cost of
- * getting it wrong is bounded: a request the session does not recognise as its
- * own is simply not adopted, and the session issues the right one itself.
+ * getting it wrong is bounded: the client adopts the boot's tree only for a
+ * comparison with the same `comparisonKey`, so one spelled differently here is
+ * simply not adopted, and the session's own request goes out instead.
+ * `bootScript.test.ts` hands what the script leaves to the real client, so
+ * that shows up as a failing test rather than a second download.
  */
 export function buildDiffBootScript(workerUrl: string): string {
 	return `(()=>{try{
@@ -67,12 +73,11 @@ else if(registry==="go"){width=parts.length;
 for(var i=0;i<parts.length;i++)if(GO_VERSION.test(parts[i])){width=i;break}}
 var pkg=parts.slice(0,width).join("/"),from=parts[width],to=parts[width+1];
 if(!pkg||!from||!to)return;
-var ignoreWhitespace=${readInHead(IGNORE_WHITESPACE)};
-var request={registry:registry,pkg:pkg,from:from,to:to,ignoreWhitespace:ignoreWhitespace};
+var comparison={registry:registry,pkg:pkg,from:from,to:to,ignoreWhitespace:${readInHead(IGNORE_WHITESPACE)}};
 var worker=new Worker(${JSON.stringify(workerUrl)},{type:"module"});
-var boot={worker:worker,id:0,request:request,replies:[]};
+var boot={worker:worker,id:0,comparison:comparison,replies:[]};
 worker.onmessage=function(event){boot.replies.push(event.data)};
-worker.postMessage({id:boot.id,type:"build-tree",registry:registry,pkg:pkg,from:from,to:to,ignoreWhitespace:ignoreWhitespace});
+worker.postMessage(Object.assign({id:boot.id,type:"build-tree"},comparison));
 window.${DIFF_BOOT_GLOBAL}=boot;
 }catch(e){}})();`;
 }
