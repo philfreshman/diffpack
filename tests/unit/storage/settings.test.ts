@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import * as settings from "#/lib/storage/settings.ts";
 import {
 	HIGHLIGHT_THEME,
 	IGNORE_WHITESPACE,
@@ -214,6 +215,22 @@ for (const { setting, valid, invalid } of CASES) {
 		);
 	});
 }
+
+/**
+ * The table is kept by hand, so a setting declared without a row in it would
+ * never be held to its head read — the very drift this file is here to catch.
+ */
+test("has a row for every setting declared in settings.ts", () => {
+	const exported: unknown[] = Object.values(settings);
+	const declared = exported.filter(
+		(it): it is StoredSetting<unknown> =>
+			typeof it === "object" && it !== null && "key" in it,
+	);
+
+	expect(CASES.map((it) => it.setting.key).sort()).toEqual(
+		declared.map((it) => it.key).sort(),
+	);
+});
 
 /**
  * History has no reading in `<head>`, so there is nothing to agree with; what
