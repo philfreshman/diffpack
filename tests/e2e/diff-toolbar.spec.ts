@@ -270,6 +270,27 @@ test("puts the old file beside the new one, and remembers that it was asked", as
 	).toBe("false");
 });
 
+test("counts the same differences however the file is shown", async ({
+	page,
+}) => {
+	await open(page, LODASH);
+	const count = page.getByTestId("difference-count");
+	const folded = await count.innerText();
+
+	// The count is where the arrows stop, taken from the rows on screen.
+	// Opening every fold and setting the file out in two columns both move
+	// each difference to another row, without splitting one or joining two.
+	await toolbar(page).getByRole("button", { name: "Expand all" }).click();
+	await expect(page.getByTestId("fold")).toHaveCount(0);
+	await expect(count).toHaveText(folded);
+
+	await toolbar(page)
+		.getByRole("button", { name: "Switch to split view" })
+		.click();
+	await expect(splitRows(page).first()).toBeVisible();
+	await expect(count).toHaveText(folded);
+});
+
 const themeLink = (page: Page) => page.locator("link#highlight-theme");
 
 /** The themes, a fold in from the gear. */
