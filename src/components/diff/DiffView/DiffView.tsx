@@ -1,36 +1,20 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { CSSProperties, Ref } from "react";
+import type { CSSProperties } from "react";
 import { useImperativeHandle, useRef } from "react";
 import { CollapsedRow } from "#/components/diff/CollapsedRow/CollapsedRow.tsx";
 import { DiffRow } from "#/components/diff/DiffRow/DiffRow.tsx";
 import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
 import { SplitDiffRow } from "#/components/diff/SplitDiffRow/SplitDiffRow.tsx";
-import type { Expander } from "#/lib/diff/computeVisibility.ts";
+import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import { gutterChars } from "#/lib/diff/gutter.ts";
 import type { HighlightAppearance } from "#/lib/diff/highlightThemes.ts";
-import type { FileView } from "#/lib/diff/viewMemory.ts";
-import type { FileDiff } from "#/lib/worker/protocol.ts";
 import styles from "./DiffView.module.css";
 import { useCloseOnEscape } from "./useCloseOnEscape.ts";
-import { useDiffModel } from "./useDiffModel.ts";
 import { useScrollMemory } from "./useScrollMemory.ts";
 
-/** What the toolbar can ask of the viewer once it is on screen. */
-export interface DiffViewHandle {
-	/** Scroll to the next difference down (`1`) or up (`-1`). */
-	stepDifference(direction: 1 | -1): void;
-}
-
 export interface DiffViewProps {
-	path: string;
-	file: FileDiff;
-	view: FileView;
-	/** The old file beside the new one, rather than one after the other. */
-	split: boolean;
-	/** A fold opened: the expander carries the lines it offered. */
-	onReveal(expander: Expander): void;
-	/** Where the file was left, on the way out. */
-	onScrolled(scrollTop: number): void;
+	/** The file on screen: the rows to draw, and what can be done to them. */
+	file: FileModelControls;
 	/** Escape: back to the comparison, with no file open. */
 	onClose(): void;
 	/**
@@ -38,8 +22,6 @@ export interface DiffViewProps {
 	 * until it arrives.
 	 */
 	pending?: boolean;
-	/** How the toolbar's difference arrows reach the scroller. */
-	ref?: Ref<DiffViewHandle>;
 	/**
 	 * The ground the syntax theme paints on, or `null` before it has been read.
 	 * Everything the viewer colours itself follows this rather than the page
@@ -57,25 +39,13 @@ const ROW_HEIGHT = 24;
 /**
  * The file, rendered.
  *
- * Everything it draws comes from the pure model — the lines, the folds and the
- * gutter width are all computed before a row exists, in `useDiffModel` — so
- * this component is only ever about putting rows on screen and keeping the
- * scroll where the reader left it.
+ * Everything it draws comes from the file model — the lines, the folds and
+ * the differences among them are all worked out before a row exists, in
+ * `useFileModel` — so this component is only ever about putting rows on
+ * screen, measuring them and keeping the scroll where the reader left it.
  */
-export function DiffView({
-	path,
-	file,
-	view,
-	split,
-	onReveal,
-	onScrolled,
-	onClose,
-	pending,
-	ref,
-	syntax,
-}: DiffViewProps) {
-	const model = useDiffModel(path, file, view, split);
-	const { lines, language, rows } = model;
+export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
+	const { path, lines, language, rows } = file;
 
 	const scroller = useRef<HTMLDivElement>(null);
 	const virtualizer = useVirtualizer({
@@ -89,7 +59,7 @@ export function DiffView({
 		// — it is also what decides which rows to draw first, so restoring the
 		// position by hand afterwards would draw the top of the file and then
 		// jump.
-		initialOffset: view.scrollTop,
+		initialOffset: file.scrollTop,
 	});
 
 	// How tall the file is — and, as a side effect of asking, the virtualiser's
@@ -98,32 +68,27 @@ export function DiffView({
 	const height = virtualizer.getTotalSize();
 
 	// Stepping through the differences is the toolbar's button and the viewer's
-	// scroller at once, so it is exposed rather than lifted: the offsets it
-	// steps by are the virtualiser's, and they exist nowhere else.
+	// scroller at once, so the scroller is exposed rather than lifted: where a
+	// row sits is the virtualiser's to say, and it exists nowhere else. Which
+	// row to go to is the model's; this only says where the reader is and goes
+	// where it is told.
 	useImperativeHandle(
-		ref,
+		file.viewport,
 		() => ({
-			stepDifference(direction) {
-				const element = scroller.current;
-				if (!element) return;
-
-				// Where the reader is, as a row: the row at the top of the
-				// viewport, so "next" is the next difference they have not
-				// reached rather than the one already under their eyes.
-				const here =
-					virtualizer.getVirtualItemForOffset(element.scrollTop)?.index ?? 0;
-				const next = model.nextDifference(here, direction);
-				if (next === undefined) return;
-
-				virtualizer.scrollToIndex(next, { align: "start" });
+			topRow() {
+				const top = scroller.current?.scrollTop ?? 0;
+				return virtualizer.getVirtualItemForOffset(top)?.index ?? 0;
+			},
+			scrollToRow(index) {
+				virtualizer.scrollToIndex(index, { align: "start" });
 			},
 		}),
-		[virtualizer, model],
+		[virtualizer],
 	);
 
 	// The scroll position is the file's, not the viewer's: the virtualiser
 	// starts at it above, and it is handed back on the way out.
-	const at = useScrollMemory(view.scrollTop, onScrolled);
+	const at = useScrollMemory(file.scrollTop, file.rememberScroll);
 	useCloseOnEscape(onClose);
 
 	return (
@@ -198,7 +163,7 @@ export function DiffView({
 								<CollapsedRow
 									fold={row}
 									key={item.key}
-									onReveal={onReveal}
+									onReveal={file.reveal}
 									{...placement}
 								/>
 							);
@@ -207,7 +172,7 @@ export function DiffView({
 				</table>
 			</div>
 			<DiffScrollbar
-				file={model}
+				file={file}
 				scroller={scroller}
 				spans={virtualizer.measurementsCache}
 			/>

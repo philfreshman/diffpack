@@ -2,27 +2,6 @@ import type { DiffRow } from "#/lib/diff/computeVisibility.ts";
 import type { SplitRow } from "#/lib/diff/pairSplitRows.ts";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 
-/**
- * What the toolbar counts and what its arrows step through: a *difference* is
- * one run of touched lines, not one touched line.
- *
- * A removal and the addition that replaced it are read as a single edit — they
- * are one row apart in the unified view and opposite each other in the split
- * one — so a run ends only where the file goes back to being unchanged.
- */
-export function countDifferences(lines: readonly DiffLine[]): number {
-	let count = 0;
-	let inRun = false;
-
-	for (const line of lines) {
-		const changed = line.type !== "unchanged";
-		if (changed && !inRun) count++;
-		inRun = changed;
-	}
-
-	return count;
-}
-
 /** A row of either layout: both are read for changes the same way. */
 type LaidOutRow = DiffRow | SplitRow;
 

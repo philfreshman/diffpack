@@ -1,15 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { countDifferences, rowChange } from "#/lib/diff/changes.ts";
+import { rowChange } from "#/lib/diff/changes.ts";
 import type { DiffRow } from "#/lib/diff/computeVisibility.ts";
 import type { SplitRow } from "#/lib/diff/pairSplitRows.ts";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 
 function line(type: DiffLine["type"]): DiffLine {
 	return { type, content: "", oldNumber: null, newNumber: null };
-}
-
-function lines(types: DiffLine["type"][]): DiffLine[] {
-	return types.map(line);
 }
 
 function unified(types: DiffLine["type"][]): DiffRow[] {
@@ -27,38 +23,6 @@ const fold: DiffRow = {
 	count: 10,
 	expanders: [],
 };
-
-describe("countDifferences", () => {
-	test("counts a run of touched lines once", () => {
-		// Three lines replaced by two is one edit, not five.
-		expect(
-			countDifferences(
-				lines([
-					"unchanged",
-					"removed",
-					"removed",
-					"removed",
-					"added",
-					"added",
-					"unchanged",
-				]),
-			),
-		).toBe(1);
-	});
-
-	test("counts each run the unchanged lines separate", () => {
-		expect(
-			countDifferences(
-				lines(["added", "unchanged", "removed", "unchanged", "added"]),
-			),
-		).toBe(3);
-	});
-
-	test("a file with nothing touched has no differences", () => {
-		expect(countDifferences(lines(["unchanged", "unchanged"]))).toBe(0);
-		expect(countDifferences([])).toBe(0);
-	});
-});
 
 describe("rowChange", () => {
 	const side = (type: DiffLine["type"]) => ({ index: 0, line: line(type) });

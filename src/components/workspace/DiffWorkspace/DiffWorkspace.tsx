@@ -1,24 +1,20 @@
 import { useNavigate } from "@tanstack/react-router";
-import type { Ref } from "react";
-import { useMemo, useRef, useState } from "react";
 import { DiffToolbar } from "#/components/diff/DiffToolbar/DiffToolbar.tsx";
-import type { DiffViewHandle } from "#/components/diff/DiffView/DiffView.tsx";
 import { DiffView } from "#/components/diff/DiffView/DiffView.tsx";
-import type { DiffViewControls } from "#/components/diff/useDiffView.ts";
-import { useDiffView } from "#/components/diff/useDiffView.ts";
+import {
+	type FileModelControls,
+	useFileModel,
+} from "#/components/diff/useFileModel.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { useHighlightTheme } from "#/components/diff/useHighlightTheme.ts";
 import { useSetting } from "#/components/storage/useSetting.ts";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
-import { countDifferences } from "#/lib/diff/changes.ts";
-import { parseUnifiedDiff } from "#/lib/diff/parseUnifiedDiff.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
-import { type ShownFile, shownFile } from "#/lib/session/shownFile.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
-import { IGNORE_WHITESPACE } from "#/lib/storage/settings.ts";
+import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
@@ -34,10 +30,10 @@ import styles from "./DiffWorkspace.module.css";
  * stand from the first paint, empty and stood down, so that choosing a package
  * fills a layout the reader is already looking at rather than replacing one.
  *
- * Opening a file is a URL write like any other navigation, and how much of a
- * file is open lives here rather than in the viewer — the viewer is mounted
- * per file, and that is exactly what has to survive clicking through the tree
- * and back.
+ * Opening a file is a URL write like any other navigation. The file on screen
+ * is one model, held here rather than in the viewer: the toolbar reads it too,
+ * and the viewer is mounted per file while how much of each file is open has
+ * to survive clicking through the tree and back.
  *
  * What each of the two panels shows while the comparison is still arriving is
  * that panel's own business, and is answered below rather than here: this
@@ -71,23 +67,14 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 		(entry) => entry.path === session.file?.path,
 	);
 
-	// The file on screen, which is not always the file last asked for — see
-	// `shownFile`. It is state adjusted during render rather than in an effect,
-	// which would show the empty pane for a frame first.
-	const [shown, setShown] = useState<ShownFile | null>(null);
-	const next = shownFile(shown, session.file);
-	if (next?.diff !== shown?.diff) setShown(next);
-
-	const viewer = useDiffView(session.key, shown?.path ?? "");
-	// Parsed here as well as in the viewer so the count stands whatever the file
-	// is doing: folding and split view move differences between rows, but they
-	// do not change how many the file has. It counts what is on screen, so it
-	// changes when the blur clears rather than a moment before it.
-	const differences = useMemo(
-		() => (shown ? countDifferences(parseUnifiedDiff(shown.diff)) : 0),
-		[shown],
-	);
-	const view = useRef<DiffViewHandle>(null);
+	// Which layout a diff is read in is a habit, not a decision to make again
+	// per file: the toolbar stores it as it flips it, and the model lays the
+	// file's rows out by it.
+	const split = useSetting(SPLIT_VIEW);
+	// The file on screen, as the one model the toolbar and the viewer both
+	// read. It is what is on screen rather than what was last asked for, so
+	// the count changes when the blur clears rather than a moment before it.
+	const shown = useFileModel(session.key, session.file, split.value);
 
 	// Opening a file is a URL write like any other navigation; the session
 	// follows the address, never the click.
@@ -151,14 +138,9 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 							fileCount={changed.length}
 							onStepFile={stepFile}
 							onClose={closeFile}
-							differences={differences}
-							onStepDifference={(direction) =>
-								view.current?.stepDifference(direction)
-							}
-							expandAll={viewer.view.expandAll}
-							onExpandAllChange={viewer.setExpandAll}
-							split={viewer.split}
-							onSplitChange={viewer.setSplit}
+							file={shown}
+							split={split.value}
+							onSplitChange={split.set}
 							ignoreWhitespace={whitespace.value}
 							onIgnoreWhitespaceChange={whitespace.set}
 							highlight={highlight}
@@ -167,10 +149,8 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 							file={session.file}
 							highlight={highlight}
 							onClose={closeFile}
-							ref={view}
 							sessionStatus={session.status}
 							shown={shown}
-							viewer={viewer}
 						/>
 					</section>
 				</main>
@@ -212,11 +192,8 @@ interface FilePaneProps {
 	/** The file the URL names, or `null` when it names none. */
 	file: OpenFile | null;
 	/** The file actually on screen, which the blur keeps a step behind. */
-	shown: ShownFile | null;
-	viewer: DiffViewControls;
+	shown: FileModelControls | null;
 	onClose(): void;
-	/** How the toolbar's difference arrows reach the viewer's scroller. */
-	ref: Ref<DiffViewHandle>;
 	/** Which theme the code is coloured with, and on what ground. */
 	highlight: HighlightThemeControls;
 }
@@ -229,9 +206,7 @@ function FilePane({
 	sessionStatus,
 	file,
 	shown,
-	viewer,
 	onClose,
-	ref,
 	highlight,
 }: FilePaneProps) {
 	return (
@@ -253,17 +228,11 @@ function FilePane({
 				// Keyed by path: a new file is a new view, which is what makes
 				// restoring its scroll a plain mount effect.
 				<DiffView
-					file={shown.diff}
+					file={shown}
 					key={shown.path}
 					onClose={onClose}
-					onReveal={viewer.reveal}
-					onScrolled={viewer.rememberScroll}
-					path={shown.path}
 					pending={file?.status === "loading"}
-					ref={ref}
-					split={viewer.split}
 					syntax={highlight.appearance}
-					view={viewer.view}
 				/>
 			)}
 		</>
