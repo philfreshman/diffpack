@@ -327,6 +327,25 @@ describe("ignoring whitespace", () => {
 
 		expect(stub.filesAsked[0]).toEqual(["index.js", undefined, true]);
 	});
+
+	test("changed mid-read, the old answer's reply never lands", async () => {
+		// The rebuilt tree has the same paths, so the same file is read again.
+		// The first reply, arriving last, answers the question no longer asked.
+		const { stub, session } = await readySession();
+		session.follow({ ...SLUG, file: "index.js" });
+		session.answerWhitespace(true);
+		take(stub.trees, 1).resolve(TREE);
+		await settled();
+
+		take(stub.fileReplies, 1).resolve({ data: "ignoring", isDiff: true });
+		take(stub.fileReplies, 0).resolve({ data: "exact", isDiff: true });
+		await settled();
+
+		expect(session.store.state.file).toMatchObject({
+			path: "index.js",
+			diff: { data: "ignoring", isDiff: true },
+		});
+	});
 });
 
 describe("the file the URL names", () => {
