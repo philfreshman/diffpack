@@ -37,8 +37,10 @@ async function ready(page: Page) {
 const MADE_UP = "diffpack-made-up";
 
 const MADE_UP_FILES: Record<string, Record<string, string>> = {
-	// Loose at the root, beside a folder there is to open by hand.
-	"1.0.0": { "README.md": "one\n", "lib/index.js": "one\n" },
+	"0.9.0": { "README.md": "one\n", "lib/index.js": "let one;\n" },
+	// Loose at the root, beside a folder there is to open by hand, and changed
+	// from 0.9.0 in nothing but whitespace.
+	"1.0.0": { "README.md": "one\n", "lib/index.js": "let  one;\n" },
 	// Everything under `src/`, and nothing beside it.
 	"2.0.0": { "src/index.js": "two\n" },
 	"3.0.0": { "src/index.js": "three\n" },
@@ -236,6 +238,33 @@ test("a new comparison starts with no folders chosen, and opens its only folder"
 	await expect(row(page, "index.js")).toBeVisible();
 	await expect(row(page, "src")).toHaveAttribute("aria-expanded", "true");
 	await expect(lib).toHaveCount(0);
+});
+
+test("the same comparison keeps its folders, with another file open or whitespace ignored", async ({
+	page,
+}) => {
+	await serveMadeUpPackage(page);
+	// Showing everything, so the file is still there once it counts as
+	// unchanged.
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "false");
+	}, ONLY_MODIFIED.key);
+	await page.goto(`/npm/${MADE_UP}/0.9.0/1.0.0`);
+	await ready(page);
+	const lib = row(page, "lib");
+	const index = row(page, "index.js");
+	await lib.click();
+
+	await index.click();
+	await expect(page).toHaveURL(`/npm/${MADE_UP}/0.9.0/1.0.0/lib/index.js`);
+	await expect(lib).toHaveAttribute("aria-expanded", "true");
+
+	// The tree is built again, and the file that changed only in whitespace
+	// comes back unchanged: the same two versions, asked another way.
+	await page.getByRole("button", { name: "Settings" }).click();
+	await page.getByRole("button", { name: "Ignore whitespaces" }).click();
+	await expect(index).toHaveAttribute("data-status", "unchanged", ENGINE);
+	await expect(lib).toHaveAttribute("aria-expanded", "true");
 });
 
 test("shows at a glance which rows open and which are files", async ({
