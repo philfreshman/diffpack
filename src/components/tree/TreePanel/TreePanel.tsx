@@ -5,7 +5,7 @@ import { FileTree } from "#/components/tree/FileTree/FileTree.tsx";
 import { TreeFilter } from "#/components/tree/TreeFilter/TreeFilter.tsx";
 import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
 import { ONLY_MODIFIED, TREE_WIDTH } from "#/lib/storage/settings.ts";
-import { folderReducer, NO_FOLDERS_CHOSEN } from "#/lib/tree/folders.ts";
+import { folderReducer, foldersFor } from "#/lib/tree/folders.ts";
 import { sidebar } from "#/lib/tree/sidebar.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
@@ -14,6 +14,11 @@ import { usePanelResize } from "./usePanelResize.ts";
 
 export interface TreePanelProps {
 	tree: DiffFileEntry | null;
+	/**
+	 * Which comparison the tree is of. A new one starts with no folders chosen
+	 * by hand; the same one rebuilt, or with another file open, keeps them.
+	 */
+	comparison: string;
 	selectedPath: string;
 	onOpenFile(path: string): void;
 	/** What stands over the panel: where a dashboard keeps its team switcher. */
@@ -33,6 +38,7 @@ export interface TreePanelProps {
  */
 export function TreePanel({
 	tree,
+	comparison,
 	selectedPath,
 	onOpenFile,
 	header,
@@ -42,9 +48,15 @@ export function TreePanel({
 	const { value: onlyModified, set: setOnlyModified } =
 		useSetting(ONLY_MODIFIED);
 
-	// Which folders were opened or closed by hand. What each change does to
-	// them is `folderReducer`'s to say; the panel only says what happened.
-	const [folders, dispatch] = useReducer(folderReducer, NO_FOLDERS_CHOSEN);
+	// Which folders were opened or closed by hand, in which comparison. What
+	// each change does to them is `folderReducer`'s to say; the panel only
+	// says what happened.
+	const [folders, dispatch] = useReducer(folderReducer, comparison, foldersFor);
+	// Starting over for a new comparison is an adjustment to a prop, made
+	// while rendering rather than in an effect, which would render once more
+	// with the last comparison's folders first.
+	if (folders.comparison !== comparison)
+		dispatch({ kind: "reset", comparison });
 	const { expandedKeys, collapsedKeys } = folders;
 
 	const rows = useMemo(

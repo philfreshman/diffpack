@@ -75,6 +75,10 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	// read. It is what is on screen rather than what was last asked for, so
 	// the count changes when the blur clears rather than a moment before it.
 	const shown = useFileModel(session.key, session.file, split.value);
+	// The comparison the URL names, as its address without a file: registry,
+	// package and both versions. Unlike the session's key it holds still while
+	// whitespace is toggled, which rebuilds the same comparison.
+	const comparisonPath = buildPath(adapter, { ...slug, file: "" });
 
 	// Opening a file is a URL write like any other navigation; the session
 	// follows the address, never the click.
@@ -84,7 +88,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 
 	/** Closing a file is the same write with nothing in the file segment. */
 	function closeFile() {
-		navigate({ to: buildPath(adapter, { ...slug, file: "" }) });
+		navigate({ to: comparisonPath });
 	}
 
 	/** The file before or after this one, in the order the tree lists them. */
@@ -107,6 +111,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 		>
 			<TreePanel
 				tree={session.tree}
+				comparison={comparisonPath}
 				selectedPath={slug.file}
 				onOpenFile={openFile}
 				header={<RegistrySwitcher adapter={adapter} />}

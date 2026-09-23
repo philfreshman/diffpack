@@ -3,7 +3,7 @@ import {
 	type FolderAction,
 	type FolderState,
 	folderReducer,
-	NO_FOLDERS_CHOSEN,
+	foldersFor,
 } from "#/lib/tree/folders.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
@@ -19,10 +19,16 @@ const shut = (path: string): FolderAction => ({
 	expanded: false,
 });
 const NARROW: FolderAction = { kind: "narrow" };
+const reset = (comparison: string): FolderAction => ({
+	kind: "reset",
+	comparison,
+});
+
+const EXPRESS = "/npm/express/4.18.2/5.1.0";
 
 /** The folders once each of `actions` has happened, in order. */
 function after(...actions: FolderAction[]): FolderState {
-	return actions.reduce(folderReducer, NO_FOLDERS_CHOSEN);
+	return actions.reduce(folderReducer, foldersFor(EXPRESS));
 }
 
 /** Both sets, spelled out, so an assertion reads as the state it expects. */
@@ -65,6 +71,23 @@ describe("folderReducer", () => {
 		});
 	});
 
+	test("a new comparison starts with nothing chosen", () => {
+		const folders = after(
+			open("lib"),
+			shut("test"),
+			reset("/npm/express/5.1.0/5.2.0"),
+		);
+
+		expect(chosen(folders)).toEqual({ opened: [], shut: [] });
+		expect(folders.comparison).toBe("/npm/express/5.1.0/5.2.0");
+	});
+
+	test("what is chosen stays with the comparison it was chosen in", () => {
+		const folders = after(open("lib"), NARROW, shut("test"));
+
+		expect(folders.comparison).toBe(EXPRESS);
+	});
+
 	test("leaves the state it is handed alone", () => {
 		const before = after(open("lib"));
 
@@ -93,7 +116,8 @@ describe("the folders chosen, as a tree that is one folder deep shows them", () 
 		visibleRows(ONE_FOLDER, {
 			filter: "",
 			onlyModified: false,
-			...folders,
+			expandedKeys: folders.expandedKeys,
+			collapsedKeys: folders.collapsedKeys,
 		}).map((row) => row.entry.path);
 
 	test("with nothing chosen, the only folder opens itself", () => {
@@ -113,5 +137,17 @@ describe("the folders chosen, as a tree that is one folder deep shows them", () 
 
 	test("narrowing lets an only folder shut by hand open itself again", () => {
 		expect(rows(after(shut("src"), NARROW))).toEqual(["src", "src/index.js"]);
+	});
+
+	test("a new comparison opens its only folder, whatever the last one chose", () => {
+		// The last comparison had `lib` to open and its own `src` to shut; this
+		// one is `src` alone, and what was chosen there says nothing about it.
+		const folders = after(
+			open("lib"),
+			shut("src"),
+			reset("/npm/one/2.0.0/3.0.0"),
+		);
+
+		expect(rows(folders)).toEqual(["src", "src/index.js"]);
 	});
 });
