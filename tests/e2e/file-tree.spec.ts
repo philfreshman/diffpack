@@ -273,11 +273,15 @@ test("the panel is resizable, within limits, and stays where it was put", async 
 	await page.mouse.up();
 
 	expect(await width()).toBe(440);
+	await expect(handle).toHaveAttribute("aria-valuenow", "440");
 
 	await page.reload();
 	await ready(page);
 
 	expect(await width()).toBe(440);
+	// The handle announces the width the panel is at, not the default the
+	// server rendered it with.
+	await expect(handle).toHaveAttribute("aria-valuenow", "440");
 });
 
 test("a stored width is applied before the first paint", async ({ page }) => {

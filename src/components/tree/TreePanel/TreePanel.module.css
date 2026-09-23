@@ -35,7 +35,7 @@
 /* Snapping shut: let go below its minimum, the panel finishes closing on its
    own — the box runs down to nothing while the content slides the rest of the
    way out, fading and blurring on from wherever the drag left it.
-   The hook waits `--duration-fast` before marking the panel collapsed. Only
+   The sidebar waits `--duration-fast` before marking the panel collapsed. Only
    the snap is animated: a drag or a keyboard nudge sets the width outright. */
 :global(html[data-tree-snapping]) .panel {
 	width: 0;
