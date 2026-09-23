@@ -1,4 +1,5 @@
 import { Store } from "@tanstack/react-store";
+import type { DiffSlug } from "#/lib/url/slug.ts";
 import { diffClient } from "#/lib/worker/diffWorkerClient.ts";
 import {
 	type Comparison,
@@ -58,34 +59,64 @@ function message(error: unknown): string {
  * any one route match — a version change re-renders the workspace, and the
  * reply to a request made before it must still find its way home.
  *
- * A factory over the client so the store's own behaviour — staleness, error
- * surfacing, prefetch de-duplication — can be tested without a browser; the
- * real engine only runs in a worker (task 1).
+ * It is told two things, each whenever it changes: what the URL says, and the
+ * answer to the whitespace question. They come in no fixed order — the stored
+ * answer is only read once the page has mounted — so what to build, which file
+ * to open and when are all worked out here, from whatever it has been told so
+ * far. A file the URL names before its tree exists is remembered, and opened
+ * once the tree is ready.
+ *
+ * A factory over the client so the store's own behaviour — ordering,
+ * staleness, error surfacing, prefetch de-duplication — can be tested without
+ * a browser; the real engine only runs in a worker (task 1).
  */
 export function createDiffSession(client: DiffClient) {
 	const store = new Store<DiffSessionState>(IDLE);
 	const prefetched = new Set<string>();
-	/** The question the comparison on screen was built from — `openFile` asks
-	 *  the engine the same one, or the file would disagree with its tree. */
-	let ignoreWhitespace = false;
+	/** What the URL says, as last told; `null` until it has said anything. */
+	let address: DiffSlug | null = null;
+	/** Whether whitespace counts; `null` until the stored answer has been read. */
+	let ignoreWhitespace: boolean | null = null;
 
 	/** A reply is worth keeping only while its comparison is still the one asked for. */
 	function isCurrent(key: string): boolean {
 		return store.state.key === key;
 	}
 
-	async function start(request: Comparison): Promise<void> {
-		const key = comparisonKey(request);
-		// Re-entered on every render of the workspace, so asking for the
-		// comparison already on screen has to cost nothing — not two more
-		// archive downloads.
-		if (isCurrent(key)) return;
+	/**
+	 * The comparison to show, or `null` for none. Half a package name, or one
+	 * version, is not a comparison yet — and nor is one whose whitespace
+	 * question has no answer: starting on a guess would build every deep link's
+	 * tree twice over when the stored answer turns out to be the other one.
+	 */
+	function wanted(): Comparison | null {
+		if (!address || ignoreWhitespace === null) return null;
+		const { registry, package: pkg, from, to } = address;
+		if (!pkg || !from || !to) return null;
 
-		ignoreWhitespace = request.ignoreWhitespace;
+		return { registry, pkg, from, to, ignoreWhitespace };
+	}
+
+	/** Brings the store in line with everything the session has been told. */
+	function settle(): void {
+		const comparison = wanted();
+		if (!comparison) {
+			reset();
+			return;
+		}
+
+		// Told again whenever either input changes, so the comparison already on
+		// screen has to cost nothing — not two more archive downloads.
+		if (isCurrent(comparisonKey(comparison))) void openNamedFile(comparison);
+		else void build(comparison);
+	}
+
+	async function build(comparison: Comparison): Promise<void> {
+		const key = comparisonKey(comparison);
 		store.setState(() => ({ ...IDLE, key, status: "loading" }));
 
 		try {
-			const tree = await client.buildTree(request);
+			const tree = await client.buildTree(comparison);
 			if (!isCurrent(key)) return;
 			store.setState((state) => ({ ...state, status: "ready", tree }));
 		} catch (error) {
@@ -95,7 +126,12 @@ export function createDiffSession(client: DiffClient) {
 				status: "error",
 				error: message(error),
 			}));
+			return;
 		}
+
+		// Whichever file the URL names by now, which need not be the one it
+		// named when the build began.
+		await openNamedFile(comparison);
 	}
 
 	/**
@@ -116,23 +152,24 @@ export function createDiffSession(client: DiffClient) {
 	}
 
 	/**
-	 * Opens the file the URL names. Cache-only in the engine, so it is cheap —
-	 * but it can only run once `start` has left an active diff behind, which is
-	 * why the caller waits for `ready`.
+	 * Opens the file the URL names, in the comparison on screen and with the
+	 * same whitespace answer as its tree, or the two would disagree. Cache-only
+	 * in the engine, so it is cheap — but it can only run once `build` has left
+	 * an active diff behind, which is why `build` comes back here when it has.
 	 */
-	async function openFile(path: string): Promise<void> {
+	async function openNamedFile(comparison: Comparison): Promise<void> {
+		const path = address?.file ?? "";
+		const { key, status, tree, file } = store.state;
 		if (!path) {
-			if (store.state.file)
-				store.setState((state) => ({ ...state, file: null }));
+			closeFile();
 			return;
 		}
+		// No tree to find it in yet, or it is already the file open.
+		if (!key || status !== "ready" || file?.path === path) return;
 
-		const key = store.state.key;
-		if (!key || store.state.status !== "ready") return;
-
-		const entry = findFile(store.state.tree, path);
-		const open = (file: OpenFile) =>
-			store.setState((state) => ({ ...state, file }));
+		const entry = findFile(tree, path);
+		const open = (next: OpenFile) =>
+			store.setState((state) => ({ ...state, file: next }));
 
 		if (!entry) {
 			open({
@@ -153,7 +190,7 @@ export function createDiffSession(client: DiffClient) {
 			const diff = await client.getFile(
 				entry.path,
 				entry.oldPath,
-				ignoreWhitespace,
+				comparison.ignoreWhitespace,
 			);
 			if (!stillOpen()) return;
 			open({ path, status: "ready", diff, error: null });
@@ -163,13 +200,36 @@ export function createDiffSession(client: DiffClient) {
 		}
 	}
 
-	/** Back to nothing selected — a URL naming no comparison at all. */
+	/** The URL names no file, so whatever was open closes. */
+	function closeFile(): void {
+		if (store.state.file) store.setState((state) => ({ ...state, file: null }));
+	}
+
+	/** Back to nothing on screen: there is no comparison to build. */
 	function reset(): void {
 		if (store.state.key === null) return;
 		store.setState(() => IDLE);
 	}
 
-	return { store, start, prefetch, openFile, reset };
+	/**
+	 * What the URL says: a comparison, where it names a whole one, and a file
+	 * in it. The file is held until the tree it is in is ready.
+	 */
+	function follow(slug: DiffSlug): void {
+		address = slug;
+		settle();
+	}
+
+	/**
+	 * The answer to the whitespace question: once the stored one has been read,
+	 * and again whenever it changes. Nothing is built before it.
+	 */
+	function answerWhitespace(ignore: boolean): void {
+		ignoreWhitespace = ignore;
+		settle();
+	}
+
+	return { store, follow, answerWhitespace, prefetch };
 }
 
 /**
