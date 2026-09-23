@@ -46,6 +46,12 @@ async function handle(request: WorkerRequest): Promise<unknown> {
 	}
 }
 
+/**
+ * Each message is handled as it arrives, so several can be in flight at once.
+ * The engine holds one active diff, which a build replaces when it finishes;
+ * keeping builds and reads from overlapping is the client's job, since it is
+ * the side that knows which comparison each read is for.
+ */
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
 	const request = event.data;
 	try {
