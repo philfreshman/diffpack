@@ -119,17 +119,21 @@ export function createDiffClient(
 			return send<DiffFileEntry>({ type: "build-tree", ...comparison });
 		},
 
-		/** Reads one file's diff out of the cache populated by `buildTree`. */
+		/**
+		 * Reads one file's diff out of `comparison`, which `buildTree` must have
+		 * built. The whitespace answer is the comparison's own, so the file and
+		 * its tree cannot disagree about it.
+		 */
 		getFile(
+			comparison: Comparison,
 			path: string,
 			oldPath: string | undefined,
-			ignoreWhitespace: boolean,
 		): Promise<FileDiff> {
 			return send<FileDiff>({
 				type: "get-file",
 				path,
 				oldPath,
-				ignoreWhitespace,
+				ignoreWhitespace: comparison.ignoreWhitespace,
 			});
 		},
 

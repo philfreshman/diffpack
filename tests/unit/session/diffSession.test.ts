@@ -61,7 +61,7 @@ function deferred<T>() {
 function stubClient() {
 	const built: Comparison[] = [];
 	const trees: Array<ReturnType<typeof deferred<DiffFileEntry>>> = [];
-	const filesAsked: Array<[string, string | undefined, boolean]> = [];
+	const filesAsked: Array<[Comparison, string, string | undefined]> = [];
 	const fileReplies: Array<ReturnType<typeof deferred<FileDiff>>> = [];
 	const prefetched: DiffRequest[] = [];
 	let prefetchFails = false;
@@ -82,8 +82,12 @@ function stubClient() {
 				trees.push(next);
 				return next.promise;
 			},
-			getFile(path: string, oldPath: string | undefined, ignore: boolean) {
-				filesAsked.push([path, oldPath, ignore]);
+			getFile(
+				comparison: Comparison,
+				path: string,
+				oldPath: string | undefined,
+			) {
+				filesAsked.push([comparison, path, oldPath]);
 				const next = deferred<FileDiff>();
 				fileReplies.push(next);
 				return next.promise;
@@ -231,7 +235,7 @@ describe.each(ORDERS)("told %s", (_, tell) => {
 		take(stub.trees, 0).resolve(TREE);
 		await settled();
 
-		expect(stub.filesAsked).toEqual([["index.js", undefined, false]]);
+		expect(stub.filesAsked).toEqual([[COMPARISON, "index.js", undefined]]);
 		expect(session.store.state.file).toMatchObject({
 			path: "index.js",
 			status: "loading",
@@ -266,7 +270,7 @@ describe.each(ORDERS)("told %s", (_, tell) => {
 		session.follow({ ...SLUG, file: "lib/router.js" });
 
 		expect(stub.built).toHaveLength(1);
-		expect(stub.filesAsked.map(([path]) => path)).toEqual([
+		expect(stub.filesAsked.map(([, path]) => path)).toEqual([
 			"index.js",
 			"lib/router.js",
 		]);
@@ -325,7 +329,11 @@ describe("ignoring whitespace", () => {
 		take(stub.trees, 0).resolve(TREE);
 		await settled();
 
-		expect(stub.filesAsked[0]).toEqual(["index.js", undefined, true]);
+		expect(stub.filesAsked[0]).toEqual([
+			{ ...COMPARISON, ignoreWhitespace: true },
+			"index.js",
+			undefined,
+		]);
 	});
 
 	test("changed mid-read, the old answer's reply never lands", async () => {
@@ -373,9 +381,9 @@ describe("the file the URL names", () => {
 		session.follow({ ...SLUG, file: "lib/router.js" });
 
 		expect(stub.filesAsked[0]).toEqual([
+			COMPARISON,
 			"lib/router.js",
 			"lib/routes.js",
-			false,
 		]);
 	});
 
