@@ -1,15 +1,11 @@
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useSetting } from "#/components/storage/useSetting.ts";
 import { FileTree } from "#/components/tree/FileTree/FileTree.tsx";
 import { TreeFilter } from "#/components/tree/TreeFilter/TreeFilter.tsx";
 import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
-import {
-	MAX_TREE_WIDTH,
-	MIN_TREE_WIDTH,
-	readOnlyModified,
-	toggleTreeCollapsed,
-	writeOnlyModified,
-} from "#/lib/tree/prefs.ts";
+import { ONLY_MODIFIED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import { toggleTreeCollapsed } from "#/lib/tree/prefs.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./TreePanel.module.css";
@@ -44,11 +40,8 @@ export function TreePanel({
 	footer,
 }: TreePanelProps) {
 	const [filter, setFilter] = useState("");
-	// A stored preference cannot be read during render — the server has no
-	// `localStorage`, and reading it in the first client render is the same
-	// mismatch. The default is what SSR shows; the effect corrects it.
-	const [onlyModified, setOnlyModified] = useState(true);
-	useEffect(() => setOnlyModified(readOnlyModified()), []);
+	const { value: onlyModified, set: setOnlyModified } =
+		useSetting(ONLY_MODIFIED);
 
 	const [expandedKeys, setExpandedKeys] = useState<ReadonlySet<string>>(
 		() => new Set(),
@@ -94,12 +87,7 @@ export function TreePanel({
 						filter={filter}
 						onFilterChange={(next) => narrow(() => setFilter(next))}
 						onlyModified={onlyModified}
-						onOnlyModifiedChange={(next) =>
-							narrow(() => {
-								setOnlyModified(next);
-								writeOnlyModified(next);
-							})
-						}
+						onOnlyModifiedChange={(next) => narrow(() => setOnlyModified(next))}
 					/>
 				</div>
 				<FileTree
@@ -121,8 +109,8 @@ export function TreePanel({
 					aria-label="Resize file tree"
 					aria-orientation="vertical"
 					aria-valuenow={width}
-					aria-valuemin={MIN_TREE_WIDTH}
-					aria-valuemax={MAX_TREE_WIDTH}
+					aria-valuemin={TREE_WIDTH.min}
+					aria-valuemax={TREE_WIDTH.max}
 					tabIndex={0}
 					onPointerDown={startResize}
 					onKeyDown={nudge}

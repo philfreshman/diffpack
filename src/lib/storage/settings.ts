@@ -1,4 +1,4 @@
-import { flag } from "./storedSetting.ts";
+import { clampedInteger, flag } from "./storedSetting.ts";
 
 /**
  * Every preference diffpack keeps between visits, each declared once: the key
@@ -25,4 +25,33 @@ export const SPLIT_VIEW = flag({
 export const IGNORE_WHITESPACE = flag({
 	key: "ignore-whitespace-preference",
 	fallback: false,
+});
+
+/**
+ * The tree panel's width in pixels: wide enough to read a path, narrow enough
+ * to leave the diff room. These are the panel's bounds as well as the stored
+ * value's — a stored width can come from an older build, a smaller screen or a
+ * hand-edited key, and the panel has to stay usable whichever it was.
+ */
+export const TREE_WIDTH = clampedInteger({
+	key: "tree_panel_width",
+	min: 220,
+	max: 640,
+	fallback: 320,
+});
+
+/** Open unless the visitor shut it. */
+export const TREE_COLLAPSED = flag({
+	key: "tree_panel_collapsed",
+	fallback: false,
+});
+
+/**
+ * On unless the visitor has turned it off — a comparison is about what
+ * changed, and the unchanged files are context. So only the literal `"false"`
+ * turns it off.
+ */
+export const ONLY_MODIFIED = flag({
+	key: "tree_show_only_modified",
+	fallback: true,
 });

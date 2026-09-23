@@ -1,12 +1,11 @@
-import { type RefObject, useEffect, useState } from "react";
+import type { RefObject } from "react";
+import { useSetting } from "#/components/storage/useSetting.ts";
+import { TREE_WIDTH } from "#/lib/storage/settings.ts";
 import { dragFrame } from "#/lib/tree/gesture.ts";
 import {
 	applyTreeWidth,
 	clampTreeWidth,
-	DEFAULT_TREE_WIDTH,
-	readTreeWidth,
 	toggleTreeCollapsed,
-	writeTreeWidth,
 } from "#/lib/tree/prefs.ts";
 
 /** On `<html>` for the length of a drag: the stylesheet stands the edge's button down. */
@@ -27,20 +26,19 @@ const SNAP_MS = 150;
  *
  * The width is a custom property on `<html>`, written before paint and
  * rewritten by the drag; keeping it out of React state is what stops the panel
- * flashing at its default width on every load. The state copy exists only so
- * the handle can announce where it is.
+ * flashing at its default width on every load. The stored setting's state
+ * exists only so the handle can announce where it is.
  */
 export function usePanelResize(
 	panel: RefObject<HTMLElement | null>,
 	content: RefObject<HTMLElement | null>,
 ) {
-	const [width, setWidth] = useState(DEFAULT_TREE_WIDTH);
-	useEffect(() => setWidth(readTreeWidth()), []);
+	const { value: width, set: storeWidth } = useSetting(TREE_WIDTH);
 
+	/** Sets the panel's width outright, within bounds, and says what it was. */
 	function resizeTo(next: number) {
 		const clamped = clampTreeWidth(next);
 		applyTreeWidth(document, clamped);
-		setWidth(clamped);
 
 		return clamped;
 	}
@@ -78,7 +76,7 @@ export function usePanelResize(
 				snapShut(startWidth);
 				return;
 			}
-			writeTreeWidth(resizeTo(last));
+			storeWidth(resizeTo(last));
 		}
 
 		window.addEventListener("pointermove", onMove);
@@ -112,7 +110,7 @@ export function usePanelResize(
 			event.key === "ArrowRight" ? 16 : event.key === "ArrowLeft" ? -16 : 0;
 		if (!step) return;
 		event.preventDefault();
-		writeTreeWidth(resizeTo(width + step));
+		storeWidth(resizeTo(width + step));
 	}
 
 	return { width, startResize, nudge };

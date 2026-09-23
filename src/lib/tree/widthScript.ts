@@ -1,24 +1,16 @@
-import {
-	DEFAULT_TREE_WIDTH,
-	MAX_TREE_WIDTH,
-	MIN_TREE_WIDTH,
-	TREE_COLLAPSED_ATTRIBUTE,
-	TREE_COLLAPSED_KEY,
-	TREE_WIDTH_KEY,
-	TREE_WIDTH_PROPERTY,
-} from "./prefs.ts";
+import { TREE_COLLAPSED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import { readInHead } from "#/lib/storage/storedSetting.ts";
+import { TREE_COLLAPSED_ATTRIBUTE, TREE_WIDTH_PROPERTY } from "./prefs.ts";
 
 /**
  * Runs in `<head>` before the first paint, so the tree panel is already the
  * width the visitor left it at, and already shut if they shut it. Like
  * `THEME_SCRIPT`, it cannot import the module it belongs to — nothing is loaded
- * yet — so the rules are restated inline over values interpolated from
- * `prefs.ts`.
+ * yet — so both stored values are read by the source `readInHead` writes from
+ * their declarations, and only where each one lands on `<html>` is spelled out
+ * here.
  */
 export const TREE_WIDTH_SCRIPT = `(()=>{try{
-var w=parseInt(localStorage.getItem(${JSON.stringify(TREE_WIDTH_KEY)}),10);
-if(isNaN(w))w=${DEFAULT_TREE_WIDTH};
-w=Math.min(${MAX_TREE_WIDTH},Math.max(${MIN_TREE_WIDTH},w));
-document.documentElement.style.setProperty(${JSON.stringify(TREE_WIDTH_PROPERTY)},w+"px");
-if(localStorage.getItem(${JSON.stringify(TREE_COLLAPSED_KEY)})==="true")document.documentElement.setAttribute(${JSON.stringify(TREE_COLLAPSED_ATTRIBUTE)},"");
+document.documentElement.style.setProperty(${JSON.stringify(TREE_WIDTH_PROPERTY)},${readInHead(TREE_WIDTH)}+"px");
+if(${readInHead(TREE_COLLAPSED)})document.documentElement.setAttribute(${JSON.stringify(TREE_COLLAPSED_ATTRIBUTE)},"");
 }catch(e){}})();`;

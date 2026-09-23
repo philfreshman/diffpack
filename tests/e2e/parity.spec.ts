@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import { HIGHLIGHT_THEME_KEY } from "#/lib/diff/highlightThemes.ts";
 import { historyKey } from "#/lib/storage/searchHistory.ts";
-import { SPLIT_VIEW } from "#/lib/storage/settings.ts";
+import {
+	ONLY_MODIFIED,
+	SPLIT_VIEW,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
 import { THEME_STORAGE_KEY } from "#/lib/theme.ts";
-import { ONLY_MODIFIED_KEY, TREE_WIDTH_KEY } from "#/lib/tree/prefs.ts";
 
 /**
  * Task 15's parity gate. The other specs each prove one feature; this one walks
@@ -102,8 +105,8 @@ const STORED = {
 	[THEME_STORAGE_KEY]: "light",
 	[SPLIT_VIEW.key]: "true",
 	[HIGHLIGHT_THEME_KEY]: "nightfall",
-	[TREE_WIDTH_KEY]: "320",
-	[ONLY_MODIFIED_KEY]: "false",
+	[TREE_WIDTH.key]: "320",
+	[ONLY_MODIFIED.key]: "false",
 	[historyKey("npm")]: JSON.stringify([{ name: "express" }]),
 };
 

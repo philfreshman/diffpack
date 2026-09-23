@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
+import {
+	IGNORE_WHITESPACE,
+	ONLY_MODIFIED,
+	SPLIT_VIEW,
+	TREE_COLLAPSED,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
 import {
 	type HeadSetting,
 	readInHead,
@@ -45,6 +51,51 @@ const CASES: Case[] = [
 		[
 			["1", false],
 			["", false],
+		],
+	),
+	reading(
+		TREE_WIDTH,
+		[
+			["420", 420],
+			["220", 220],
+			["640", 640],
+		],
+		[
+			// Brought within bounds: the panel has to stay readable and leave
+			// the diff room, whatever build or screen stored the width.
+			["40", 220],
+			["2000", 640],
+			["-5", 220],
+			// Read the way `parseInt` reads it, in the head as well.
+			["300px", 300],
+			[" 300", 300],
+			["1e3", 220],
+			["wide please", 320],
+			["", 320],
+		],
+	),
+	reading(
+		TREE_COLLAPSED,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["yes", false],
+			["", false],
+		],
+	),
+	reading(
+		ONLY_MODIFIED,
+		[
+			["false", false],
+			["true", true],
+		],
+		[
+			// The stored sense is inverted: only the literal "false" turns it off.
+			["nonsense", true],
+			["FALSE", true],
+			["", true],
 		],
 	),
 ];

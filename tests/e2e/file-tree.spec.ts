@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { TREE_COLLAPSED_KEY, TREE_WIDTH_KEY } from "#/lib/tree/prefs.ts";
+import { TREE_COLLAPSED, TREE_WIDTH } from "#/lib/storage/settings.ts";
 
 /**
  * express 4.18.2 → 5.1.0: a real, nested, thoroughly changed comparison, which
@@ -285,7 +285,7 @@ test("a stored width is applied before the first paint", async ({ page }) => {
 	// its default and jumps once React hydrates is a visible flash.
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "9999");
-	}, TREE_WIDTH_KEY);
+	}, TREE_WIDTH.key);
 	await page.goto(EXPRESS);
 
 	const applied = await page.evaluate(() =>
@@ -342,7 +342,7 @@ test("the sidebar collapses from its edge, reopens from the header, and stays ho
 	await expect(panel).toBeVisible();
 	await expect(expand).toBeHidden();
 	expect(
-		await page.evaluate((key) => localStorage.getItem(key), TREE_COLLAPSED_KEY),
+		await page.evaluate((key) => localStorage.getItem(key), TREE_COLLAPSED.key),
 	).toBe("false");
 });
 
@@ -351,7 +351,7 @@ test("a collapsed sidebar is applied before the first paint", async ({
 }) => {
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "true");
-	}, TREE_COLLAPSED_KEY);
+	}, TREE_COLLAPSED.key);
 	await page.goto(EXPRESS);
 
 	expect(
@@ -366,7 +366,7 @@ test("F finds: it opens a shut sidebar and lands in the filter", async ({
 }) => {
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "true");
-	}, TREE_COLLAPSED_KEY);
+	}, TREE_COLLAPSED.key);
 	await page.goto(EXPRESS);
 	await ready(page);
 

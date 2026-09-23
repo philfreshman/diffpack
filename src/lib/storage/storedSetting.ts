@@ -52,6 +52,37 @@ export function flag({
 }
 
 /**
+ * A whole number, stored in decimal. One out of bounds is brought within them;
+ * one that is not a number at all is `fallback`.
+ */
+export function clampedInteger({
+	key,
+	min,
+	max,
+	fallback,
+}: {
+	key: string;
+	min: number;
+	max: number;
+	fallback: number;
+}): HeadSetting<number> & { readonly min: number; readonly max: number } {
+	return {
+		key,
+		min,
+		max,
+		fallback,
+		parse(raw) {
+			const parsed = raw === null ? Number.NaN : Number.parseInt(raw, 10);
+			if (Number.isNaN(parsed)) return fallback;
+
+			return Math.min(max, Math.max(min, parsed));
+		},
+		parseSource: `function(raw){var n=parseInt(raw,10);return isNaN(n)?${fallback}:Math.min(${max},Math.max(${min},n))}`,
+		serialize: String,
+	};
+}
+
+/**
  * The store is absent on the server, and a browser in private mode or with
  * site data blocked can throw on any use of it. Neither is a reason to fail a
  * render: a setting that cannot be read is its fallback, and one that cannot
