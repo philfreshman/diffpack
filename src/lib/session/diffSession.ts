@@ -27,7 +27,10 @@ export interface DiffSessionState {
 	status: SessionStatus;
 	tree: DiffFileEntry | null;
 	error: string | null;
-	/** The file the URL names, or `null` when it names none. */
+	/**
+	 * The file the URL names, once its tree is ready to read it from; `null`
+	 * until then, and when the URL names none.
+	 */
 	file: OpenFile | null;
 }
 
