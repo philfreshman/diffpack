@@ -1,17 +1,16 @@
 import type { ReactNode } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useReducer, useRef, useState } from "react";
 import { useSetting } from "#/components/storage/useSetting.ts";
 import { FileTree } from "#/components/tree/FileTree/FileTree.tsx";
 import { TreeFilter } from "#/components/tree/TreeFilter/TreeFilter.tsx";
 import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
 import { ONLY_MODIFIED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import { folderReducer, NO_FOLDERS_CHOSEN } from "#/lib/tree/folders.ts";
 import { sidebar } from "#/lib/tree/sidebar.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./TreePanel.module.css";
 import { usePanelResize } from "./usePanelResize.ts";
-
-const EMPTY: ReadonlySet<string> = new Set();
 
 export interface TreePanelProps {
 	tree: DiffFileEntry | null;
@@ -43,12 +42,10 @@ export function TreePanel({
 	const { value: onlyModified, set: setOnlyModified } =
 		useSetting(ONLY_MODIFIED);
 
-	const [expandedKeys, setExpandedKeys] = useState<ReadonlySet<string>>(
-		() => new Set(),
-	);
-	const [collapsedKeys, setCollapsedKeys] = useState<ReadonlySet<string>>(
-		() => new Set(),
-	);
+	// Which folders were opened or closed by hand. What each change does to
+	// them is `folderReducer`'s to say; the panel only says what happened.
+	const [folders, dispatch] = useReducer(folderReducer, NO_FOLDERS_CHOSEN);
+	const { expandedKeys, collapsedKeys } = folders;
 
 	const rows = useMemo(
 		() =>
@@ -56,19 +53,13 @@ export function TreePanel({
 		[tree, filter, onlyModified, expandedKeys, collapsedKeys],
 	);
 
-	/** Opening or closing a folder is a choice, and it outranks auto-expansion. */
 	function toggleFolder(path: string, expanded: boolean) {
-		setExpandedKeys((keys) => withKey(keys, path, expanded));
-		setCollapsedKeys((keys) => withKey(keys, path, !expanded));
+		dispatch({ kind: "toggle", path, expanded });
 	}
 
-	/**
-	 * Narrowing the tree clears the folders closed by hand: they were closed
-	 * against a fuller tree, and holding them shut would hide the very rows the
-	 * user just asked to see.
-	 */
+	/** The filter and only-modified change what the tree holds. */
 	function narrow(change: () => void) {
-		setCollapsedKeys(EMPTY);
+		dispatch({ kind: "narrow" });
 		change();
 	}
 
@@ -127,16 +118,4 @@ export function TreePanel({
 			</div>
 		</aside>
 	);
-}
-
-function withKey(
-	keys: ReadonlySet<string>,
-	path: string,
-	present: boolean,
-): ReadonlySet<string> {
-	const next = new Set(keys);
-	if (present) next.add(path);
-	else next.delete(path);
-
-	return next;
 }
