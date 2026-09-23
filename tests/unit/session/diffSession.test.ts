@@ -188,6 +188,108 @@ describe("a comparison", () => {
 	});
 });
 
+type Session = ReturnType<typeof createDiffSession>;
+
+/**
+ * The two things a session is told, in each order they can come in. The
+ * stored whitespace answer is read once the page has mounted, and nothing
+ * says whether that lands before or after the URL is first passed on.
+ */
+const ORDERS: Array<[string, (session: Session, slug: DiffSlug) => void]> = [
+	[
+		"the URL first",
+		(session, slug) => {
+			session.follow(slug);
+			session.answerWhitespace(false);
+		},
+	],
+	[
+		"the whitespace answer first",
+		(session, slug) => {
+			session.answerWhitespace(false);
+			session.follow(slug);
+		},
+	],
+];
+
+describe.each(ORDERS)("told %s", (_, tell) => {
+	function told(slug: DiffSlug) {
+		const stub = stubClient();
+		const session = createDiffSession(stub.client);
+		tell(session, slug);
+
+		return { stub, session };
+	}
+
+	test("a file named before the tree is ready opens once it is ready", async () => {
+		const { stub, session } = told({ ...SLUG, file: "index.js" });
+
+		// Nothing to read it out of yet, and nothing for the page to show.
+		expect(stub.filesAsked).toEqual([]);
+		expect(session.store.state.file).toBeNull();
+
+		take(stub.trees, 0).resolve(TREE);
+		await settled();
+
+		expect(stub.filesAsked).toEqual([["index.js", undefined, false]]);
+		expect(session.store.state.file).toMatchObject({
+			path: "index.js",
+			status: "loading",
+		});
+	});
+
+	test("a file from a replaced comparison never opens", async () => {
+		const { stub, session } = told({ ...SLUG, file: "index.js" });
+		// Another pair, naming no file, before the first tree has arrived.
+		session.follow({ ...SLUG, to: "5.2.0" });
+
+		// The replaced tree lands while the new one is still on its way.
+		take(stub.trees, 0).resolve(TREE);
+		await settled();
+		expect(session.store.state.status).toBe("loading");
+
+		// The new tree holds a file of the same name, so only the URL can say
+		// that it was not asked for.
+		take(stub.trees, 1).resolve(TREE);
+		await settled();
+
+		expect(stub.filesAsked).toEqual([]);
+		expect(session.store.state.file).toBeNull();
+	});
+
+	test("changing only the file does not rebuild the tree", async () => {
+		const { stub, session } = told(SLUG);
+		// Once while the tree is on its way, once after it has arrived.
+		session.follow({ ...SLUG, file: "index.js" });
+		take(stub.trees, 0).resolve(TREE);
+		await settled();
+		session.follow({ ...SLUG, file: "lib/router.js" });
+
+		expect(stub.built).toHaveLength(1);
+		expect(stub.filesAsked.map(([path]) => path)).toEqual([
+			"index.js",
+			"lib/router.js",
+		]);
+	});
+});
+
+test("a whitespace answer arriving late starts exactly one build", () => {
+	// A deep link, then a click into a file, all before the stored answer has
+	// been read: not one build on a guess and another on the answer.
+	const stub = stubClient();
+	const session = createDiffSession(stub.client);
+	session.follow(SLUG);
+	session.follow({ ...SLUG, file: "index.js" });
+
+	expect(stub.built).toEqual([]);
+	expect(session.store.state.status).toBe("idle");
+
+	session.answerWhitespace(true);
+
+	expect(stub.built).toEqual([{ ...COMPARISON, ignoreWhitespace: true }]);
+	expect(session.store.state.status).toBe("loading");
+});
+
 describe("ignoring whitespace", () => {
 	test("is a different comparison, so the tree is built again", async () => {
 		// Not a repaint of the tree on screen: which lines differ is the
@@ -297,13 +399,6 @@ describe("the file the URL names", () => {
 			path: "lib/router.js",
 			diff: { data: "second", isDiff: true },
 		});
-	});
-
-	test("is not read before the tree exists", () => {
-		const { stub, session } = toldOf({ ...SLUG, file: "index.js" });
-
-		expect(stub.filesAsked).toHaveLength(0);
-		expect(session.store.state.file).toBeNull();
 	});
 });
 
