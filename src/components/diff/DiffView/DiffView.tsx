@@ -5,7 +5,6 @@ import { CollapsedRow } from "#/components/diff/CollapsedRow/CollapsedRow.tsx";
 import { DiffRow } from "#/components/diff/DiffRow/DiffRow.tsx";
 import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
 import { SplitDiffRow } from "#/components/diff/SplitDiffRow/SplitDiffRow.tsx";
-import { stepDifference as nextDifference } from "#/lib/diff/changes.ts";
 import type { Expander } from "#/lib/diff/computeVisibility.ts";
 import { gutterChars } from "#/lib/diff/gutter.ts";
 import type { HighlightAppearance } from "#/lib/diff/highlightThemes.ts";
@@ -75,12 +74,8 @@ export function DiffView({
 	ref,
 	syntax,
 }: DiffViewProps) {
-	const { lines, language, rows, stops } = useDiffModel(
-		path,
-		file,
-		view,
-		split,
-	);
+	const model = useDiffModel(path, file, view, split);
+	const { lines, language, rows } = model;
 
 	const scroller = useRef<HTMLDivElement>(null);
 	const virtualizer = useVirtualizer({
@@ -98,9 +93,8 @@ export function DiffView({
 	});
 
 	// How tall the file is — and, as a side effect of asking, the virtualiser's
-	// measurements brought up to date. The scrollbar draws its minimap from
-	// those, so they are handed to it rather than to the row model, which is
-	// derived before a virtualiser exists.
+	// measurements brought up to date. The scrollbar places the model's
+	// changes by those, so they are handed to it along with the model.
 	const height = virtualizer.getTotalSize();
 
 	// Stepping through the differences is the toolbar's button and the viewer's
@@ -118,13 +112,13 @@ export function DiffView({
 				// reached rather than the one already under their eyes.
 				const here =
 					virtualizer.getVirtualItemForOffset(element.scrollTop)?.index ?? 0;
-				const next = nextDifference(stops, here, direction);
+				const next = model.nextDifference(here, direction);
 				if (next === undefined) return;
 
 				virtualizer.scrollToIndex(next, { align: "start" });
 			},
 		}),
-		[virtualizer, stops],
+		[virtualizer, model],
 	);
 
 	// The scroll position is the file's, not the viewer's: the virtualiser
@@ -213,7 +207,7 @@ export function DiffView({
 				</table>
 			</div>
 			<DiffScrollbar
-				rows={rows}
+				file={model}
 				scroller={scroller}
 				spans={virtualizer.measurementsCache}
 			/>
