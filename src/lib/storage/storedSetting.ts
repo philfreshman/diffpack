@@ -118,26 +118,40 @@ export function clampedInteger({
 }
 
 /**
+ * Where settings are kept: `localStorage`, unless a caller hands in another —
+ * which a test does, so a module that keeps a setting can be run against a
+ * store it controls, one that refuses included.
+ */
+export type SettingStore = Pick<Storage, "getItem" | "setItem">;
+
+/**
  * The store is absent on the server, and a browser in private mode or with
  * site data blocked can throw on any use of it. Neither is a reason to fail a
  * render: a setting that cannot be read is its fallback, and one that cannot
  * be written still holds for the session wherever it was set.
  */
-function readStored(key: string): string | null {
+function readStored(key: string, store?: SettingStore): string | null {
 	try {
-		return localStorage.getItem(key);
+		return (store ?? localStorage).getItem(key);
 	} catch {
 		return null;
 	}
 }
 
-export function readSetting<T>(setting: StoredSetting<T>): T {
-	return setting.parse(readStored(setting.key));
+export function readSetting<T>(
+	setting: StoredSetting<T>,
+	store?: SettingStore,
+): T {
+	return setting.parse(readStored(setting.key, store));
 }
 
-export function writeSetting<T>(setting: StoredSetting<T>, value: T): void {
+export function writeSetting<T>(
+	setting: StoredSetting<T>,
+	value: T,
+	store?: SettingStore,
+): void {
 	try {
-		localStorage.setItem(setting.key, setting.serialize(value));
+		(store ?? localStorage).setItem(setting.key, setting.serialize(value));
 	} catch {
 		// Not persisted; the page still does what was asked for this session.
 	}
