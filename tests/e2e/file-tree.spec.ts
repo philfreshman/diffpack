@@ -8,8 +8,10 @@ import {
 
 /**
  * express 4.18.2 → 5.1.0: a real, nested, thoroughly changed comparison, which
- * is what the tree exists for. It comes from the real registry — the engine
- * only runs in a worker, so there is nothing to stub.
+ * is what the tree exists for. It comes from the real registry, unstubbed: the
+ * engine only runs in a worker, and real archives are what it has to cope
+ * with. The made-up package below is the one exception, for a shape no real
+ * package has.
  */
 const EXPRESS = "/npm/express/4.18.2/5.1.0";
 
