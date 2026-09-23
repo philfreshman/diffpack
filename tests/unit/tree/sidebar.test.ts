@@ -137,6 +137,17 @@ describe("resizing", () => {
 		expect(sidebar.width()).toBe(TREE_WIDTH.min);
 	});
 
+	test("to a whole pixel, which is what is stored", () => {
+		// Under browser zoom the edge is let go between two pixels.
+		const { sidebar, store, shownWidth } = page();
+
+		sidebar.resize(420.6);
+
+		expect(shownWidth()).toBe("421px");
+		expect(sidebar.width()).toBe(421);
+		expect(store.getItem(TREE_WIDTH.key)).toBe("421");
+	});
+
 	test("starts from the width stored on an earlier visit", () => {
 		const store = memoryStore();
 		store.setItem(TREE_WIDTH.key, "440");

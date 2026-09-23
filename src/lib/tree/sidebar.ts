@@ -101,9 +101,13 @@ export function createSidebar({
 		return () => listeners.delete(listener);
 	}
 
-	/** Sets the width outright, within bounds, and keeps it for the next visit. */
+	/**
+	 * Sets the width outright, within bounds, and keeps it for the next visit.
+	 * Rounded to a whole pixel, which is what the setting stores: under browser
+	 * zoom a drag can be let go between two.
+	 */
 	function resize(next: number): void {
-		chosen = TREE_WIDTH.clamp(next);
+		chosen = TREE_WIDTH.clamp(Math.round(next));
 		showWidth(chosen);
 		writeSetting(TREE_WIDTH, chosen, store);
 		for (const listener of listeners) listener();
