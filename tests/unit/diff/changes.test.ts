@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	countDifferences,
 	differenceRows,
+	rowChange,
 	stepDifference,
 } from "#/lib/diff/changes.ts";
 import type { DiffRow } from "#/lib/diff/computeVisibility.ts";
@@ -102,6 +103,40 @@ describe("differenceRows", () => {
 		// The removal and the addition set against it are one difference seen
 		// twice, which is the whole point of reading a diff this way.
 		expect(differenceRows(rows)).toEqual([1]);
+	});
+});
+
+describe("rowChange", () => {
+	const side = (type: DiffLine["type"]) => ({ index: 0, line: line(type) });
+
+	test("a line is what happened to it, and an untouched one is nothing", () => {
+		expect(unified(["added", "removed", "unchanged"]).map(rowChange)).toEqual([
+			"added",
+			"removed",
+			null,
+		]);
+	});
+
+	test("a fold is never a change: it only ever holds untouched lines", () => {
+		expect(rowChange(fold)).toBeNull();
+	});
+
+	test("a split pair is a change when either side is one", () => {
+		// The arrows and the minimap both ask this, so the pair that counts as a
+		// stop is the pair that gets a band.
+		const pairs: SplitRow[] = [
+			{ kind: "pair", left: side("removed"), right: side("added") },
+			{ kind: "pair", left: side("removed"), right: null },
+			{ kind: "pair", left: null, right: side("added") },
+			{ kind: "pair", left: side("unchanged"), right: side("unchanged") },
+		];
+
+		expect(pairs.map(rowChange)).toEqual([
+			"modified",
+			"removed",
+			"added",
+			null,
+		]);
 	});
 });
 

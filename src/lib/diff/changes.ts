@@ -26,6 +26,34 @@ export function countDifferences(lines: readonly DiffLine[]): number {
 /** A row of either layout: both are navigated the same way. */
 type NavigableRow = DiffRow | SplitRow;
 
+/** What happened to a row: the minimap colours its band by this. */
+export type Change = "added" | "removed" | "modified";
+
+/**
+ * What happened to a row, or `null` when nothing did.
+ *
+ * The one place that says whether a row is a change. The toolbar's arrows stop
+ * at the first row of each run of these and the scrollbar marks them, so two
+ * rules would let the minimap mark a row the arrows walk past.
+ */
+export function rowChange(row: NavigableRow): Change | null {
+	if (row.kind === "collapsed") return null;
+	if (row.kind === "line") return lineChange(row.line);
+
+	// Side by side, a removal and the addition set opposite it are one change
+	// seen twice, and a change with only one side is that side's alone. An
+	// unchanged line is set opposite itself, so neither side is a change.
+	const left = lineChange(row.left?.line);
+	const right = lineChange(row.right?.line);
+	if (left && right) return "modified";
+
+	return left ?? right;
+}
+
+function lineChange(line: DiffLine | undefined): Change | null {
+	return !line || line.type === "unchanged" ? null : line.type;
+}
+
 /**
  * The first row of each difference, in the rows actually on screen.
  *
@@ -38,7 +66,7 @@ export function differenceRows(rows: readonly NavigableRow[]): number[] {
 	let inRun = false;
 
 	rows.forEach((row, index) => {
-		const changed = isChanged(row);
+		const changed = rowChange(row) !== null;
 		if (changed && !inRun) starts.push(index);
 		inRun = changed;
 	});
@@ -64,19 +92,4 @@ export function stepDifference(
 	}
 
 	return undefined;
-}
-
-function isChanged(row: NavigableRow): boolean {
-	if (row.kind === "collapsed") return false;
-	if (row.kind === "line") return row.line.type !== "unchanged";
-
-	// Side by side, a pair is a change when either side is one; an unchanged
-	// line is set opposite itself, so neither side is.
-	const left = row.left?.line.type;
-	const right = row.right?.line.type;
-
-	return (
-		(left ?? "unchanged") !== "unchanged" ||
-		(right ?? "unchanged") !== "unchanged"
-	);
 }
