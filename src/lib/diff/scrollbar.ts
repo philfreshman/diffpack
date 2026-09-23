@@ -1,6 +1,4 @@
-import { type Change, rowChange } from "#/lib/diff/changes.ts";
-import type { DiffRow } from "#/lib/diff/computeVisibility.ts";
-import type { SplitRow } from "#/lib/diff/pairSplitRows.ts";
+import { type Change, type LaidOutRow, rowChange } from "#/lib/diff/changes.ts";
 
 /** What the scrolling element measures, and all the geometry needs from it. */
 export interface Viewport {
@@ -98,9 +96,6 @@ function scrollForThumbTop(
 	return Math.min(Math.max(progress * maxScrollTop, 0), maxScrollTop);
 }
 
-/** A row of either view, as the minimap has to take both. */
-type MarkableRow = DiffRow | SplitRow;
-
 /** A change, as its share of the file: `0` is the top, `1` the bottom. */
 export interface Marker {
 	type: Change;
@@ -128,7 +123,7 @@ export interface RowSpan {
  * whole screen of scrolling.
  */
 export function changeMarkers(
-	rows: readonly MarkableRow[],
+	rows: readonly LaidOutRow[],
 	spans: readonly RowSpan[],
 ): Marker[] {
 	const height = spans[rows.length - 1]?.end ?? 0;

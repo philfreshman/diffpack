@@ -3,7 +3,7 @@ import type { SplitRow } from "#/lib/diff/pairSplitRows.ts";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 
 /** A row of either layout: both are read for changes the same way. */
-type LaidOutRow = DiffRow | SplitRow;
+export type LaidOutRow = DiffRow | SplitRow;
 
 /** What happened to a row: the minimap colours its band by this. */
 export type Change = "added" | "removed" | "modified";

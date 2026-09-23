@@ -1,4 +1,4 @@
-import { rowChange } from "#/lib/diff/changes.ts";
+import { type LaidOutRow, rowChange } from "#/lib/diff/changes.ts";
 import {
 	computeVisibility,
 	type DiffRow,
@@ -108,7 +108,7 @@ export function fileModel(
  * the arrows scroll to: folds and split pairing both change which row a given
  * line ended up in, and a stale index would scroll to the wrong place.
  */
-function differenceStops(rows: readonly (DiffRow | SplitRow)[]): number[] {
+function differenceStops(rows: readonly LaidOutRow[]): number[] {
 	const stops: number[] = [];
 	let inRun = false;
 
