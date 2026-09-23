@@ -32,7 +32,7 @@ survive review.
   you edit it; `fallow list --boundaries` prints the zones. Every file under `src/` must belong to
   a zone, so a new top-level directory there is a finding, not a silent exemption.
 - **`rule-packs/diffpack-policy.jsonc`** — two house rules: `localStorage` is reachable only from
-  the module that owns the key, and registry adapters take the injected `Fetcher` rather than
+  `src/lib/storage/storedSetting.ts`, and registry adapters take the injected `Fetcher` rather than
   calling the global `fetch`. Both are at zero; check with `fallow rule-pack test`.
 - **CRAP is advisory here** (`maxCrap` is set out of reach). Rank with it, never gate on it — the
   scores are `static_estimated`, not coverage-backed.
