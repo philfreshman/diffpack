@@ -1,4 +1,5 @@
 import { SettingsMenu } from "#/components/diff/SettingsMenu/SettingsMenu.tsx";
+import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import {
@@ -24,12 +25,15 @@ export interface DiffToolbarProps {
 	onStepFile(direction: 1 | -1): void;
 	/** Back to the comparison, with no file open. */
 	onClose(): void;
-	/** Runs of touched lines in the open file — what the arrows step through. */
-	differences: number;
-	onStepDifference(direction: 1 | -1): void;
-	/** Whether the whole file is open, folds and all. */
-	expandAll: boolean;
-	onExpandAllChange(expandAll: boolean): void;
+	/**
+	 * The file on screen, read from the same model the viewer draws: how many
+	 * differences it has and how to step through them, and whether it is all
+	 * open. `null` while there is no file on screen to read.
+	 */
+	file: Pick<
+		FileModelControls,
+		"differences" | "stepDifference" | "expandAll" | "setExpandAll"
+	> | null;
 	/** The old file beside the new one, rather than one after the other. */
 	split: boolean;
 	onSplitChange(split: boolean): void;
@@ -50,9 +54,9 @@ export interface DiffToolbarProps {
  * it, with its navigation stood down) — the layout does not rearrange itself
  * under the reader on every click.
  *
- * Expand-all is the file's state, not the toolbar's — the viewer remembers it
- * per file (task 12), so the button reports what the file it is over is doing
- * rather than keeping a count of its own clicks.
+ * Expand-all is the file's state, not the toolbar's — the file model remembers
+ * it per file (task 12), so the button reports what the file it is over is
+ * doing rather than keeping a count of its own clicks.
  */
 export function DiffToolbar({
 	path,
@@ -60,10 +64,7 @@ export function DiffToolbar({
 	fileCount,
 	onStepFile,
 	onClose,
-	differences,
-	onStepDifference,
-	expandAll,
-	onExpandAllChange,
+	file,
 	split,
 	onSplitChange,
 	ignoreWhitespace,
@@ -78,16 +79,16 @@ export function DiffToolbar({
 				<IconButton
 					aria-label="Previous difference"
 					title="Previous difference"
-					disabled={!open}
-					onClick={() => onStepDifference(-1)}
+					disabled={!file}
+					onClick={() => file?.stepDifference(-1)}
 				>
 					<ArrowUpIcon width="16" height="16" />
 				</IconButton>
 				<IconButton
 					aria-label="Next difference"
 					title="Next difference"
-					disabled={!open}
-					onClick={() => onStepDifference(1)}
+					disabled={!file}
+					onClick={() => file?.stepDifference(1)}
 				>
 					<ArrowDownIcon width="16" height="16" />
 				</IconButton>
@@ -127,19 +128,14 @@ export function DiffToolbar({
 
 			<h2 className={styles.filename}>{path}</h2>
 
-			{open && (
+			{file && (
 				<span className={styles.differences} data-testid="difference-count">
-					{differences} {differences === 1 ? "difference" : "differences"}
+					{file.differences}{" "}
+					{file.differences === 1 ? "difference" : "differences"}
 				</span>
 			)}
 
-			<ViewControls
-				expandAll={expandAll}
-				onExpandAllChange={onExpandAllChange}
-				onSplitChange={onSplitChange}
-				open={open}
-				split={split}
-			/>
+			<ViewControls file={file} onSplitChange={onSplitChange} split={split} />
 
 			<SettingsMenu
 				highlight={highlight}
@@ -156,18 +152,11 @@ export function DiffToolbar({
  * not, and stay live so the choice can be made before one is opened.
  */
 function ViewControls({
-	expandAll,
-	onExpandAllChange,
+	file,
 	split,
 	onSplitChange,
-	open,
-}: Pick<
-	DiffToolbarProps,
-	"expandAll" | "onExpandAllChange" | "split" | "onSplitChange"
-> & {
-	/** Whether a file is open — see `DiffToolbarProps["path"]`. */
-	open: boolean;
-}) {
+}: Pick<DiffToolbarProps, "file" | "split" | "onSplitChange">) {
+	const expandAll = file?.expandAll ?? false;
 	const fold = expandAll ? "Fold all" : "Expand all";
 
 	return (
@@ -176,8 +165,8 @@ function ViewControls({
 				aria-label={fold}
 				aria-pressed={expandAll}
 				title={fold}
-				disabled={!open}
-				onClick={() => onExpandAllChange(!expandAll)}
+				disabled={!file}
+				onClick={() => file?.setExpandAll(!expandAll)}
 			>
 				{expandAll ? (
 					<FoldIcon width="16" height="16" />
