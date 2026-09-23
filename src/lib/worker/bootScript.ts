@@ -43,19 +43,21 @@ const REGISTRY_IDS = registryAdapters.map((adapter) => adapter.id);
  * already downloading by the time React has an opinion about them.
  *
  * Like `THEME_SCRIPT` it cannot import the modules it belongs to — nothing is
- * loaded yet at that point — so two things are restated inline: how far a
- * package name reaches into the path, which is each adapter's `packagePath`,
- * and the fields of a `Comparison`, which is `protocol.ts`. The values they
- * turn on are interpolated from those modules so they stay single-sourced. The
- * comparison is written once: it is what the script posts, inside the same
- * envelope `send` puts round one, and what it leaves for the client to adopt.
- * The stored whitespace answer is not restated at all: `readInHead` writes its
- * read from the setting's own declaration.
+ * loaded yet at that point — so two things are restated inline. One is how far
+ * a package name reaches into the path, which is each adapter's `packagePath`;
+ * the registry ids and Go's version pattern it turns on are interpolated from
+ * the adapters. The other is the fields of a `Comparison`, from `protocol.ts`,
+ * written out once: the script posts that object inside the same `id`/`type`
+ * envelope the client puts round its own, and leaves it for the client to
+ * adopt. The stored whitespace answer is not restated at all: `readInHead`
+ * writes its read from the setting's own declaration.
  *
  * Restating is what makes it possible to get this wrong, and the cost of
  * getting it wrong is bounded: the client adopts the boot's tree only for a
- * comparison with the same `comparisonKey`, so one it does not recognise is
+ * comparison with the same `comparisonKey`, so one spelled differently here is
  * simply not adopted, and the session's own request goes out instead.
+ * `bootScript.test.ts` hands what the script leaves to the real client, so
+ * that shows up as a failing test rather than a second download.
  */
 export function buildDiffBootScript(workerUrl: string): string {
 	return `(()=>{try{
