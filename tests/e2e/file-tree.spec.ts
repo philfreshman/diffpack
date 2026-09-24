@@ -220,33 +220,32 @@ test("a new comparison starts with no folders chosen, and opens its only folder"
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "false");
 	}, ONLY_MODIFIED.key);
-	await page.goto(`/npm/${MADE_UP}/1.0.0/3.0.0`);
+	await page.goto(`/npm/${MADE_UP}/2.0.0/3.0.0`);
 	await ready(page);
-	const lib = row(page, "lib");
-	await expect(lib).toHaveAttribute("aria-expanded", "false");
+	const src = row(page, "src");
+	await expect(src).toHaveAttribute("aria-expanded", "true");
 
-	await lib.click();
-	await expect(lib).toHaveAttribute("aria-expanded", "true");
+	await src.click();
+	await expect(src).toHaveAttribute("aria-expanded", "false");
 
 	// Other versions, chosen in the page rather than by loading another: a new
 	// page forgets every folder anyway, so only this way can one carry over.
-	const from = page.getByRole("combobox", { name: "From Version" });
-	await from.fill("2.0.0");
-	await page.getByRole("option", { name: "2.0.0", exact: true }).click();
+	const to = page.getByRole("combobox", { name: "To Version" });
+	await to.fill("4.0.0");
+	await page.getByRole("option", { name: "4.0.0", exact: true }).click();
 	await page.getByRole("button", { name: "Compare" }).click();
-	await expect(page).toHaveURL(`/npm/${MADE_UP}/2.0.0/3.0.0`);
+	await expect(page).toHaveURL(`/npm/${MADE_UP}/2.0.0/4.0.0`);
 
-	// `lib` was opened in a comparison that had it. This one is all `src`, and
-	// a tree that is one folder deep opens that folder unless it was shut by
-	// hand. Its tree, not the last one's: that had three files, and its open
-	// `lib` showed an `index.js` of its own.
+	// `src` was shut by hand in a comparison that had it too. Carried over,
+	// that choice would keep this one's only folder shut; a new comparison
+	// starts with nothing chosen, so it opens. Its tree, not the last one's:
+	// that had one file, this one has two.
 	await expect(page.getByTestId("diff-status")).toHaveText(
-		"1 file, 1 changed",
+		"2 files, 2 changed",
 		ENGINE,
 	);
-	await expect(row(page, "src")).toHaveAttribute("aria-expanded", "true");
-	await expect(row(page, "index.js")).toBeVisible();
-	await expect(lib).toHaveCount(0);
+	await expect(src).toHaveAttribute("aria-expanded", "true");
+	await expect(row(page, "utils")).toBeVisible();
 });
 
 test("opening a folder inside the only folder leaves the only folder open", async ({
