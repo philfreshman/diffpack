@@ -155,10 +155,10 @@ export function createDiffSession(client: DiffClient) {
 	}
 
 	/**
-	 * Opens the file the URL names, in the comparison on screen and with the
-	 * same whitespace answer as its tree, or the two would disagree. Cache-only
-	 * in the engine, so it is cheap — but it can only run once `build` has left
-	 * an active diff behind, which is why `build` comes back here when it has.
+	 * Opens the file the URL names, read out of the comparison on screen.
+	 * Cache-only in the engine, so it is cheap — but it can only run once
+	 * `build` has left an active diff behind, which is why `build` comes back
+	 * here when it has.
 	 */
 	async function openNamedFile(comparison: Comparison): Promise<void> {
 		const path = address?.file ?? "";
@@ -190,11 +190,7 @@ export function createDiffSession(client: DiffClient) {
 		const stillOpen = () => isCurrent(key) && store.state.file?.path === path;
 
 		try {
-			const diff = await client.getFile(
-				entry.path,
-				entry.oldPath,
-				comparison.ignoreWhitespace,
-			);
+			const diff = await client.getFile(comparison, entry.path, entry.oldPath);
 			if (!stillOpen()) return;
 			open({ path, status: "ready", diff, error: null });
 		} catch (error) {
