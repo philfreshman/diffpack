@@ -24,8 +24,8 @@
 		"prepare": "husky"
 	},
 	"dependencies": {
-		"@philfreshman/diffpack-engine": "0.2.0",
 		"@base-ui/react": "1.7.0",
+		"@philfreshman/diffpack-engine": "0.3.1",
 		"@tanstack/react-query": "5.101.4",
 		"@tanstack/react-router": "1.170.31",
 		"@tanstack/react-start": "1.168.48",

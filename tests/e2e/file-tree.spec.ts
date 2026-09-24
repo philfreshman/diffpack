@@ -48,6 +48,13 @@ const MADE_UP_FILES: Record<string, Record<string, string>> = {
 	"3.0.0": { "src/index.js": "three\n" },
 	// Still all `src/`, now with a folder inside it to open by hand.
 	"4.0.0": { "src/index.js": "four\n", "src/utils/a.js": "let a;\n" },
+	// `lib` a file here and a folder in 6.0.0: two nodes at one path. Their
+	// contents differ, or the engine would call it a rename and keep only one.
+	"5.0.0": { "README.md": "five\n", lib: "module.exports = 5;\n" },
+	"6.0.0": {
+		"README.md": "five\n",
+		"lib/index.js": "export const six = 6;\nexport default six;\n",
+	},
 };
 
 async function serveMadeUpPackage(page: Page) {
@@ -299,6 +306,37 @@ test("the same comparison keeps its folders, with another file open or whitespac
 	await page.getByRole("button", { name: "Ignore whitespaces" }).click();
 	await expect(index).toHaveAttribute("data-status", "unchanged", ENGINE);
 	await expect(lib).toHaveAttribute("aria-expanded", "true");
+});
+
+test("a path that is a file in one version and a folder in the other is two rows, each its own", async ({
+	page,
+}) => {
+	await serveMadeUpPackage(page);
+	await page.goto(`/npm/${MADE_UP}/5.0.0/6.0.0`);
+	await ready(page);
+	const at = (type: string) =>
+		page.locator(`[role="treeitem"][data-path="lib"][data-type="${type}"]`);
+	const file = at("file");
+	const folder = at("directory");
+	// The old version's first, the way a diff reads.
+	await expect(file).toHaveAttribute("data-status", "removed");
+	await expect(folder).toHaveAttribute("aria-expanded", "true");
+	await expect(row(page, "index.js")).toBeVisible();
+
+	await file.click();
+
+	// The file is open, and only the file: the folder shares its path, not
+	// its selection, and the tree is still one tab stop.
+	await expect(page).toHaveURL(`/npm/${MADE_UP}/5.0.0/6.0.0/lib`);
+	await expect(file).toHaveAttribute("aria-selected", "true");
+	await expect(folder).toHaveAttribute("aria-selected", "false");
+	await expect(page.locator('[role="treeitem"][tabindex="0"]')).toHaveCount(1);
+
+	// The arrows walk the two as two rows: on to the folder, then into it.
+	await page.keyboard.press("ArrowDown");
+	await expect(folder).toBeFocused();
+	await page.keyboard.press("ArrowDown");
+	await expect(row(page, "index.js")).toBeFocused();
 });
 
 test("shows at a glance which rows open and which are files", async ({
