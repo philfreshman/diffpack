@@ -46,6 +46,8 @@ const MADE_UP_FILES: Record<string, Record<string, string>> = {
 	// Everything under `src/`, and nothing beside it.
 	"2.0.0": { "src/index.js": "two\n" },
 	"3.0.0": { "src/index.js": "three\n" },
+	// Still all `src/`, now with a folder inside it to open by hand.
+	"4.0.0": { "src/index.js": "four\n", "src/utils/a.js": "let a;\n" },
 };
 
 async function serveMadeUpPackage(page: Page) {
@@ -235,9 +237,9 @@ test("a new comparison starts with no folders chosen, and opens its only folder"
 	await expect(page).toHaveURL(`/npm/${MADE_UP}/2.0.0/3.0.0`);
 
 	// `lib` was opened in a comparison that had it. This one is all `src`, and
-	// a tree that is one folder deep opens that folder, but only while no
-	// folder has been chosen by hand. Its tree, not the last one's: that had
-	// three files, and its open `lib` showed an `index.js` of its own.
+	// a tree that is one folder deep opens that folder unless it was shut by
+	// hand. Its tree, not the last one's: that had three files, and its open
+	// `lib` showed an `index.js` of its own.
 	await expect(page.getByTestId("diff-status")).toHaveText(
 		"1 file, 1 changed",
 		ENGINE,
@@ -245,6 +247,30 @@ test("a new comparison starts with no folders chosen, and opens its only folder"
 	await expect(row(page, "src")).toHaveAttribute("aria-expanded", "true");
 	await expect(row(page, "index.js")).toBeVisible();
 	await expect(lib).toHaveCount(0);
+});
+
+test("opening a folder inside the only folder leaves the only folder open", async ({
+	page,
+}) => {
+	await serveMadeUpPackage(page);
+	// Showing everything: with only-modified on, every folder with a change in
+	// it opens itself, which would hide `src` shutting.
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "false");
+	}, ONLY_MODIFIED.key);
+	await page.goto(`/npm/${MADE_UP}/3.0.0/4.0.0`);
+	await ready(page);
+	const src = row(page, "src");
+	const utils = row(page, "utils");
+	await expect(src).toHaveAttribute("aria-expanded", "true");
+	await expect(utils).toHaveAttribute("aria-expanded", "false");
+
+	await utils.click();
+
+	await expect(utils).toHaveAttribute("aria-expanded", "true");
+	await expect(src).toHaveAttribute("aria-expanded", "true");
+	await expect(row(page, "a.js")).toBeVisible();
+	await expect(row(page, "index.js")).toBeVisible();
 });
 
 test("the same comparison keeps its folders, with another file open or whitespace ignored", async ({
