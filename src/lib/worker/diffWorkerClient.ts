@@ -46,6 +46,13 @@ export function createDiffClient(
 	 * active diff only when it *finishes*. Two builds in flight at once would
 	 * leave the one that downloaded faster in the engine, not the one asked for
 	 * last, and every read after that would come out of the wrong comparison.
+	 *
+	 * The price is that a slow build holds up everything behind it: going back
+	 * to a comparison already in the cache waits for the downloads of the one
+	 * in flight, and a download that never finishes stalls every later build
+	 * and read until the page is reloaded. The engine can neither cancel a
+	 * build nor read from a diff other than the active one, so the client has
+	 * no way to put a correct answer ahead of it.
 	 */
 	let lane: Promise<unknown> = Promise.resolve();
 	/**
@@ -57,7 +64,9 @@ export function createDiffClient(
 	/**
 	 * How many builds have been asked for. One still waiting in the lane when
 	 * a newer one is asked for is not worth sending: whatever it left in the
-	 * engine, the newer one would replace before anything could read it.
+	 * engine, the newer one would replace before the session reads from it. A
+	 * read asked of it in between is refused, as for any comparison no longer
+	 * loaded.
 	 */
 	let buildsAsked = 0;
 
