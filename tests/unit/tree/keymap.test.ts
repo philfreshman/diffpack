@@ -131,6 +131,21 @@ describe("←", () => {
 	test("does nothing at the top level, where there is nothing above", () => {
 		expect(treeCommand("ArrowLeft", ROWS, 3)).toBeUndefined();
 	});
+
+	test("goes up to the folder, not to a file at the same path", () => {
+		// `lib` a file in one version and a folder in the other: two rows at
+		// one path, the file first.
+		const rows = [
+			row("lib", 0),
+			row("lib", 0, { expanded: true }),
+			row("lib/index.js", 1),
+		];
+
+		expect(treeCommand("ArrowLeft", rows, 2)).toEqual({
+			kind: "focus",
+			index: 1,
+		});
+	});
 });
 
 describe("everything else", () => {

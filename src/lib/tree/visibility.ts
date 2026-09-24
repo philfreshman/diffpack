@@ -8,6 +8,14 @@ export interface TreeRow {
 	hasChildren: boolean;
 }
 
+/**
+ * What tells one row from another. Not the path alone: a path that is a file
+ * in one version and a folder in the other is two rows, one of each.
+ */
+export function rowKey(entry: DiffFileEntry): string {
+	return `${entry.type}:${entry.path}`;
+}
+
 /** Everything the user has done to the tree that changes what it shows. */
 export interface TreeView {
 	filter: string;
