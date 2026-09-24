@@ -58,8 +58,8 @@ export function folderReducer(
 		case "narrow":
 			return { ...state, collapsedKeys: NONE };
 		// Another comparison is other folders, and none of them chosen yet.
-		// Carried over, a folder opened in the last one would stop this one's
-		// only folder opening itself, and one shut there would stay shut here.
+		// Carried over, a folder opened in the last one would stay open here,
+		// and one shut there would stay shut here, its only folder included.
 		case "reset":
 			return foldersFor(action.comparison);
 	}
