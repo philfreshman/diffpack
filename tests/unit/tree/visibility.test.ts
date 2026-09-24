@@ -143,6 +143,43 @@ describe("visibleRows", () => {
 		expect(rows.map((row) => row.entry.path)).toEqual(["src", "src/index.js"]);
 	});
 
+	test("the only folder stays open when a folder inside it is opened by hand", () => {
+		// Opening `src/a` is a choice about `src/a`, not about `src`.
+		const single: DiffFileEntry = {
+			path: "",
+			type: "directory",
+			status: "modified",
+			children: [
+				{
+					path: "src",
+					type: "directory",
+					status: "modified",
+					children: [
+						{
+							path: "src/a",
+							type: "directory",
+							status: "modified",
+							children: [file("src/a/x.js", "modified")],
+						},
+						file("src/index.js", "modified"),
+					],
+				},
+			],
+		};
+
+		const rows = visibleRows(single, {
+			...SHOW_ALL,
+			expandedKeys: new Set(["src/a"]),
+		});
+
+		expect(rows.map((row) => row.entry.path)).toEqual([
+			"src",
+			"src/a",
+			"src/a/x.js",
+			"src/index.js",
+		]);
+	});
+
 	test("has nothing to show before a comparison has run", () => {
 		expect(visibleRows(null, SHOW_ALL)).toEqual([]);
 	});

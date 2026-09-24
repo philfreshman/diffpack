@@ -139,6 +139,39 @@ describe("the folders chosen, as a tree that is one folder deep shows them", () 
 		expect(rows(after(shut("src"), NARROW))).toEqual(["src", "src/index.js"]);
 	});
 
+	test("opening a folder inside the only folder leaves the only folder open", () => {
+		const nested: DiffFileEntry = {
+			...ONE_FOLDER,
+			children: [
+				{
+					path: "src",
+					type: "directory",
+					status: "modified",
+					children: [
+						{
+							path: "src/a",
+							type: "directory",
+							status: "modified",
+							children: [
+								{ path: "src/a/x.js", type: "file", status: "modified" },
+							],
+						},
+					],
+				},
+			],
+		};
+		const folders = after(open("src/a"));
+
+		const shown = visibleRows(nested, {
+			filter: "",
+			onlyModified: false,
+			expandedKeys: folders.expandedKeys,
+			collapsedKeys: folders.collapsedKeys,
+		}).map((row) => row.entry.path);
+
+		expect(shown).toEqual(["src", "src/a", "src/a/x.js"]);
+	});
+
 	test("a new comparison opens its only folder, whatever the last one chose", () => {
 		// The last comparison had `lib` to open and its own `src` to shut; this
 		// one is `src` alone, and what was chosen there says nothing about it.
