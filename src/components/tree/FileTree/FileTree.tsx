@@ -7,7 +7,7 @@ import {
 	FolderOpenIcon,
 } from "#/components/ui/icons.tsx";
 import { treeCommand } from "#/lib/tree/keymap.ts";
-import type { TreeRow } from "#/lib/tree/visibility.ts";
+import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
 import styles from "./FileTree.module.css";
 
 export interface FileTreeProps {
@@ -48,29 +48,29 @@ export function FileTree({
 	onToggleFolder,
 }: FileTreeProps) {
 	// A tree is one tab stop: exactly one row is tabbable, and the arrows move
-	// which one that is. The focused row is remembered by path rather than by
-	// index, because filtering and expanding renumber the rows underneath it.
-	const [focusedPath, setFocusedPath] = useState("");
+	// which one that is. The focused row is remembered by its key rather than
+	// by index, because filtering and expanding renumber the rows underneath
+	// it.
+	const [focusedKey, setFocusedKey] = useState("");
 	const elements = useRef(new Map<string, HTMLElement>());
 
-	const index = rows.findIndex((row) => row.entry.path === focusedPath);
-	const selectedIndex = rows.findIndex(
-		(row) => row.entry.path === selectedPath,
-	);
+	const index = rows.findIndex((row) => rowKey(row.entry) === focusedKey);
+	const selectedIndex = rows.findIndex((row) => isSelected(row, selectedPath));
 	// Nothing focused yet: the file the URL names is where the user already is,
 	// and failing that the top of the tree.
 	const activeIndex = index >= 0 ? index : Math.max(selectedIndex, 0);
-	const activePath = rows[activeIndex]?.entry.path ?? "";
+	const activeRow = rows[activeIndex];
+	const activeKey = activeRow ? rowKey(activeRow.entry) : "";
 
 	function focusRow(row: TreeRow) {
-		setFocusedPath(row.entry.path);
-		const element = elements.current.get(row.entry.path);
+		setFocusedKey(rowKey(row.entry));
+		const element = elements.current.get(rowKey(row.entry));
 		element?.focus({ preventScroll: true });
 		element?.scrollIntoView({ block: "nearest" });
 	}
 
 	function activate(row: TreeRow) {
-		setFocusedPath(row.entry.path);
+		setFocusedKey(rowKey(row.entry));
 		if (row.hasChildren) onToggleFolder(row.entry.path, !row.expanded);
 		else onOpenFile(row.entry.path);
 	}
@@ -97,18 +97,26 @@ export function FileTree({
 		>
 			{rows.map((row, position) => (
 				<FileTreeRow
-					active={row.entry.path === activePath}
-					key={row.entry.path}
+					active={rowKey(row.entry) === activeKey}
+					key={rowKey(row.entry)}
 					onActivate={activate}
-					onFocus={setFocusedPath}
+					onFocus={setFocusedKey}
 					position={position}
 					register={elements.current}
 					row={row}
-					selected={row.entry.path === selectedPath}
+					selected={isSelected(row, selectedPath)}
 				/>
 			))}
 		</div>
 	);
+}
+
+/**
+ * Whether `row` is the file the URL names. Only a file can be: a folder at the
+ * same path is another row, and the URL never names a folder.
+ */
+function isSelected(row: TreeRow, selectedPath: string): boolean {
+	return row.entry.type === "file" && row.entry.path === selectedPath;
 }
 
 interface FileTreeRowProps {
@@ -118,11 +126,13 @@ interface FileTreeRowProps {
 	/** Whether this is the file the URL names. */
 	selected: boolean;
 	onActivate(row: TreeRow): void;
-	onFocus(path: string): void;
+	/** Says which row took focus, by its `rowKey`. */
+	onFocus(key: string): void;
 	/** How far down the tree this row sat when it appeared: its turn in the
 	    fade-in, and read only then. */
 	position: number;
-	/** Where the rows put themselves so the keyboard can focus them. */
+	/** Where the rows put themselves, by `rowKey`, so the keyboard can focus
+	    them. */
 	register: Map<string, HTMLElement>;
 }
 
@@ -137,6 +147,7 @@ function FileTreeRow({
 	register,
 }: FileTreeRowProps) {
 	const { entry, expanded, hasChildren } = row;
+	const key = rowKey(entry);
 	// The fade-in is the stylesheet's; a row only says when its turn is. React
 	// mounts a DOM node per row that is new — a finished comparison, an opened
 	// folder, a filter letting rows back in — so the animation runs exactly when
@@ -153,11 +164,11 @@ function FileTreeRow({
 			role="treeitem"
 			className={styles.row}
 			ref={(element) => {
-				if (element) register.set(entry.path, element);
-				else register.delete(entry.path);
+				if (element) register.set(key, element);
+				else register.delete(key);
 			}}
 			tabIndex={active ? 0 : -1}
-			onFocus={() => onFocus(entry.path)}
+			onFocus={() => onFocus(key)}
 			style={{
 				paddingLeft: `${row.depth * 18 + 4}px`,
 				animationDelay: `${delay}ms`,
