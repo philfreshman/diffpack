@@ -219,6 +219,41 @@ describe("the engine's one active diff", () => {
 		).rejects.toThrow("Cargo.toml");
 	});
 
+	test("a read queued behind another comparison's build is refused when its turn comes", async () => {
+		// Asked while its own comparison is still the one loaded: whether it may
+		// be answered depends on what the engine holds when it is sent, and by
+		// then the build ahead of it has replaced its comparison.
+		const client = clientOver(new FakeEngine());
+		await client.buildTree(COMPARISON);
+		void client.buildTree(ANOTHER);
+
+		await expect(
+			client.getFile(COMPARISON, "Cargo.toml", undefined),
+		).rejects.toThrow("no longer loaded");
+	});
+
+	test("a failed build leaves no comparison to read from", async () => {
+		// What a failed build left in the engine is not the client's to guess,
+		// so not even the comparison built before it is read.
+		const { client, spawned } = clientWith(null);
+		const built = client.buildTree(COMPARISON);
+		await settled();
+		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
+		await built;
+		const failed = client.buildTree(ANOTHER);
+		await settled();
+		spawned[0]?.reply({ id: 1, ok: false, error: "404 Not Found" });
+		await expect(failed).rejects.toThrow("404 Not Found");
+
+		const read = client.getFile(COMPARISON, "Cargo.toml", undefined);
+		await settled();
+
+		// Checked before the read is awaited: a read the client did send would
+		// wait forever on a reply this worker never gives.
+		expect(spawned[0]?.posted).toHaveLength(2);
+		await expect(read).rejects.toThrow("no longer loaded");
+	});
+
 	test("a failed build holds up nothing behind it", async () => {
 		const { client, spawned } = clientWith(null);
 		const failed = client.buildTree(ANOTHER);
@@ -246,11 +281,14 @@ describe("the engine's one active diff", () => {
 		void client.buildTree(COMPARISON);
 
 		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
+		await settled();
 
-		await expect(overtaken).rejects.toThrow("overtaken");
+		// Checked before `overtaken` is awaited: a build the client did send
+		// would wait forever on a reply this worker never gives.
 		expect(spawned[0]?.posted).toEqual([
 			{ id: 0, type: "build-tree", ...ANOTHER },
 			{ id: 1, type: "build-tree", ...COMPARISON },
 		]);
+		await expect(overtaken).rejects.toThrow("overtaken");
 	});
 });
