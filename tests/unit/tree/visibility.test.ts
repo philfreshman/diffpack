@@ -180,6 +180,38 @@ describe("visibleRows", () => {
 		]);
 	});
 
+	test("a path that is a file and a folder is two rows, and only the folder opens", () => {
+		// `lib` a file in one version and a folder in the other: the engine
+		// sends both, the old version's first.
+		const both: DiffFileEntry = {
+			path: "",
+			type: "directory",
+			status: "modified",
+			children: [
+				{ ...file("lib", "removed"), children: [] },
+				{
+					path: "lib",
+					type: "directory",
+					status: "added",
+					children: [file("lib/index.js", "added")],
+				},
+			],
+		};
+
+		const rows = visibleRows(both, {
+			...SHOW_ALL,
+			expandedKeys: new Set(["lib"]),
+		});
+
+		expect(
+			rows.map((row) => [row.entry.path, row.entry.type, row.expanded]),
+		).toEqual([
+			["lib", "file", false],
+			["lib", "directory", true],
+			["lib/index.js", "file", false],
+		]);
+	});
+
 	test("has nothing to show before a comparison has run", () => {
 		expect(visibleRows(null, SHOW_ALL)).toEqual([]);
 	});

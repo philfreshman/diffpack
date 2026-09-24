@@ -312,6 +312,10 @@ test("a path that is a file in one version and a folder in the other is two rows
 	page,
 }) => {
 	await serveMadeUpPackage(page);
+	// Only what changed, so the folder opens itself on the way to its file.
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "true");
+	}, ONLY_MODIFIED.key);
 	await page.goto(`/npm/${MADE_UP}/5.0.0/6.0.0`);
 	await ready(page);
 	const at = (type: string) =>
