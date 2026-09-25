@@ -157,8 +157,8 @@ export function createDiffSession(client: DiffClient) {
 	/**
 	 * Opens the file the URL names, read out of the comparison on screen.
 	 * Cache-only in the engine, so it is cheap — but it can only run once
-	 * `build` has left an active diff behind, which is why `build` comes back
-	 * here when it has.
+	 * `build` has left both versions in the cache, which is why `build` comes
+	 * back here when it has.
 	 */
 	async function openNamedFile(comparison: Comparison): Promise<void> {
 		const path = address?.file ?? "";

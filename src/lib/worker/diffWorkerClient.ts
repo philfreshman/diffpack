@@ -85,10 +85,10 @@ export function createDiffClient(
 	}
 
 	/**
-	 * The WASM module keeps its extraction cache and its active-diff pointer in
-	 * module-local state, so a second worker would silently start from an empty
-	 * cache and fail every `getFile` with "No active diff context". One worker
-	 * per document, and where the boot script made one, that is the one.
+	 * The WASM module keeps its extraction cache in module-local state, so a
+	 * second worker would silently start from an empty cache and fail every
+	 * `getFile` with "has not been loaded". One worker per document, and where
+	 * the boot script made one, that is the one.
 	 */
 	function getWorker(): Worker {
 		if (worker) return worker;
@@ -209,9 +209,9 @@ export function createDiffClient(
 					);
 				return send<FileDiff>({
 					type: "get-file",
+					...comparison,
 					path,
 					oldPath,
-					ignoreWhitespace: comparison.ignoreWhitespace,
 				});
 			});
 		},

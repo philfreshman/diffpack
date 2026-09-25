@@ -1,6 +1,6 @@
 import init, {
 	build_diff_tree_for_package,
-	get_diff_for_path,
+	get_diff_for_comparison,
 	prefetch_package,
 } from "@philfreshman/diffpack-engine";
 import wasmUrl from "@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url";
@@ -38,7 +38,11 @@ async function handle(request: WorkerRequest): Promise<unknown> {
 			]);
 			return undefined;
 		case "get-file":
-			return get_diff_for_path(
+			return get_diff_for_comparison(
+				request.registry,
+				request.pkg,
+				request.from,
+				request.to,
 				request.path,
 				request.oldPath,
 				request.ignoreWhitespace,
@@ -48,9 +52,8 @@ async function handle(request: WorkerRequest): Promise<unknown> {
 
 /**
  * Each message is handled as it arrives, so several can be in flight at once.
- * The engine holds one active diff, which a build replaces when it finishes;
- * keeping builds and reads from overlapping is the client's job, since it is
- * the side that knows which comparison each read is for.
+ * A read names the comparison it is of and is answered from that pair's own
+ * entries in the extraction cache, so builds may finish in any order.
  */
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
 	const request = event.data;

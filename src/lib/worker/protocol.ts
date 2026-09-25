@@ -37,9 +37,9 @@ export type DiffRequest = {
  * whether whitespace counts changes which lines differ, so it is part of what
  * is being read, not a way of showing what has already been read.
  *
- * It is what a `build-tree` asks for, and the engine holds one of them at a
- * time — so the session, the client and the boot script all have to agree on
- * when two are the same one, and {@link comparisonKey} is that agreement.
+ * It is what a `build-tree` asks for and what a `get-file` is read out of —
+ * so the session, the client and the boot script all have to agree on when
+ * two are the same one, and {@link comparisonKey} is that agreement.
  */
 export type Comparison = DiffRequest & { ignoreWhitespace: boolean };
 
@@ -62,13 +62,12 @@ export function comparisonKey(comparison: Comparison): string {
 export type WorkerRequest =
 	| ({ id: number; type: "build-tree" } & Comparison)
 	| ({ id: number; type: "prefetch" } & DiffRequest)
-	| {
+	| ({
 			id: number;
 			type: "get-file";
 			path: string;
 			oldPath?: string;
-			ignoreWhitespace: boolean;
-	  };
+	  } & Comparison);
 
 /** `Omit` over a union must distribute, or the per-variant fields are lost. */
 export type WorkerRequestInput = WorkerRequest extends infer T

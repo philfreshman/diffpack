@@ -40,14 +40,15 @@ class FakeWorker {
 }
 
 /**
- * A worker that answers the way the engine does: a build replaces the one
- * active diff when it *finishes*, and a file is read out of whichever diff is
- * active when the read arrives. A version in `slow` is still downloading until
- * the test says it has landed; every other one is already in the cache.
+ * A worker that answers the way the engine does: a build loads its two
+ * versions into the cache when it *finishes*, and a file is read out of the
+ * two versions the read names, which must have been loaded. A version in
+ * `slow` is still downloading until the test says it has landed; every other
+ * one downloads at once.
  */
 class FakeEngine {
 	onmessage: ((event: { data: unknown }) => void) | null = null;
-	private active: string | null = null;
+	private readonly loaded = new Set<string>();
 	private readonly downloading = new Map<string, () => void>();
 
 	constructor(private readonly slow: ReadonlySet<string> = new Set()) {}
@@ -55,7 +56,7 @@ class FakeEngine {
 	postMessage(request: WorkerRequest) {
 		if (request.type === "build-tree") {
 			const finish = () => {
-				this.active = `${request.from}..${request.to}`;
+				this.loaded.add(request.from).add(request.to);
 				this.reply({ id: request.id, ok: true, data: TREE });
 			};
 			if (this.slow.has(request.to)) this.downloading.set(request.to, finish);
@@ -63,8 +64,20 @@ class FakeEngine {
 			return;
 		}
 		if (request.type === "get-file") {
-			const data = { data: `${this.active} ${request.path}`, isDiff: true };
-			setTimeout(() => this.reply({ id: request.id, ok: true, data }), 0);
+			const missing = [request.from, request.to].find(
+				(version) => !this.loaded.has(version),
+			);
+			const response = missing
+				? { id: request.id, ok: false, error: `${missing} has not been loaded` }
+				: {
+						id: request.id,
+						ok: true,
+						data: {
+							data: `${request.from}..${request.to} ${request.path}`,
+							isDiff: true,
+						},
+					};
+			setTimeout(() => this.reply(response), 0);
 		}
 	}
 
