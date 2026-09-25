@@ -94,6 +94,17 @@ class FakeEngine {
 /** Lets pending timers and the microtasks behind them run. */
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+/**
+ * `reply`, if it lands within a few timer turns; otherwise a failure, rather
+ * than a test left waiting on a download the fake never finishes.
+ */
+function prompt<T>(reply: Promise<T>): Promise<T> {
+	const heldUp = settled()
+		.then(settled)
+		.then(() => Promise.reject(new Error("held up")));
+	return Promise.race([reply, heldUp]);
+}
+
 function bootOf(worker: FakeWorker, replies: unknown[] = []): DiffBoot {
 	return {
 		worker: worker as unknown as Worker,
@@ -150,17 +161,13 @@ describe("createDiffClient", () => {
 		expect(await client.buildTree(COMPARISON)).toEqual(TREE);
 	});
 
-	test("asks for itself, once the boot's build is done, when the boot script started another comparison", async () => {
+	test("asks for itself when the boot script started another comparison", () => {
 		const booted = new FakeWorker();
 		const { client, spawned } = clientWith(bootOf(booted));
 
+		// Beside the boot's build, not behind it: a read names its comparison,
+		// so it does not matter which of the two finishes last.
 		client.buildTree({ ...COMPARISON, ignoreWhitespace: true });
-		await settled();
-		// Not beside the boot's build: whichever finished last would hold the engine.
-		expect(booted.posted).toEqual([]);
-
-		booted.reply({ id: 0, ok: true, data: TREE });
-		await settled();
 
 		expect(spawned).toEqual([]);
 		expect(booted.posted).toEqual([
@@ -168,19 +175,15 @@ describe("createDiffClient", () => {
 		]);
 	});
 
-	test("does not hand the boot's tree back once another comparison has replaced it", async () => {
+	test("does not hand the boot's tree back once another comparison has been asked for", () => {
 		const booted = new FakeWorker();
 		const { client } = clientWith(bootOf(booted));
 
 		client.buildTree(ANOTHER);
-		booted.reply({ id: 0, ok: true, data: TREE });
-		await settled();
 		client.buildTree(COMPARISON);
-		booted.reply({ id: 1, ok: true, data: TREE });
-		await settled();
 
-		// The engine holds one active diff, so the second ask has to be a real
-		// request: the boot's tree would describe a comparison no longer loaded.
+		// The boot's tree answers the page's first ask, so coming back to its
+		// comparison is a request of its own.
 		expect(booted.posted).toEqual([
 			{ id: 1, type: "build-tree", ...ANOTHER },
 			{ id: 2, type: "build-tree", ...COMPARISON },
@@ -203,7 +206,7 @@ describe("createDiffClient", () => {
 	});
 });
 
-describe("the engine's one active diff", () => {
+describe("a file read by the comparison it belongs to", () => {
 	test("a file is read out of the comparison it was asked of, not the build that finished last", async () => {
 		// `ANOTHER`'s newer version is not in the cache yet.
 		const engine = new FakeEngine(new Set([ANOTHER.to]));
@@ -222,32 +225,28 @@ describe("the engine's one active diff", () => {
 		expect(file.data).toBe("0.6.5..0.12.1 Cargo.toml");
 	});
 
-	test("a file is refused, not misread, once another comparison has replaced its own", async () => {
+	test("a file is read out of its own comparison once another has been built after it", async () => {
 		const client = clientOver(new FakeEngine());
 		await client.buildTree(COMPARISON);
 		await client.buildTree(ANOTHER);
 
-		await expect(
-			client.getFile(COMPARISON, "Cargo.toml", undefined),
-		).rejects.toThrow("Cargo.toml");
+		const file = await client.getFile(COMPARISON, "Cargo.toml", undefined);
+		expect(file.data).toBe("0.6.5..0.12.1 Cargo.toml");
 	});
 
-	test("a read queued behind another comparison's build is refused when its turn comes", async () => {
-		// Asked while its own comparison is still the one loaded: whether it may
-		// be answered depends on what the engine holds when it is sent, and by
-		// then the build ahead of it has replaced its comparison.
-		const client = clientOver(new FakeEngine());
+	test("a read is not held up by another comparison's build still downloading", async () => {
+		// `ANOTHER`'s newer version never lands.
+		const client = clientOver(new FakeEngine(new Set([ANOTHER.to])));
 		await client.buildTree(COMPARISON);
 		void client.buildTree(ANOTHER);
 
-		await expect(
+		const file = await prompt(
 			client.getFile(COMPARISON, "Cargo.toml", undefined),
-		).rejects.toThrow("no longer loaded");
+		);
+		expect(file.data).toBe("0.6.5..0.12.1 Cargo.toml");
 	});
 
-	test("a failed build leaves no comparison to read from", async () => {
-		// What a failed build left in the engine is not the client's to guess,
-		// so not even the comparison built before it is read.
+	test("a failed build does not stop the comparison built before it being read", async () => {
 		const { client, spawned } = clientWith(null);
 		const built = client.buildTree(COMPARISON);
 		await settled();
@@ -258,13 +257,18 @@ describe("the engine's one active diff", () => {
 		spawned[0]?.reply({ id: 1, ok: false, error: "404 Not Found" });
 		await expect(failed).rejects.toThrow("404 Not Found");
 
-		const read = client.getFile(COMPARISON, "Cargo.toml", undefined);
-		await settled();
+		const read = client.getFile(COMPARISON, "Cargo.toml", "Cargo.toml.orig");
 
-		// Checked before the read is awaited: a read the client did send would
-		// wait forever on a reply this worker never gives.
-		expect(spawned[0]?.posted).toHaveLength(2);
-		await expect(read).rejects.toThrow("no longer loaded");
+		expect(spawned[0]?.posted[2]).toEqual({
+			id: 2,
+			type: "get-file",
+			...COMPARISON,
+			path: "Cargo.toml",
+			oldPath: "Cargo.toml.orig",
+		});
+		const diff = { data: "@@ -1 +1 @@", isDiff: true };
+		spawned[0]?.reply({ id: 2, ok: true, data: diff });
+		expect(await read).toEqual(diff);
 	});
 
 	test("a failed build holds up nothing behind it", async () => {
@@ -272,36 +276,27 @@ describe("the engine's one active diff", () => {
 		const failed = client.buildTree(ANOTHER);
 		await settled();
 		const next = client.buildTree(COMPARISON);
+		// Heard before it lands: nothing else is listening for the failure.
+		const refusal = failed.then(
+			() => null,
+			(error: Error) => error.message,
+		);
 
 		spawned[0]?.reply({ id: 0, ok: false, error: "404 Not Found" });
 		await settled();
 		spawned[0]?.reply({ id: 1, ok: true, data: TREE });
 
-		await expect(failed).rejects.toThrow("404 Not Found");
+		expect(await refusal).toBe("404 Not Found");
 		expect(await next).toEqual(TREE);
 	});
 
-	test("a build overtaken while it waited is never sent", async () => {
-		// Toggling whitespace back and forth while a download is in flight: only
-		// the last answer can end up in the engine, so only it is worth building.
-		const { client, spawned } = clientWith(null);
+	test("going back to a comparison is not held up by a build still downloading", async () => {
+		// `ANOTHER`'s newer version never lands.
+		const client = clientOver(new FakeEngine(new Set([ANOTHER.to])));
+		await client.buildTree(COMPARISON);
 		void client.buildTree(ANOTHER);
 		await settled();
-		const overtaken = client.buildTree({
-			...COMPARISON,
-			ignoreWhitespace: true,
-		});
-		void client.buildTree(COMPARISON);
 
-		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
-		await settled();
-
-		// Checked before `overtaken` is awaited: a build the client did send
-		// would wait forever on a reply this worker never gives.
-		expect(spawned[0]?.posted).toEqual([
-			{ id: 0, type: "build-tree", ...ANOTHER },
-			{ id: 1, type: "build-tree", ...COMPARISON },
-		]);
-		await expect(overtaken).rejects.toThrow("overtaken");
+		expect(await prompt(client.buildTree(COMPARISON))).toEqual(TREE);
 	});
 });
