@@ -64,8 +64,15 @@ export function parseUnifiedDiff(file: FileDiff): DiffLine[] {
 
 /**
  * The engine writes `--- from/x` and `+++ to/x` ahead of the first line. They
- * name the file, which the toolbar already does, so they are not content.
+ * name the file, which the toolbar already does, so they are not content. The
+ * side a file is missing from is named `/dev/null` instead: `--- /dev/null` for
+ * an added file, `+++ /dev/null` for a removed one.
  */
 function isHeader(raw: string): boolean {
-	return raw.startsWith("--- from/") || raw.startsWith("+++ to/");
+	return (
+		raw.startsWith("--- from/") ||
+		raw.startsWith("+++ to/") ||
+		raw === "--- /dev/null" ||
+		raw === "+++ /dev/null"
+	);
 }
