@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildDiffBootScript } from "#/lib/worker/bootScript.ts";
+import { buildDiffBootScript, type DiffBoot } from "#/lib/worker/bootScript.ts";
+import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
 
 /** Stands in for the hashed URL Vite interpolates at build time. */
 const WORKER_URL = "/assets/diff.worker-test.js";
@@ -9,7 +10,11 @@ const WORKER_URL = "/assets/diff.worker-test.js";
  * test it is to run it — against a document that is entirely stubbed. What it
  * spawns and what it posts is its whole observable behaviour.
  */
-function boot(pathname: string, stored: Record<string, string> = {}) {
+function boot(
+	pathname: string,
+	stored: Record<string, string> = {},
+	store: unknown = { getItem: (key: string) => stored[key] ?? null },
+) {
 	const posted: unknown[] = [];
 	const spawned: Array<{ url: string; options: unknown }> = [];
 
@@ -33,12 +38,7 @@ function boot(pathname: string, stored: Record<string, string> = {}) {
 		"localStorage",
 		"Worker",
 		buildDiffBootScript(WORKER_URL),
-	)(
-		window,
-		{ pathname },
-		{ getItem: (key: string) => stored[key] ?? null },
-		FakeWorker,
-	);
+	)(window, { pathname }, store, FakeWorker);
 
 	return { posted, spawned, window };
 }
@@ -107,6 +107,32 @@ describe("the diff boot script", () => {
 		]);
 	});
 
+	test("leaves behind a request the client adopts as the same comparison", () => {
+		// The script spells its comparison out by hand, so this is what holds that
+		// spelling to the one the client compares by: a field named differently
+		// would not be adopted, and the page would build the tree twice.
+		const { posted, window } = boot("/npm/@types/node/26.0.0/26.7.0");
+		const booted = window.__diffpackDiffBoot as DiffBoot;
+		const client = createDiffClient(
+			() => {
+				throw new Error("spawned a second worker");
+			},
+			() => booted,
+		);
+
+		void client.buildTree({
+			registry: "npm",
+			pkg: "@types/node",
+			from: "26.0.0",
+			to: "26.7.0",
+			ignoreWhitespace: false,
+		});
+
+		expect(posted).toEqual([
+			{ id: booted.id, type: "build-tree", ...booted.comparison },
+		]);
+	});
+
 	test("starts nothing where the first segment names no registry", () => {
 		const { spawned, window } = boot("/about/express/4.18.2/5.1.0");
 
@@ -133,5 +159,20 @@ describe("the diff boot script", () => {
 
 			expect(posted).toMatchObject([{ ignoreWhitespace: false }]);
 		}
+	});
+
+	test("still boots, whitespace-exact, when the store refuses to be read", () => {
+		// A private-mode store that throws is no answer, which is the setting's
+		// fallback: the same thing the session reads once mounted, so it adopts
+		// this request rather than issuing its own.
+		const refusing = {
+			getItem() {
+				throw new Error("SecurityError");
+			},
+		};
+
+		const { posted } = boot("/crates/serde/1.0.0/1.0.1", {}, refusing);
+
+		expect(posted).toMatchObject([{ ignoreWhitespace: false }]);
 	});
 });

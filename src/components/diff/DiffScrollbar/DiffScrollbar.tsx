@@ -1,17 +1,21 @@
 import type { RefObject } from "react";
-import { useChangeMarkers } from "#/components/diff/useChangeMarkers.ts";
+import { useMemo } from "react";
 import { useDiffScrollbar } from "#/components/diff/useDiffScrollbar.ts";
-import type { DiffRow } from "#/lib/diff/computeVisibility.ts";
-import type { SplitRow } from "#/lib/diff/pairSplitRows.ts";
+import type { FileModel } from "#/lib/diff/fileModel.ts";
 import type { RowSpan } from "#/lib/diff/scrollbar.ts";
 import styles from "./DiffScrollbar.module.css";
 
 export interface DiffScrollbarProps {
 	/** The element the bar scrolls; it is not the bar's to own. */
 	scroller: RefObject<HTMLElement | null>;
-	/** Every row of the file, changed or not — what the minimap marks. */
-	rows: readonly (DiffRow | SplitRow)[];
-	/** How tall each of those rows measures, as the virtualiser has it. */
+	/** The file on screen, which says where its changes are. */
+	file: Pick<FileModel, "markers">;
+	/**
+	 * How tall each row measures, as the virtualiser has it: every row has one,
+	 * an estimate until the row has been drawn once. Its rendered items would
+	 * cover only the rows on screen — the part of the file that needs no
+	 * minimap.
+	 */
 	spans: readonly RowSpan[];
 }
 
@@ -21,13 +25,13 @@ export interface DiffScrollbarProps {
  * The native one cannot carry the markers, and there is nothing to gain from
  * showing both — so the scroller hides its own and this sits over it.
  *
- * Both halves of what it draws are worked out here, from the same file: bands
- * that were placed by some other measure than the thumb's would point at rows
- * the thumb never reaches.
+ * Which rows changed is the file's to say; both halves of what the bar draws
+ * are placed here, by the same measurements: bands that were placed by some
+ * other measure than the thumb's would point at rows the thumb never reaches.
  */
-export function DiffScrollbar({ scroller, rows, spans }: DiffScrollbarProps) {
+export function DiffScrollbar({ scroller, file, spans }: DiffScrollbarProps) {
 	const bar = useDiffScrollbar(scroller);
-	const markers = useChangeMarkers(rows, spans);
+	const markers = useMemo(() => file.markers(spans), [file, spans]);
 
 	return (
 		<div

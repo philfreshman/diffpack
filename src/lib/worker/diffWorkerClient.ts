@@ -1,30 +1,19 @@
 import { type DiffBoot, readDiffBoot } from "./bootScript.ts";
-import type {
-	DiffFileEntry,
-	DiffRequest,
-	FileDiff,
-	WorkerRequest,
-	WorkerRequestInput,
-	WorkerResponse,
+import {
+	type Comparison,
+	comparisonKey,
+	type DiffFileEntry,
+	type DiffRequest,
+	type FileDiff,
+	type WorkerRequest,
+	type WorkerRequestInput,
+	type WorkerResponse,
 } from "./protocol.ts";
 
 type Pending = {
 	resolve: (value: unknown) => void;
 	reject: (reason: Error) => void;
 };
-
-/** The comparison a `build-tree` request asks for, as the boot script states it. */
-type Comparison = DiffRequest & { ignoreWhitespace: boolean };
-
-function sameComparison(left: Comparison, right: Comparison): boolean {
-	return (
-		left.registry === right.registry &&
-		left.pkg === right.pkg &&
-		left.from === right.from &&
-		left.to === right.to &&
-		left.ignoreWhitespace === right.ignoreWhitespace
-	);
-}
 
 /**
  * The page's one link to the engine.
@@ -45,10 +34,41 @@ export function createDiffClient(
 	 * The boot script's `build-tree`, waiting for whoever asked for it. Cleared
 	 * the moment it is claimed *or* another comparison is asked for: the engine
 	 * holds one active diff, so handing this tree back after a second
-	 * `build-tree` has replaced it would leave `getFile` reading the wrong one.
+	 * `build-tree` has replaced it would describe a comparison no longer loaded.
 	 */
-	let adopted: { request: Comparison; tree: Promise<DiffFileEntry> } | null =
+	let adopted: { comparison: Comparison; tree: Promise<DiffFileEntry> } | null =
 		null;
+	/**
+	 * The last of the requests that set or read the engine's active diff, which
+	 * go one at a time, in the order they were asked for.
+	 *
+	 * The worker starts each message as it arrives, and a build replaces the
+	 * active diff only when it *finishes*. Two builds in flight at once would
+	 * leave the one that downloaded faster in the engine, not the one asked for
+	 * last, and every read after that would come out of the wrong comparison.
+	 *
+	 * The price is that a slow build holds up everything behind it: going back
+	 * to a comparison already in the cache waits for the downloads of the one
+	 * in flight, and a download that never finishes stalls every later build
+	 * and read until the page is reloaded. The engine can neither cancel a
+	 * build nor read from a diff other than the active one, so the client has
+	 * no way to put a correct answer ahead of it.
+	 */
+	let lane: Promise<unknown> = Promise.resolve();
+	/**
+	 * The comparison the engine holds, by `comparisonKey`: the last build to
+	 * succeed. `null` before one has, and after one fails, rather than guess
+	 * what a failed build left behind.
+	 */
+	let active: string | null = null;
+	/**
+	 * How many builds have been asked for. One still waiting in the lane when
+	 * a newer one is asked for is not worth sending: whatever it left in the
+	 * engine, the newer one would replace before the session reads from it. A
+	 * read asked of it in between is refused, as for any comparison no longer
+	 * loaded.
+	 */
+	let buildsAsked = 0;
 
 	function receive(message: WorkerResponse) {
 		const entry = pending.get(message.id);
@@ -84,11 +104,12 @@ export function createDiffClient(
 		// Past whatever the script used, so a reply cannot resolve the wrong call.
 		nextId = booted.id + 1;
 
-		const tree = awaitReply<DiffFileEntry>(booted.id);
-		// It may never be claimed — a link opened and abandoned mid-flight — and
-		// an unclaimed failure is not the page's to report.
-		tree.catch(() => {});
-		adopted = { request: booted.request, tree };
+		const tree = built(booted.comparison, awaitReply(booted.id));
+		// First in the lane, since it is already in flight. It may never be
+		// claimed — a link opened and abandoned mid-flight — and an unclaimed
+		// failure is not the page's to report.
+		lane = tree.catch(() => {});
+		adopted = { comparison: booted.comparison, tree };
 
 		worker.onmessage = (event) => receive(event.data);
 		// Everything the script's own handler caught while no client existed.
@@ -100,9 +121,9 @@ export function createDiffClient(
 	}
 
 	/**
-	 * Requests carry an id because several may be in flight at once — clicking
-	 * quickly through the file tree is the common case — and replies must
-	 * resolve the call that asked for them rather than whichever is newest.
+	 * Requests carry an id because several may be in flight at once — a
+	 * prefetch beside a build is the common case — and replies must resolve the
+	 * call that asked for them rather than whichever is newest.
 	 */
 	function send<T>(request: WorkerRequestInput): Promise<T> {
 		const target = getWorker();
@@ -112,43 +133,94 @@ export function createDiffClient(
 		return reply;
 	}
 
+	/**
+	 * Runs `request` once everything ahead of it in the lane has replied. A
+	 * failure is its caller's to hear; whatever is behind it goes ahead anyway.
+	 */
+	function enqueue<T>(request: () => Promise<T>): Promise<T> {
+		// Adopting the boot's build is what puts it at the head of the lane.
+		getWorker();
+		const reply = lane.then(request);
+		lane = reply.catch(() => {});
+		return reply;
+	}
+
+	/** A build's tree, with `active` kept in step with what it did to the engine. */
+	function built(
+		comparison: Comparison,
+		tree: Promise<DiffFileEntry>,
+	): Promise<DiffFileEntry> {
+		return tree.then(
+			(value) => {
+				active = comparisonKey(comparison);
+				return value;
+			},
+			(error: unknown) => {
+				active = null;
+				throw error;
+			},
+		);
+	}
+
 	return {
 		/** Downloads both versions, extracts them, and returns the diff tree. */
-		buildTree(
-			request: DiffRequest,
-			ignoreWhitespace: boolean,
-		): Promise<DiffFileEntry> {
+		buildTree(comparison: Comparison): Promise<DiffFileEntry> {
 			getWorker();
 
-			const wanted = { ...request, ignoreWhitespace };
 			const claim = adopted;
 			// Either way the boot's request stops being adoptable here: claimed,
 			// or overtaken by the comparison about to replace it in the engine.
 			adopted = null;
-			if (claim && sameComparison(claim.request, wanted)) return claim.tree;
+			if (
+				claim &&
+				comparisonKey(claim.comparison) === comparisonKey(comparison)
+			)
+				return claim.tree;
 
-			return send<DiffFileEntry>({
-				type: "build-tree",
-				...request,
-				ignoreWhitespace,
+			const build = ++buildsAsked;
+			return enqueue(() => {
+				if (build !== buildsAsked)
+					return Promise.reject(
+						new Error("Build overtaken by a newer comparison before it began"),
+					);
+				return built(comparison, send({ type: "build-tree", ...comparison }));
 			});
 		},
 
-		/** Reads one file's diff out of the cache populated by `buildTree`. */
+		/**
+		 * Reads one file's diff out of `comparison`, which `buildTree` must have
+		 * built. The whitespace answer is the comparison's own, so the file and
+		 * its tree cannot disagree about it.
+		 *
+		 * Refused once another comparison has replaced it in the engine: the
+		 * engine would answer out of whichever diff it holds, and a diff of
+		 * another pair of versions is not this file's.
+		 */
 		getFile(
+			comparison: Comparison,
 			path: string,
 			oldPath: string | undefined,
-			ignoreWhitespace: boolean,
 		): Promise<FileDiff> {
-			return send<FileDiff>({
-				type: "get-file",
-				path,
-				oldPath,
-				ignoreWhitespace,
+			const key = comparisonKey(comparison);
+			return enqueue(() => {
+				if (active !== key)
+					return Promise.reject(
+						new Error(`${path} was asked of a comparison no longer loaded`),
+					);
+				return send<FileDiff>({
+					type: "get-file",
+					path,
+					oldPath,
+					ignoreWhitespace: comparison.ignoreWhitespace,
+				});
 			});
 		},
 
-		/** Warms the extraction cache so a later `buildTree` skips the downloads. */
+		/**
+		 * Warms the extraction cache so a later `buildTree` skips the downloads.
+		 * Not in the lane: it leaves the active diff alone, so a build has no
+		 * reason to wait for it, nor it for a build.
+		 */
 		prefetch(request: DiffRequest): Promise<void> {
 			return send<void>({ type: "prefetch", ...request });
 		},

@@ -1,4 +1,4 @@
-import { MAX_TREE_WIDTH, MIN_TREE_WIDTH } from "./prefs.ts";
+import { TREE_WIDTH } from "#/lib/storage/settings.ts";
 
 /**
  * Dragging the sidebar's edge past its minimum does not stop it: the panel
@@ -25,12 +25,12 @@ export interface DragFrame {
 
 /** What the panel looks like with its edge dragged to `width`. */
 export function dragFrame(width: number): DragFrame {
-	const overshoot = Math.max(0, MIN_TREE_WIDTH - width);
+	const overshoot = Math.max(0, TREE_WIDTH.min - width);
 
 	return {
-		width: Math.min(MAX_TREE_WIDTH, Math.max(0, width)),
+		width: Math.min(TREE_WIDTH.max, Math.max(0, width)),
 		opacity: Math.max(0, 1 - overshoot / FADE_DISTANCE),
-		blur: (Math.min(overshoot, MIN_TREE_WIDTH) / MIN_TREE_WIDTH) * MAX_BLUR,
+		blur: (Math.min(overshoot, TREE_WIDTH.min) / TREE_WIDTH.min) * MAX_BLUR,
 		collapses: overshoot > 0,
 	};
 }

@@ -34,6 +34,27 @@ describe("parseUnifiedDiff", () => {
 		]);
 	});
 
+	test("an added or removed file's header is not a line of it either", () => {
+		// A file with no old version is headed `--- /dev/null`, and one with no new
+		// version `+++ /dev/null`. Read as content, the `/dev/null` side showed up
+		// as a first line on both sides of every added and every removed file.
+		const added = parseUnifiedDiff({
+			isDiff: true,
+			data: ["--- /dev/null", "+++ to/index.js", "+ one"].join("\n"),
+		});
+		const removed = parseUnifiedDiff({
+			isDiff: true,
+			data: ["--- from/index.js", "+++ /dev/null", "- one"].join("\n"),
+		});
+
+		expect(added).toEqual([
+			{ type: "added", content: "one", oldNumber: null, newNumber: 1 },
+		]);
+		expect(removed).toEqual([
+			{ type: "removed", content: "one", oldNumber: 1, newNumber: null },
+		]);
+	});
+
 	test("a file that did not change is all of it, unmarked", () => {
 		// The engine returns unchanged files as their own content — no markers, no
 		// header — so slicing a prefix off would eat the first two characters of

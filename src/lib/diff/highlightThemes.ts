@@ -166,28 +166,15 @@ export const HIGHLIGHT_THEMES: readonly HighlightTheme[] = [
 ];
 
 /**
- * What an unconfigured visitor gets: whichever GitHub theme matches the page.
+ * What a visitor who has not chosen gets: whichever GitHub theme matches the
+ * page.
  *
  * The old picker defaulted light to `"github"`, which is not one of its own
  * options — so a light-mode visitor who had never chosen saw an empty select.
  * `base16/github` is the listed light GitHub theme, and is the fix.
  */
-function defaultHighlightTheme(theme: ResolvedTheme): string {
+export function defaultHighlightTheme(theme: ResolvedTheme): string {
 	return theme === "dark" ? "github-dark" : "base16/github";
-}
-
-/**
- * Narrows whatever `localStorage` handed back. A value that is no longer one
- * of the offered themes — the old `"github"` among them — is not a choice we
- * can honour, so it falls back to the page's default.
- */
-export function parseHighlightTheme(
-	raw: string | null,
-	theme: ResolvedTheme,
-): string {
-	const chosen = HIGHLIGHT_THEMES.find((it) => it.value === raw);
-
-	return chosen ? chosen.value : defaultHighlightTheme(theme);
 }
 
 /**
@@ -203,26 +190,4 @@ export function highlightAppearance(
 	value: string | null,
 ): HighlightAppearance | null {
 	return HIGHLIGHT_THEMES.find((it) => it.value === value)?.appearance ?? null;
-}
-
-/** The old app's key, so a returning visitor's theme is still theirs. */
-export const HIGHLIGHT_THEME_KEY = "highlight_theme";
-
-export function readHighlightTheme(theme: ResolvedTheme): string {
-	try {
-		return parseHighlightTheme(
-			localStorage.getItem(HIGHLIGHT_THEME_KEY),
-			theme,
-		);
-	} catch {
-		return defaultHighlightTheme(theme);
-	}
-}
-
-export function writeHighlightTheme(value: string): void {
-	try {
-		localStorage.setItem(HIGHLIGHT_THEME_KEY, value);
-	} catch {
-		// Not persisted; the viewer still shows what was asked for this session.
-	}
 }

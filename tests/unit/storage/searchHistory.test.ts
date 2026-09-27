@@ -2,16 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
 	addToHistory,
 	HISTORY_LIMIT,
-	historyKey,
 	parseHistory,
 } from "#/lib/storage/searchHistory.ts";
-
-describe("historyKey", () => {
-	test("keeps the key the old app wrote, per registry", () => {
-		expect(historyKey("npm")).toBe("search_history_npm");
-		expect(historyKey("go")).toBe("search_history_go");
-	});
-});
 
 describe("parseHistory", () => {
 	test("reads back what was stored", () => {

@@ -33,7 +33,7 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          skip='^(README\.md|CONTRIBUTING\.md|AGENTS\.md|vercel\.json|docs/.*|\.claude/.*|\.junie/.*)$'
+          skip='^(README\.md|CONTRIBUTING\.md|AGENTS\.md|CLAUDE\.md|vercel\.json|docs/.*|\.claude/.*|\.junie/.*)$'
           if ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             echo code=true >> "$GITHUB_OUTPUT"
           elif git diff --name-only "$BASE...HEAD" | grep -qEv "$skip"; then

@@ -1,10 +1,13 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
-import { HIGHLIGHT_THEME_KEY } from "#/lib/diff/highlightThemes.ts";
-import { SPLIT_VIEW_KEY } from "#/lib/diff/prefs.ts";
-import { historyKey } from "#/lib/storage/searchHistory.ts";
-import { THEME_STORAGE_KEY } from "#/lib/theme.ts";
-import { ONLY_MODIFIED_KEY, TREE_WIDTH_KEY } from "#/lib/tree/prefs.ts";
+import {
+	HIGHLIGHT_THEME,
+	ONLY_MODIFIED,
+	SPLIT_VIEW,
+	searchHistory,
+	THEME_SELECTION,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
 
 /**
  * Task 15's parity gate. The other specs each prove one feature; this one walks
@@ -99,12 +102,12 @@ test("no file in a Go module reads as its versioned root", async ({ page }) => {
  * same constants, so this object is the only place the literal names appear.
  */
 const STORED = {
-	[THEME_STORAGE_KEY]: "light",
-	[SPLIT_VIEW_KEY]: "true",
-	[HIGHLIGHT_THEME_KEY]: "nightfall",
-	[TREE_WIDTH_KEY]: "320",
-	[ONLY_MODIFIED_KEY]: "false",
-	[historyKey("npm")]: JSON.stringify([{ name: "express" }]),
+	[THEME_SELECTION.key]: "light",
+	[SPLIT_VIEW.key]: "true",
+	[HIGHLIGHT_THEME.key]: "nightfall",
+	[TREE_WIDTH.key]: "320",
+	[ONLY_MODIFIED.key]: "false",
+	[searchHistory("npm").key]: JSON.stringify([{ name: "express" }]),
 };
 
 /**

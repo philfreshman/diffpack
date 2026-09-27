@@ -1,24 +1,24 @@
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useReducer, useRef, useState } from "react";
+import { useSetting } from "#/components/storage/useSetting.ts";
 import { FileTree } from "#/components/tree/FileTree/FileTree.tsx";
 import { TreeFilter } from "#/components/tree/TreeFilter/TreeFilter.tsx";
 import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
-import {
-	MAX_TREE_WIDTH,
-	MIN_TREE_WIDTH,
-	readOnlyModified,
-	toggleTreeCollapsed,
-	writeOnlyModified,
-} from "#/lib/tree/prefs.ts";
+import { ONLY_MODIFIED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import { folderReducer, foldersFor } from "#/lib/tree/folders.ts";
+import { sidebar } from "#/lib/tree/sidebar.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./TreePanel.module.css";
 import { usePanelResize } from "./usePanelResize.ts";
 
-const EMPTY: ReadonlySet<string> = new Set();
-
 export interface TreePanelProps {
 	tree: DiffFileEntry | null;
+	/**
+	 * Which comparison the tree is of. A new one starts with no folders chosen
+	 * by hand; the same one rebuilt, or with another file open, keeps them.
+	 */
+	comparison: string;
 	selectedPath: string;
 	onOpenFile(path: string): void;
 	/** What stands over the panel: where a dashboard keeps its team switcher. */
@@ -38,24 +38,26 @@ export interface TreePanelProps {
  */
 export function TreePanel({
 	tree,
+	comparison,
 	selectedPath,
 	onOpenFile,
 	header,
 	footer,
 }: TreePanelProps) {
 	const [filter, setFilter] = useState("");
-	// A stored preference cannot be read during render — the server has no
-	// `localStorage`, and reading it in the first client render is the same
-	// mismatch. The default is what SSR shows; the effect corrects it.
-	const [onlyModified, setOnlyModified] = useState(true);
-	useEffect(() => setOnlyModified(readOnlyModified()), []);
+	const { value: onlyModified, set: setOnlyModified } =
+		useSetting(ONLY_MODIFIED);
 
-	const [expandedKeys, setExpandedKeys] = useState<ReadonlySet<string>>(
-		() => new Set(),
-	);
-	const [collapsedKeys, setCollapsedKeys] = useState<ReadonlySet<string>>(
-		() => new Set(),
-	);
+	// Which folders were opened or closed by hand, in which comparison. What
+	// each change does to them is `folderReducer`'s to say; the panel only
+	// says what happened.
+	const [folders, dispatch] = useReducer(folderReducer, comparison, foldersFor);
+	// Starting over for a new comparison is an adjustment to a prop, made
+	// while rendering rather than in an effect, which would render once more
+	// with the last comparison's folders first.
+	if (folders.comparison !== comparison)
+		dispatch({ kind: "reset", comparison });
+	const { expandedKeys, collapsedKeys } = folders;
 
 	const rows = useMemo(
 		() =>
@@ -63,19 +65,13 @@ export function TreePanel({
 		[tree, filter, onlyModified, expandedKeys, collapsedKeys],
 	);
 
-	/** Opening or closing a folder is a choice, and it outranks auto-expansion. */
 	function toggleFolder(path: string, expanded: boolean) {
-		setExpandedKeys((keys) => withKey(keys, path, expanded));
-		setCollapsedKeys((keys) => withKey(keys, path, !expanded));
+		dispatch({ kind: "toggle", path, expanded });
 	}
 
-	/**
-	 * Narrowing the tree clears the folders closed by hand: they were closed
-	 * against a fuller tree, and holding them shut would hide the very rows the
-	 * user just asked to see.
-	 */
+	/** The filter and only-modified change what the tree holds. */
 	function narrow(change: () => void) {
-		setCollapsedKeys(EMPTY);
+		dispatch({ kind: "narrow" });
 		change();
 	}
 
@@ -94,12 +90,7 @@ export function TreePanel({
 						filter={filter}
 						onFilterChange={(next) => narrow(() => setFilter(next))}
 						onlyModified={onlyModified}
-						onOnlyModifiedChange={(next) =>
-							narrow(() => {
-								setOnlyModified(next);
-								writeOnlyModified(next);
-							})
-						}
+						onOnlyModifiedChange={(next) => narrow(() => setOnlyModified(next))}
 					/>
 				</div>
 				<FileTree
@@ -121,8 +112,8 @@ export function TreePanel({
 					aria-label="Resize file tree"
 					aria-orientation="vertical"
 					aria-valuenow={width}
-					aria-valuemin={MIN_TREE_WIDTH}
-					aria-valuemax={MAX_TREE_WIDTH}
+					aria-valuemin={TREE_WIDTH.min}
+					aria-valuemax={TREE_WIDTH.max}
 					tabIndex={0}
 					onPointerDown={startResize}
 					onKeyDown={nudge}
@@ -132,23 +123,11 @@ export function TreePanel({
 					className={styles.collapse}
 					aria-label="Collapse sidebar"
 					title="Collapse sidebar"
-					onClick={() => toggleTreeCollapsed(document)}
+					onClick={() => sidebar.close()}
 				>
 					<ChevronLeftIcon width="14" height="14" />
 				</button>
 			</div>
 		</aside>
 	);
-}
-
-function withKey(
-	keys: ReadonlySet<string>,
-	path: string,
-	present: boolean,
-): ReadonlySet<string> {
-	const next = new Set(keys);
-	if (present) next.add(path);
-	else next.delete(path);
-
-	return next;
 }

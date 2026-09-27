@@ -1,10 +1,17 @@
+import { gzipSync } from "node:zlib";
 import { expect, type Page, test } from "@playwright/test";
-import { TREE_COLLAPSED_KEY, TREE_WIDTH_KEY } from "#/lib/tree/prefs.ts";
+import {
+	ONLY_MODIFIED,
+	TREE_COLLAPSED,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
 
 /**
  * express 4.18.2 → 5.1.0: a real, nested, thoroughly changed comparison, which
- * is what the tree exists for. It comes from the real registry — the engine
- * only runs in a worker, so there is nothing to stub.
+ * is what the tree exists for. It comes from the real registry, unstubbed: the
+ * engine only runs in a worker, and real archives are what it has to cope
+ * with. The made-up package below is the one exception, for a shape no real
+ * package has.
  */
 const EXPRESS = "/npm/express/4.18.2/5.1.0";
 
@@ -21,6 +28,83 @@ async function ready(page: Page) {
 		"ready",
 		ENGINE,
 	);
+}
+
+/**
+ * A package made up for a tree that is one folder deep, which no real registry
+ * serves: every npm, crates.io and PyPI archive keeps its manifest at the root,
+ * beside whatever folders it has. Its version list and its tarballs are
+ * answered from here, and the engine unpacks them like any others.
+ */
+const MADE_UP = "diffpack-made-up";
+
+const MADE_UP_FILES: Record<string, Record<string, string>> = {
+	"0.9.0": { "README.md": "one\n", "lib/index.js": "let one;\n" },
+	// Loose at the root, beside a folder there is to open by hand, and changed
+	// from 0.9.0 in nothing but whitespace.
+	"1.0.0": { "README.md": "one\n", "lib/index.js": "let  one;\n" },
+	// Everything under `src/`, and nothing beside it.
+	"2.0.0": { "src/index.js": "two\n" },
+	"3.0.0": { "src/index.js": "three\n" },
+	// Still all `src/`, now with a folder inside it to open by hand.
+	"4.0.0": { "src/index.js": "four\n", "src/utils/a.js": "let a;\n" },
+	// `lib` a file here and a folder in 6.0.0: two nodes at one path. Their
+	// contents differ, or the engine would call it a rename and keep only one.
+	"5.0.0": { "README.md": "five\n", lib: "module.exports = 5;\n" },
+	"6.0.0": {
+		"README.md": "five\n",
+		"lib/index.js": "export const six = 6;\nexport default six;\n",
+	},
+};
+
+async function serveMadeUpPackage(page: Page) {
+	const registry = `https://registry.npmjs.org/${MADE_UP}`;
+	const versions = Object.fromEntries(
+		Object.keys(MADE_UP_FILES).map((version) => [version, {}]),
+	);
+	await page.route(registry, (route) => route.fulfill({ json: { versions } }));
+	// The engine fetches from its worker, and a worker's requests are routed
+	// like the page's.
+	await page.route(`${registry}/-/*`, (route) => {
+		const version = /-([\d.]+)\.tgz$/.exec(route.request().url())?.[1] ?? "";
+		const files = MADE_UP_FILES[version];
+		return files ? route.fulfill({ body: tarball(files) }) : route.abort();
+	});
+}
+
+/**
+ * `files` packed the way npm packs a package: each under `package/`, which the
+ * engine strips. A tar is a 512-byte header per file, the file padded out to
+ * whole blocks, and two empty blocks to end on.
+ */
+function tarball(files: Record<string, string>): Buffer {
+	const blocks = Object.entries(files).flatMap(([path, text]) => {
+		const content = Buffer.from(text);
+		const padding = (512 - (content.length % 512)) % 512;
+		return [
+			tarHeader(`package/${path}`, content.length),
+			content,
+			Buffer.alloc(padding),
+		];
+	});
+
+	return gzipSync(Buffer.concat([...blocks, Buffer.alloc(1024)]));
+}
+
+function tarHeader(path: string, size: number): Buffer {
+	const header = Buffer.alloc(512);
+	header.write(path, 0);
+	header.write("0000644", 100);
+	header.write(size.toString(8).padStart(11, "0"), 124);
+	header.write("0", 156); // a regular file
+	header.write("ustar\u000000", 257);
+	// The checksum is the sum of the header's bytes, its own field counted as
+	// eight spaces.
+	header.write(" ".repeat(8), 148);
+	const sum = header.reduce((total, byte) => total + byte, 0);
+	header.write(`${sum.toString(8).padStart(6, "0")}\u0000 `, 148);
+
+	return header;
 }
 
 test("shows the comparison as a tree of folders and files", async ({
@@ -132,6 +216,131 @@ test("a folder opens and shuts on click, and stays shut", async ({ page }) => {
 	await middleware.click();
 
 	await expect(row(page, "query.js")).toBeVisible();
+});
+
+test("a new comparison starts with no folders chosen, and opens its only folder", async ({
+	page,
+}) => {
+	await serveMadeUpPackage(page);
+	// Showing everything: with only-modified on, every folder with a change in
+	// it opens itself, and `src` would open whatever had carried over.
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "false");
+	}, ONLY_MODIFIED.key);
+	await page.goto(`/npm/${MADE_UP}/2.0.0/3.0.0`);
+	await ready(page);
+	const src = row(page, "src");
+	await expect(src).toHaveAttribute("aria-expanded", "true");
+
+	await src.click();
+	await expect(src).toHaveAttribute("aria-expanded", "false");
+
+	// Other versions, chosen in the page rather than by loading another: a new
+	// page forgets every folder anyway, so only this way can one carry over.
+	const to = page.getByRole("combobox", { name: "To Version" });
+	await to.fill("4.0.0");
+	await page.getByRole("option", { name: "4.0.0", exact: true }).click();
+	await page.getByRole("button", { name: "Compare" }).click();
+	await expect(page).toHaveURL(`/npm/${MADE_UP}/2.0.0/4.0.0`);
+
+	// `src` was shut by hand in a comparison that had it too. Carried over,
+	// that choice would keep this one's only folder shut; a new comparison
+	// starts with nothing chosen, so it opens. Its tree, not the last one's:
+	// that had one file, this one has two.
+	await expect(page.getByTestId("diff-status")).toHaveText(
+		"2 files, 2 changed",
+		ENGINE,
+	);
+	await expect(src).toHaveAttribute("aria-expanded", "true");
+	await expect(row(page, "utils")).toBeVisible();
+});
+
+test("opening a folder inside the only folder leaves the only folder open", async ({
+	page,
+}) => {
+	await serveMadeUpPackage(page);
+	// Showing everything: with only-modified on, every folder with a change in
+	// it opens itself, which would hide `src` shutting.
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "false");
+	}, ONLY_MODIFIED.key);
+	await page.goto(`/npm/${MADE_UP}/3.0.0/4.0.0`);
+	await ready(page);
+	const src = row(page, "src");
+	const utils = row(page, "utils");
+	await expect(src).toHaveAttribute("aria-expanded", "true");
+	await expect(utils).toHaveAttribute("aria-expanded", "false");
+
+	await utils.click();
+
+	await expect(utils).toHaveAttribute("aria-expanded", "true");
+	await expect(src).toHaveAttribute("aria-expanded", "true");
+	await expect(row(page, "a.js")).toBeVisible();
+	await expect(row(page, "index.js")).toBeVisible();
+});
+
+test("the same comparison keeps its folders, with another file open or whitespace ignored", async ({
+	page,
+}) => {
+	await serveMadeUpPackage(page);
+	// Showing everything, so the file is still there once it counts as
+	// unchanged.
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "false");
+	}, ONLY_MODIFIED.key);
+	await page.goto(`/npm/${MADE_UP}/0.9.0/1.0.0`);
+	await ready(page);
+	const lib = row(page, "lib");
+	const index = row(page, "index.js");
+	await lib.click();
+
+	await index.click();
+	await expect(page).toHaveURL(`/npm/${MADE_UP}/0.9.0/1.0.0/lib/index.js`);
+	// The tree has taken the new address in, not only the location bar.
+	await expect(index).toHaveAttribute("aria-selected", "true");
+	await expect(lib).toHaveAttribute("aria-expanded", "true");
+
+	// The tree is built again, and the file that changed only in whitespace
+	// comes back unchanged: the same two versions, asked another way.
+	await page.getByRole("button", { name: "Settings" }).click();
+	await page.getByRole("button", { name: "Ignore whitespaces" }).click();
+	await expect(index).toHaveAttribute("data-status", "unchanged", ENGINE);
+	await expect(lib).toHaveAttribute("aria-expanded", "true");
+});
+
+test("a path that is a file in one version and a folder in the other is two rows, each its own", async ({
+	page,
+}) => {
+	await serveMadeUpPackage(page);
+	// Only what changed, so the folder opens itself on the way to its file.
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "true");
+	}, ONLY_MODIFIED.key);
+	await page.goto(`/npm/${MADE_UP}/5.0.0/6.0.0`);
+	await ready(page);
+	const at = (type: string) =>
+		page.locator(`[role="treeitem"][data-path="lib"][data-type="${type}"]`);
+	const file = at("file");
+	const folder = at("directory");
+	// The old version's first, the way a diff reads.
+	await expect(file).toHaveAttribute("data-status", "removed");
+	await expect(folder).toHaveAttribute("aria-expanded", "true");
+	await expect(row(page, "index.js")).toBeVisible();
+
+	await file.click();
+
+	// The file is open, and only the file: the folder shares its path, not
+	// its selection, and the tree is still one tab stop.
+	await expect(page).toHaveURL(`/npm/${MADE_UP}/5.0.0/6.0.0/lib`);
+	await expect(file).toHaveAttribute("aria-selected", "true");
+	await expect(folder).toHaveAttribute("aria-selected", "false");
+	await expect(page.locator('[role="treeitem"][tabindex="0"]')).toHaveCount(1);
+
+	// The arrows walk the two as two rows: on to the folder, then into it.
+	await page.keyboard.press("ArrowDown");
+	await expect(folder).toBeFocused();
+	await page.keyboard.press("ArrowDown");
+	await expect(row(page, "index.js")).toBeFocused();
 });
 
 test("shows at a glance which rows open and which are files", async ({
@@ -273,11 +482,15 @@ test("the panel is resizable, within limits, and stays where it was put", async 
 	await page.mouse.up();
 
 	expect(await width()).toBe(440);
+	await expect(handle).toHaveAttribute("aria-valuenow", "440");
 
 	await page.reload();
 	await ready(page);
 
 	expect(await width()).toBe(440);
+	// The handle announces the width the panel is at, not the default the
+	// server rendered it with.
+	await expect(handle).toHaveAttribute("aria-valuenow", "440");
 });
 
 test("a stored width is applied before the first paint", async ({ page }) => {
@@ -285,7 +498,7 @@ test("a stored width is applied before the first paint", async ({ page }) => {
 	// its default and jumps once React hydrates is a visible flash.
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "9999");
-	}, TREE_WIDTH_KEY);
+	}, TREE_WIDTH.key);
 	await page.goto(EXPRESS);
 
 	const applied = await page.evaluate(() =>
@@ -342,7 +555,7 @@ test("the sidebar collapses from its edge, reopens from the header, and stays ho
 	await expect(panel).toBeVisible();
 	await expect(expand).toBeHidden();
 	expect(
-		await page.evaluate((key) => localStorage.getItem(key), TREE_COLLAPSED_KEY),
+		await page.evaluate((key) => localStorage.getItem(key), TREE_COLLAPSED.key),
 	).toBe("false");
 });
 
@@ -351,7 +564,7 @@ test("a collapsed sidebar is applied before the first paint", async ({
 }) => {
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "true");
-	}, TREE_COLLAPSED_KEY);
+	}, TREE_COLLAPSED.key);
 	await page.goto(EXPRESS);
 
 	expect(
@@ -366,7 +579,7 @@ test("F finds: it opens a shut sidebar and lands in the filter", async ({
 }) => {
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "true");
-	}, TREE_COLLAPSED_KEY);
+	}, TREE_COLLAPSED.key);
 	await page.goto(EXPRESS);
 	await ready(page);
 

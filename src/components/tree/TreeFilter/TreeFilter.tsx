@@ -3,10 +3,7 @@ import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import { FilterIcon, SearchIcon } from "#/components/ui/icons.tsx";
 import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
 import { useKeyShortcut } from "#/components/ui/useKeyShortcut.ts";
-import {
-	TREE_COLLAPSED_ATTRIBUTE,
-	toggleTreeCollapsed,
-} from "#/lib/tree/prefs.ts";
+import { sidebar } from "#/lib/tree/sidebar.ts";
 import styles from "./TreeFilter.module.css";
 
 export interface TreeFilterProps {
@@ -32,9 +29,7 @@ export function TreeFilter({
 	const input = useRef<HTMLInputElement>(null);
 	// A shut sidebar is opened first: a hidden field cannot take focus.
 	useKeyShortcut(SHORTCUT, () => {
-		if (document.documentElement.hasAttribute(TREE_COLLAPSED_ATTRIBUTE)) {
-			toggleTreeCollapsed(document);
-		}
+		sidebar.open();
 		input.current?.focus();
 	});
 

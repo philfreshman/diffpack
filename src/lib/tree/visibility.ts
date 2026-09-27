@@ -8,6 +8,14 @@ export interface TreeRow {
 	hasChildren: boolean;
 }
 
+/**
+ * What tells one row from another. Not the path alone: a path that is a file
+ * in one version and a folder in the other is two rows, one of each.
+ */
+export function rowKey(entry: DiffFileEntry): string {
+	return `${entry.type}:${entry.path}`;
+}
+
 /** Everything the user has done to the tree that changes what it shows. */
 export interface TreeView {
 	filter: string;
@@ -62,18 +70,17 @@ function isVisible(entry: DiffFileEntry, view: TreeView): boolean {
 
 /**
  * A package whose whole content sits under one folder (`src/`, a Go module's
- * package directory) would otherwise present as a single unopened row. Nothing
- * chosen by hand yet is what makes this safe to decide for the user.
+ * package directory) would otherwise present as a single unopened row. Only
+ * shutting that folder by hand overrides this: opening a folder inside it is a
+ * choice about that folder, and must not shut the one around it.
  */
 function withSoleRootOpen(root: DiffFileEntry, view: TreeView): TreeView {
 	const children = root.children ?? [];
 	const sole = children.length === 1 ? children[0] : undefined;
 	if (sole?.type !== "directory") return view;
-	if (view.expandedKeys.size > 0 || view.collapsedKeys.has(sole.path)) {
-		return view;
-	}
+	if (view.collapsedKeys.has(sole.path)) return view;
 
-	return { ...view, expandedKeys: new Set([sole.path]) };
+	return { ...view, expandedKeys: new Set([...view.expandedKeys, sole.path]) };
 }
 
 function collect(

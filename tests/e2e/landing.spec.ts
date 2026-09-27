@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { THEME_STORAGE_KEY } from "#/lib/theme.ts";
+import { THEME_SELECTION } from "#/lib/storage/settings.ts";
 
 test("offers every registry diffpack supports", async ({ page }) => {
 	await page.goto("/");
@@ -85,7 +85,7 @@ test("hangs the nebula behind the stars, in the dark theme only", async ({
 
 	await page.evaluate(
 		(key) => localStorage.setItem(key, "light"),
-		THEME_STORAGE_KEY,
+		THEME_SELECTION.key,
 	);
 	await page.reload();
 
