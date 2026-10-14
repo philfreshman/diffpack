@@ -225,8 +225,19 @@ server function).
 
 ## Working here
 
-- Branch from `development` and open PRs against it. Conventional Commits, with a scope where one
-  fits: `fix(tree): …`, `test(worker): …`, `chore(deps): …`.
+- Picking up a GitHub issue: set it to In Progress.
+- Pull the latest `development`, branch from it, and open PRs against it. Keep branch names short
+  and named for the change: `feat/…`, `fix/…`.
+- Split work into small, independent commits. Conventional Commits, with a scope where one fits:
+  `fix(tree): …`, `test(worker): …`, `chore(deps): …`. A commit message is a short imperative
+  header, a blank line, and a brief body saying why; the longer explanation goes in the PR
+  description.
+- Commits and PRs carry no AI attribution: no `Co-Authored-By` trailer, no "Generated with" line.
+- After a PR merges: switch to `development`, pull, then delete the merged local branch and its
+  worktree.
+- Write commit messages, PR descriptions and docs in plain, direct language. When a technical term
+  is needed, explain it briefly.
+- Write code in Clean Code style.
 - Match the codebase's comment style: a comment says *why*, in full sentences, and names the
   constraint it protects. The doc comments in `src/lib/` are the design notes for their modules.
   Read them before changing one, and update them when the reason changes.
