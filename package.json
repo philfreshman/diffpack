@@ -38,7 +38,7 @@
 		"zod": "4.4.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.14",
+		"@biomejs/biome": "2.5.15",
 		"@playwright/test": "1.62.1",
 		"@tanstack/react-router-devtools": "1.167.1",
 		"@tanstack/router-cli": "1.167.32",
