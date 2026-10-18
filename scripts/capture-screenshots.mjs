@@ -1,22 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Recaptures the reference set in `migration/screenshots/` against a running
- * build, so the rebuild can be read against the Astro site frame by frame.
+ * Recaptures `migration/screenshots/` against a running build, for review by eye.
+ * Shot names, sizes and framing must match the reference set.
  *
- * The names and the framing are the contract: shot `07` here must be the same
- * view, at the same size, as `07` in the reference folder, or the pair cannot
- * be compared. Sizes are the reference set's — a 1440×900 window at
- * `deviceScaleFactor: 2`, and 390×844 for the one mobile shot.
- *
- *     bun run dev
- *     bun scripts/capture-screenshots.mjs                    # -> screenshots/
  *     bun scripts/capture-screenshots.mjs --only 07 12 --out /tmp/shots
- *     BASE_URL=http://localhost:4321 bun scripts/capture-screenshots.mjs
- *
- * It is a harness, not a test: it never asserts. Comparing what it produced
- * with `migration/screenshots/` is the review step, and one that a human does —
- * the two trees are different implementations, so a pixel comparison would be
- * red everywhere and say nothing.
  */
 import { mkdir } from "node:fs/promises";
 import { chromium } from "@playwright/test";
@@ -26,17 +13,10 @@ const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
 const DESKTOP = { width: 1440, height: 900 };
 const MOBILE = { width: 390, height: 844 };
 
-/** Two archives over the network, extracted in a worker. */
 const ENGINE = 90_000;
 
-/**
- * The comparisons the reference set was taken from. Nearly every diff and tree
- * shot in it is `node 26.6.0 → 26.7.0` — two files, one changed line each — so
- * that is what these use too. A shot of a different package would be a picture
- * of a different thing, and the pair could not be read against each other.
- */
+// The reference set's own comparisons; another package breaks the pairing.
 const NODE = "/npm/node/26.6.0/26.7.0";
-/** Where the reference needed a deep tree instead. */
 const EXPRESS = "/npm/express/4.18.2/5.1.0";
 const CHI = "/go/github.com/go-chi/chi/v5/v5.3.1/v5.3.2";
 
@@ -62,7 +42,6 @@ function readList(name) {
 const tree = (page) =>
 	page.getByRole("treeitem").and(page.locator("[data-type='file']"));
 
-/** Waits for the engine rather than for a duration. */
 async function diffReady(page) {
 	await page
 		.getByTestId("diff-status")
@@ -79,11 +58,6 @@ async function openFile(page, path, file) {
 	await page.waitForTimeout(500);
 }
 
-/**
- * Each shot: the file name it is written under, the theme the reference was
- * taken in, an optional viewport, what to do to get there, and — when the
- * reference is a crop rather than a page — the element to clip to.
- */
 const SHOTS = [
 	{
 		name: "01-landing-dark",
@@ -235,16 +209,13 @@ const SHOTS = [
 		name: "19-mobile-diff",
 		theme: "dark",
 		viewport: MOBILE,
-		// Mobile layout is deferred (plan §9.6, open question 11.10), so this
-		// one is expected to differ from its reference. It is captured anyway:
-		// what it looks like today is the input to that decision.
+		// Expected to differ from its reference: the mobile layout is deferred.
 		act: (page) => openFile(page, NODE, "package.json"),
 	},
 	{
 		name: "21-tree-nested-badges",
 		theme: "dark",
 		clip: "[data-testid='tree-panel']",
-		// express, for a tree with folders in it to aggregate counts over.
 		act: (page) => openFile(page, EXPRESS, "index.js"),
 	},
 	{
@@ -294,8 +265,7 @@ const SHOTS = [
 	{
 		name: "27-go-diff",
 		theme: "dark",
-		// `go.mod` does not change between these tags, so the only-modified tree
-		// never lists it.
+		// `go.mod` is unchanged between these tags, so the tree hides it.
 		act: (page) => openFile(page, CHI, "tree.go"),
 	},
 ];
@@ -320,8 +290,7 @@ async function main() {
 			deviceScaleFactor: 2,
 			colorScheme: shot.theme,
 		});
-		// The theme is a stored preference read before the first paint, not a
-		// media query, so it is set the way a returning visitor would have it.
+		// The theme is a stored setting, not a media query.
 		await context.addInitScript(
 			(theme) => localStorage.setItem("theme", theme),
 			shot.theme,

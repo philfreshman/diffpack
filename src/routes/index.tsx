@@ -18,8 +18,6 @@ export const Route = createFileRoute("/")({
 function Home() {
 	return (
 		<>
-			{/* The night sky belongs to the landing page: the workspace pages are for
-			    reading diffs, and a pulsing background competes with them. */}
 			<div className={styles.cosmos} aria-hidden="true" data-testid="cosmos" />
 			<StarField />
 			<ThemeToggle floating />

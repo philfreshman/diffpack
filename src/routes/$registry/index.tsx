@@ -5,7 +5,6 @@ import { metaTags } from "#/lib/url/documentMeta.ts";
 import { parseSlug } from "#/lib/url/slug.ts";
 
 export const Route = createFileRoute("/$registry/")({
-	// `/npm` is the same workspace with nothing selected in it.
 	loader: ({ params }) => parseSlug(requireAdapter(params.registry), ""),
 	head: ({ params, loaderData }) =>
 		loaderData
