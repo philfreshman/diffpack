@@ -1,12 +1,6 @@
 import { useEffect, useRef } from "react";
 
-/**
- * A single unmodified key, pressed anywhere on the page other than while
- * typing, calls `onPress` — and is not typed anywhere itself. A key pressed in
- * a field is text, not a command, so the field keeps it.
- */
 export function useKeyShortcut(key: string, onPress: () => void) {
-	// The latest callback without re-subscribing on every render.
 	const handler = useRef(onPress);
 	handler.current = onPress;
 

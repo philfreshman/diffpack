@@ -1,20 +1,15 @@
-/* Controls centred on the space beside the sidebar, with the expand button
-   held in the leading corner so it does not push them off centre. */
 .header {
 	position: relative;
 	display: flex;
 	align-items: flex-end;
 	justify-content: center;
 	height: var(--workspace-header-height);
-	/* The leading space is the expand button's, held whether or not it shows:
-	   reserving it only while the sidebar is shut moved every control in the
-	   bar sideways each time the sidebar opened or closed. */
+	/* Reserved for the expand button even when hidden, so controls never shift. */
 	padding: var(--space-2) var(--space-6) var(--space-2) var(--space-12);
 	border-bottom: 1px solid var(--color-border);
 	background-color: var(--color-canvas);
 }
 
-/* Level with the inputs rather than their labels. */
 .expand {
 	position: absolute;
 	bottom: calc(var(--space-2) + 2px);
@@ -26,9 +21,7 @@
 	color: var(--color-foreground);
 }
 
-/* Shown from the moment a drag lets go into a snap, not once the panel has
-   finished closing: the way back has to be there as soon as the way out is
-   taken. */
+/* Shown as soon as a drag snaps shut, not once the panel finishes closing. */
 :global(html:not([data-tree-collapsed], [data-tree-snapping])) .expand {
 	display: none;
 }
@@ -41,6 +34,3 @@
 	align-items: flex-end;
 	gap: var(--space-4);
 }
-
-/* Each control claims its own share of the row — the package name is the
-   longest text in it, the versions are short, Compare is a fixed label. */

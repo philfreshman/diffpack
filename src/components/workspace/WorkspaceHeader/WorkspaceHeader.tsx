@@ -7,15 +7,6 @@ import { PackageCombobox } from "../PackageCombobox/PackageCombobox.tsx";
 import { VersionControls } from "../VersionControls/VersionControls.tsx";
 import styles from "./WorkspaceHeader.module.css";
 
-/**
- * Always mounted, whatever the URL says: the header is how a comparison is
- * assembled, so it exists before there is anything to compare — package, two
- * versions, then Compare, left to right.
- *
- * It is the bar beside the sidebar, not over it, so it carries no wordmark: the
- * sidebar's registry switcher is the way out of the workspace. What it does
- * carry is the way back into a shut sidebar, shown only while it is shut.
- */
 export function WorkspaceHeader({ slug }: { slug: DiffSlug }) {
 	const adapter = requireAdapter(slug.registry);
 

@@ -1,9 +1,5 @@
 import type { SVGProps } from "react";
 
-/**
- * Line icons on a 24×24 grid, stroked with `currentColor` so they inherit the
- * theme. Decorative by default — the accessible name belongs to the control.
- */
 type IconProps = SVGProps<SVGSVGElement>;
 
 function Icon({ children, ...props }: IconProps) {

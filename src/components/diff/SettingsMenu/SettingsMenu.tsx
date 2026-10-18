@@ -9,26 +9,11 @@ import { HIGHLIGHT_THEMES } from "#/lib/diff/highlightThemes.ts";
 import styles from "./SettingsMenu.module.css";
 
 export interface SettingsMenuProps {
-	/** Whether a line that differs only in whitespace counts as a change. */
 	ignoreWhitespace: boolean;
 	onIgnoreWhitespaceChange(ignore: boolean): void;
-	/**
-	 * Which theme the code is coloured with. Held above the toolbar rather than
-	 * here: the viewer takes its own surfaces from the same choice, and two
-	 * copies of the hook would be two answers to one question.
-	 */
+	/** Passed in, not called here: the viewer must read the same hook instance. */
 	highlight: HighlightThemeControls;
 }
-
-/**
- * The gear: everything about how a diff is read that is not a button in its
- * own right on the toolbar.
- *
- * It is a navigation menu rather than a select because it holds settings of
- * more than one kind — a switch, and a list long enough to want a fold of its
- * own — and because that is what the two of them will keep being as more are
- * added.
- */
 export function SettingsMenu({
 	ignoreWhitespace,
 	onIgnoreWhitespaceChange,
@@ -49,8 +34,6 @@ export function SettingsMenu({
 					<NavigationMenu.Content className={styles.content}>
 						<ul className={styles.options}>
 							<li>
-								{/* It says whether it is on the way a chosen theme does —
-								    a tick at the end of its own row. */}
 								<button
 									className={styles.option}
 									aria-pressed={ignoreWhitespace}
@@ -69,8 +52,6 @@ export function SettingsMenu({
 							</li>
 
 							<li>
-								{/* Twenty-three themes are a list to scan, not a row of
-								    controls, so they fold in behind their own name. */}
 								<NavigationMenu.Root orientation="vertical">
 									<NavigationMenu.List className={styles.options}>
 										<NavigationMenu.Item>
@@ -153,7 +134,6 @@ export function SettingsMenu({
 	);
 }
 
-/** The name of the theme in force, or nothing until it has been read. */
 function label(theme: string | null): string {
 	return HIGHLIGHT_THEMES.find((it) => it.value === theme)?.label ?? "";
 }

@@ -9,25 +9,12 @@ declare global {
 	}
 }
 
-/**
- * How long a route is given to write its title before the view is reported.
- *
- * Measured, not guessed: in a production build the head is reconciled about a
- * second after the click — and mutates twice before that with the *old* title
- * still in place — where `vite dev` manages it in tens of milliseconds. A
- * deadline tuned against dev reports every view under the previous page's name.
- */
+// Measured on a production build, where the title lands about a second after
+// the click. `vite dev` is far faster, so do not tune this against dev.
 const TITLE_GRACE_MS = 3_000;
 
-/**
- * The Astro site was a document per URL, so gtag.js counted every comparison on
- * its own. Here a comparison is a client-side navigation and the inline
- * `config` fires exactly once, which would collapse the whole site into one
- * page_view. This sends the rest.
- *
- * The first resolved location is the one `config` already reported, so it is
- * skipped rather than counted twice.
- */
+// The inline gtag `config` reports only the first page; this reports every
+// client-side navigation after it, so it skips the first location.
 export function Analytics() {
 	const href = useRouterState({
 		select: (state) => state.location.href,
@@ -42,12 +29,8 @@ export function Analytics() {
 		if (reported.current === href) return;
 		reported.current = href;
 
-		// The route's `<title>` is not written in this commit, or in the frame
-		// after it — the head is reconciled a moment later, on no schedule worth
-		// racing. Sending straight away would file every view under the title of
-		// the page the visitor just left, so this waits for the head to change
-		// and gives up after a beat, which is the case where the new route's
-		// title is the same as the old one's.
+		// The new `<title>` is written some time after this commit, so wait for it,
+		// up to TITLE_GRACE_MS (the case where the title does not change).
 		const before = document.title;
 		let sent = false;
 		const send = () => {
@@ -63,9 +46,7 @@ export function Analytics() {
 			});
 		};
 
-		// The head is touched for other reasons mid-transition — a stylesheet
-		// link, the theme meta — so a mutation is only the signal when the title
-		// it carries is a new one.
+		// The head also changes for other reasons, so only a new title counts.
 		const observer = new MutationObserver(() => {
 			if (document.title !== before) send();
 		});
@@ -76,9 +57,7 @@ export function Analytics() {
 		});
 		const deadline = setTimeout(send, TITLE_GRACE_MS);
 
-		// A navigation that arrives before the title does still happened: report
-		// it on the way out rather than dropping it, since a missing view is
-		// worse than one named after the page it was leaving.
+		// A navigation that beats the title is still reported, not dropped.
 		return send;
 	}, [href]);
 

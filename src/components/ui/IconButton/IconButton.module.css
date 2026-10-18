@@ -15,8 +15,6 @@
 	background-color: var(--color-surface-hover);
 }
 
-/* Stood down rather than hidden: a control the reader can see is missing is
-   easier to make sense of than one that comes and goes. */
 .iconButton:disabled {
 	opacity: 0.4;
 	cursor: default;

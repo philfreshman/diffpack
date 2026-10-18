@@ -14,28 +14,12 @@ import { usePanelResize } from "./usePanelResize.ts";
 
 export interface TreePanelProps {
 	tree: DiffFileEntry | null;
-	/**
-	 * Which comparison the tree is of. A new one starts with no folders chosen
-	 * by hand; the same one rebuilt, or with another file open, keeps them.
-	 */
 	comparison: string;
 	selectedPath: string;
 	onOpenFile(path: string): void;
-	/** What stands over the panel: where a dashboard keeps its team switcher. */
 	header?: ReactNode;
-	/**
-	 * What the tree amounts to, stated at its foot — the count belongs to the
-	 * list it counts, so it sits under it rather than over the whole body.
-	 */
 	footer?: ReactNode;
 }
-
-/**
- * The sidebar: how the comparison is navigated, full height down the left of
- * the window the way a dashboard keeps its navigation. It owns what the tree
- * shows — the filter, only-modified, and which folders the user has opened or
- * closed by hand — and hands `visibleRows` the whole of that state at once.
- */
 export function TreePanel({
 	tree,
 	comparison,
@@ -48,13 +32,8 @@ export function TreePanel({
 	const { value: onlyModified, set: setOnlyModified } =
 		useSetting(ONLY_MODIFIED);
 
-	// Which folders were opened or closed by hand, in which comparison. What
-	// each change does to them is `folderReducer`'s to say; the panel only
-	// says what happened.
 	const [folders, dispatch] = useReducer(folderReducer, comparison, foldersFor);
-	// Starting over for a new comparison is an adjustment to a prop, made
-	// while rendering rather than in an effect, which would render once more
-	// with the last comparison's folders first.
+	// Reset during render: an effect would render once with the old comparison's folders.
 	if (folders.comparison !== comparison)
 		dispatch({ kind: "reset", comparison });
 	const { expandedKeys, collapsedKeys } = folders;
@@ -69,7 +48,6 @@ export function TreePanel({
 		dispatch({ kind: "toggle", path, expanded });
 	}
 
-	/** The filter and only-modified change what the tree holds. */
 	function narrow(change: () => void) {
 		dispatch({ kind: "narrow" });
 		change();
@@ -81,8 +59,6 @@ export function TreePanel({
 
 	return (
 		<aside className={styles.panel} ref={panelRef} data-testid="tree-panel">
-			{/* Held at the panel's minimum and pinned to its right edge, so a drag
-			    past the minimum slides it out of the window instead of crushing it. */}
 			<div className={styles.content} ref={contentRef}>
 				{header && <div className={styles.head}>{header}</div>}
 				<div className={styles.filter}>
@@ -101,9 +77,6 @@ export function TreePanel({
 				/>
 				{footer && <div className={styles.foot}>{footer}</div>}
 			</div>
-			{/* The edge is a grip and, on hover, the way to shut the panel: the
-			    button sits across the rule rather than inside the panel, so it
-			    takes nothing from the tree's width. */}
 			<div className={styles.edge}>
 				{/* biome-ignore lint/a11y/useSemanticElements: an <hr> cannot be dragged */}
 				<div

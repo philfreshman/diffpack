@@ -7,14 +7,11 @@ import {
 	thumbMetrics,
 } from "#/lib/diff/scrollbar.ts";
 
-/** How long the scrollbar stays after the reader has stopped moving. */
 const HIDE_DELAY = 600;
 
-/** What the scrollbar needs to draw itself and to be driven. */
 export interface DiffScrollbar {
-	/** Where the thumb sits, or `null` while the file fits on screen. */
+	/** `null` while the file fits on screen. */
 	thumb: Thumb | null;
-	/** Whether it is currently on show. */
 	shown: boolean;
 	track: RefObject<HTMLDivElement | null>;
 	onTrackMouseDown(event: React.MouseEvent): void;
@@ -23,14 +20,7 @@ export interface DiffScrollbar {
 	onTrackMouseLeave(): void;
 }
 
-/**
- * The scrollbar's behaviour, over a scroller it does not own.
- *
- * The file is scrolled by setting `scrollTop`, never by moving the thumb
- * directly: the thumb is drawn from the scroll position, so there is one
- * source of truth and a scroll from the wheel, a drag and a click through the
- * file tree all put it in the same place.
- */
+/** Drives `scrollTop` only; the thumb is always drawn from the scroll position. */
 export function useDiffScrollbar(
 	scroller: RefObject<HTMLElement | null>,
 ): DiffScrollbar {
@@ -38,8 +28,6 @@ export function useDiffScrollbar(
 	const [shown, setShown] = useState(false);
 	const track = useRef<HTMLDivElement>(null);
 
-	// Held so the bar does not vanish out from under a pointer that is still on
-	// it, or mid-drag — both are the reader using it, not ignoring it.
 	const held = useRef({ hovering: false, dragging: false });
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -55,8 +43,6 @@ export function useDiffScrollbar(
 		if (scroller.current) setThumb(thumbMetrics(scroller.current));
 	}, [scroller]);
 
-	// A scroll is what the scrollbar is about: it both moves the thumb and is
-	// the reason to show it.
 	useEffect(() => {
 		const element = scroller.current;
 		if (!element) return;
@@ -70,8 +56,7 @@ export function useDiffScrollbar(
 		element.addEventListener("scroll", onScroll, { passive: true });
 		measure();
 
-		// The file changes height under it — a fold opens, the window resizes,
-		// a wrapped row remeasures — and each of those changes the thumb.
+		// Folds, resizes and remeasured rows change the height without a scroll.
 		const observer = new ResizeObserver(measure);
 		observer.observe(element);
 		const content = element.firstElementChild;
@@ -94,7 +79,7 @@ export function useDiffScrollbar(
 		(event: React.MouseEvent) => {
 			const element = scroller.current;
 			if (!element) return;
-			// Otherwise the drag selects the file's text as it passes over it.
+			// Otherwise the drag selects the file's text.
 			event.preventDefault();
 			event.stopPropagation();
 
