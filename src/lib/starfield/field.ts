@@ -1,46 +1,25 @@
-/**
- * The star field as data. Every star is a diff mark — a `+` or a `−` — scattered
- * through a cube that wraps around the viewer, so the field can be flown through
- * forever without running out. The generator takes its randomness as an argument
- * so a seed produces the same sky twice, which is what makes it safe to build
- * during hydration and testable without a browser.
- */
-
 export interface DiffMark {
-	/** World position, each axis in −`FIELD_HALF`..`FIELD_HALF`. */
 	x: number;
 	y: number;
 	z: number;
-	/** Relative size, before perspective and the device pixel ratio. */
 	size: number;
-	/** Length of one pulse, in milliseconds. */
 	periodMs: number;
-	/** Where in its pulse the mark starts, 0..1, so they do not blink in unison. */
 	phase: number;
-	/** A `+` when true, a `−` when false. */
 	plus: boolean;
 }
 
-/**
- * Half the side of the cube the field lives in. The shader wraps marks within
- * it, and the far fade puts them out of sight well before the seam, so the
- * count below is much larger than what is ever on screen at once.
- */
+/** The shader wraps marks within this cube, and the far fade hides the seam. */
 export const FIELD_HALF = 38;
 export const MARK_COUNT = 6500;
 export const FIELD_SEED = 0x5eed;
 
-/** Rather more `+` than `−`, which is what a release usually looks like. */
 const PLUS_SHARE = 0.62;
 const MIN_SIZE = 0.55;
 const MAX_SIZE = 1.65;
 const MIN_PERIOD_MS = 2000;
 const MAX_PERIOD_MS = 6000;
 
-/**
- * Mulberry32 — small, fast, and good enough for scattering marks. Seeded so the
- * field is reproducible.
- */
+/** Mulberry32. Seeded so a seed gives the same sky twice, which hydration relies on. */
 export function createRng(seed: number): () => number {
 	let state = seed >>> 0;
 	return () => {

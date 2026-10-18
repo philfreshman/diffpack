@@ -6,11 +6,8 @@ import type { Fetcher, RegistryAdapter } from "./types.ts";
 const BACKEND_URL = "https://api.diffpack.io";
 const DEPS_DEV_URL = "https://api.deps.dev/v3/systems/pypi/packages";
 
-/**
- * PyPI has no CORS-reachable search API, so search goes through diffpack's own
- * backend (a separate service). Its payload is validated because the contract
- * lives outside this repo.
- */
+// PyPI search goes through diffpack's own backend, whose contract lives outside
+// this repo, so its payload is validated.
 const SearchResponse = z.array(
 	z.object({
 		name: z.string(),
