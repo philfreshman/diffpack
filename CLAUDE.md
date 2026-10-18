@@ -192,6 +192,18 @@ its default width). The theme lands as `data-theme` on `<html>`, which is why `<
 `suppressHydrationWarning`. The sidebar width is the `--tree-panel-width` custom property and shut
 is `data-tree-collapsed`, both on `<html>` and moved without a render (`src/lib/tree/sidebar.ts`).
 
+## Code style
+
+- Write self-explaining code in Clean Code style: intention-revealing names, small functions that
+  do one thing, named constants and types instead of magic values, and a well-named helper instead
+  of a block that needs explaining.
+- Add no new comments, doc comments included. If code seems to need one, rename or restructure it
+  until it does not. The why behind a change goes in the commit message or the PR description.
+- Existing comments, the doc comments in `src/lib/` among them: keep them true when you change the
+  code they describe, and delete them once the code makes them redundant.
+- The one exception is a reason a tool requires: the explanation after a `biome-ignore` or
+  `fallow-ignore`, and the comment beside an entry in `.fallowrc.jsonc` (see `AGENTS.md`).
+
 ## CSS conventions
 
 - CSS Modules and custom properties. No Tailwind, no CSS-in-JS.
@@ -237,10 +249,6 @@ server function).
   worktree.
 - Write commit messages, PR descriptions and docs in plain, direct language. When a technical term
   is needed, explain it briefly.
-- Write code in Clean Code style.
-- Match the codebase's comment style: a comment says *why*, in full sentences, and names the
-  constraint it protects. The doc comments in `src/lib/` are the design notes for their modules.
-  Read them before changing one, and update them when the reason changes.
 - A behavior fix comes with a test that fails without it: a unit test for anything in `lib`, and
   Playwright for anything that needs the DOM, the worker or the wasm.
 - E2e tests use real registries. Only a tree shape no real package has may be stubbed with
