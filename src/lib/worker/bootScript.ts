@@ -4,33 +4,18 @@ import { IGNORE_WHITESPACE } from "#/lib/storage/settings.ts";
 import { readInHead } from "#/lib/storage/storedSetting.ts";
 import type { Comparison } from "./protocol.ts";
 
-/**
- * Where the boot script leaves what it started, for `readDiffBoot` to find. A
- * name rather than a symbol because the script that writes it and the module
- * that reads it never meet in a module graph — which is also why it is stated
- * here once and reached only through the two functions below.
- */
+// A name, not a symbol: the head script and this module share no module graph.
 const DIFF_BOOT_GLOBAL = "__diffpackDiffBoot";
 
-/**
- * What the boot script leaves behind: the worker it spawned, the comparison it
- * asked for and under which id, and every reply that landed before a client
- * existed to hear it.
- */
 export interface DiffBoot {
 	worker: Worker;
 	id: number;
-	/** What its `build-tree` asked for: the message it posted, minus the envelope. */
 	comparison: Comparison;
-	/** Replies buffered by the script's own handler, oldest first. */
+	/** Replies that arrived before a client existed, oldest first. */
 	replies: unknown[];
 }
 
-/**
- * The boot, if the script found a comparison to start. Read lazily — the
- * module is evaluated on the server too, where there is no `window` and
- * nothing has been booted.
- */
+// Read lazily: this module is also evaluated on the server.
 export function readDiffBoot(): DiffBoot | null {
 	const holder = globalThis as Record<string, unknown>;
 	return (holder[DIFF_BOOT_GLOBAL] as DiffBoot | undefined) ?? null;
@@ -38,27 +23,8 @@ export function readDiffBoot(): DiffBoot | null {
 
 const REGISTRY_IDS = registryAdapters.map((adapter) => adapter.id);
 
-/**
- * Runs in `<head>`, before anything is hydrated, so a deep link's archives are
- * already downloading by the time React has an opinion about them.
- *
- * Like `THEME_SCRIPT` it cannot import the modules it belongs to — nothing is
- * loaded yet at that point — so two things are restated inline. One is how far
- * a package name reaches into the path, which is each adapter's `packagePath`;
- * the registry ids and Go's version pattern it turns on are interpolated from
- * the adapters. The other is the fields of a `Comparison`, from `protocol.ts`,
- * written out once: the script posts that object inside the same `id`/`type`
- * envelope the client puts round its own, and leaves it for the client to
- * adopt. The stored whitespace answer is not restated at all: `readInHead`
- * writes its read from the setting's own declaration.
- *
- * Restating is what makes it possible to get this wrong, and the cost of
- * getting it wrong is bounded: the client adopts the boot's tree only for a
- * comparison with the same `comparisonKey`, so one spelled differently here is
- * simply not adopted, and the session's own request goes out instead.
- * `bootScript.test.ts` hands what the script leaves to the real client, so
- * that shows up as a failing test rather than a second download.
- */
+// Restates each adapter's `packagePath` rule and the `Comparison` fields inline,
+// since it cannot import. Change them together; `bootScript.test.ts` checks it.
 export function buildDiffBootScript(workerUrl: string): string {
 	return `(()=>{try{
 var REGISTRIES=${JSON.stringify(REGISTRY_IDS)};

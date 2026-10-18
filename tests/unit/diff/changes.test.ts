@@ -40,8 +40,6 @@ describe("rowChange", () => {
 	});
 
 	test("a split pair is a change when either side is one", () => {
-		// The arrows and the minimap both ask this, so the pair that counts as a
-		// stop is the pair that gets a band.
 		const pairs: SplitRow[] = [
 			{ kind: "pair", left: side("removed"), right: side("added") },
 			{ kind: "pair", left: side("removed"), right: null },

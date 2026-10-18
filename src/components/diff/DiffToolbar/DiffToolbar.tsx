@@ -16,48 +16,23 @@ import {
 import styles from "./DiffToolbar.module.css";
 
 export interface DiffToolbarProps {
-	/** The file being read, or `""` when the comparison has none open. */
+	/** `""` when no file is open. */
 	path: string;
-	/** Where that file sits in the changed files, and how many there are. */
 	fileIndex: number;
 	fileCount: number;
-	/** The next changed file up (`-1`) or down (`1`) the tree. */
 	onStepFile(direction: 1 | -1): void;
-	/** Back to the comparison, with no file open. */
 	onClose(): void;
-	/**
-	 * The file on screen, read from the same model the viewer draws: how many
-	 * differences it has and how to step through them, and whether it is all
-	 * open. `null` while there is no file on screen to read.
-	 */
 	file: Pick<
 		FileModelControls,
 		"differences" | "stepDifference" | "expandAll" | "setExpandAll"
 	> | null;
-	/** The old file beside the new one, rather than one after the other. */
 	split: boolean;
 	onSplitChange(split: boolean): void;
-	/** Whether a line that differs only in whitespace counts as a change. */
 	ignoreWhitespace: boolean;
 	onIgnoreWhitespaceChange(ignore: boolean): void;
-	/** Which theme the code is coloured with — the gear's longest setting. */
 	highlight: HighlightThemeControls;
 }
 
-/**
- * The bar above the viewer: on the left, where the reader is and how they move
- * — through the differences in this file, then through the files themselves;
- * on the right, how what they are reading is shown.
- *
- * It is part of the workspace's frame rather than the file's, so it stands
- * whether or not a file is open (a comparison with nothing chosen still shows
- * it, with its navigation stood down) — the layout does not rearrange itself
- * under the reader on every click.
- *
- * Expand-all is the file's state, not the toolbar's — the file model remembers
- * it per file (task 12), so the button reports what the file it is over is
- * doing rather than keeping a count of its own clicks.
- */
 export function DiffToolbar({
 	path,
 	fileIndex,
@@ -103,8 +78,6 @@ export function DiffToolbar({
 				>
 					<ArrowLeftIcon width="16" height="16" />
 				</IconButton>
-				{/* The position is stated even with nothing open, so the count of
-				    files to read is on screen before the first click. */}
 				<span className={styles.counter} data-testid="file-counter">
 					{open ? `${fileIndex + 1}/${fileCount}` : fileCount} files
 				</span>
@@ -146,11 +119,6 @@ export function DiffToolbar({
 	);
 }
 
-/**
- * The right-hand half: how what is being read is shown, rather than where in
- * it the reader is. Expand-all needs a file to work on; the two layouts do
- * not, and stay live so the choice can be made before one is opened.
- */
 function ViewControls({
 	file,
 	split,
@@ -174,8 +142,6 @@ function ViewControls({
 					<UnfoldIcon width="16" height="16" />
 				)}
 			</IconButton>
-			{/* Two buttons rather than one that swaps: which layout is showing is
-			    then readable without working out what the icon would do next. */}
 			<IconButton
 				aria-label="Switch to split view"
 				aria-pressed={split}

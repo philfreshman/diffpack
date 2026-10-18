@@ -1,6 +1,5 @@
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 
-/** One rendered line of the tree: what to draw, and how far in. */
 export interface TreeRow {
 	entry: DiffFileEntry;
 	depth: number;
@@ -8,31 +7,18 @@ export interface TreeRow {
 	hasChildren: boolean;
 }
 
-/**
- * What tells one row from another. Not the path alone: a path that is a file
- * in one version and a folder in the other is two rows, one of each.
- */
 export function rowKey(entry: DiffFileEntry): string {
 	return `${entry.type}:${entry.path}`;
 }
 
-/** Everything the user has done to the tree that changes what it shows. */
 export interface TreeView {
 	filter: string;
 	onlyModified: boolean;
-	/** Folders the user opened by hand. */
 	expandedKeys: ReadonlySet<string>;
-	/** Folders the user closed by hand, which outranks auto-expansion. */
+	/** Outranks auto-expansion. */
 	collapsedKeys: ReadonlySet<string>;
 }
 
-/**
- * The tree the user can actually see, flattened in render order.
- *
- * Flat rather than nested because everything downstream wants it flat: the
- * renderer maps over it, and ↑↓/Home/End are index arithmetic over exactly
- * this list. The root itself is structure, not content, so it is never a row.
- */
 export function visibleRows(
 	root: DiffFileEntry | null,
 	view: TreeView,
@@ -46,10 +32,6 @@ export function visibleRows(
 	return rows;
 }
 
-/**
- * A folder earns its row when something inside it does — otherwise filtering
- * to `router` or to modified files would hide the folders on the way there.
- */
 function hasVisibleDescendant(entry: DiffFileEntry, view: TreeView): boolean {
 	return (entry.children ?? []).some(
 		(child) => isVisible(child, view) || hasVisibleDescendant(child, view),
@@ -57,9 +39,7 @@ function hasVisibleDescendant(entry: DiffFileEntry, view: TreeView): boolean {
 }
 
 function isVisible(entry: DiffFileEntry, view: TreeView): boolean {
-	// The whole path, not the name: filtering for "router" should find
-	// `lib/router/index.js`, and a matching folder brings its contents with it
-	// because their paths carry its name too.
+	// The whole path, not the name, so a matching folder brings its contents.
 	const matchesFilter = entry.path
 		.toLowerCase()
 		.includes(view.filter.toLowerCase());
@@ -68,12 +48,7 @@ function isVisible(entry: DiffFileEntry, view: TreeView): boolean {
 	return matchesFilter && (!view.onlyModified || changed);
 }
 
-/**
- * A package whose whole content sits under one folder (`src/`, a Go module's
- * package directory) would otherwise present as a single unopened row. Only
- * shutting that folder by hand overrides this: opening a folder inside it is a
- * choice about that folder, and must not shut the one around it.
- */
+// A sole top-level folder opens by itself; only shutting it by hand overrides that.
 function withSoleRootOpen(root: DiffFileEntry, view: TreeView): TreeView {
 	const children = root.children ?? [];
 	const sole = children.length === 1 ? children[0] : undefined;
@@ -93,9 +68,7 @@ function collect(
 
 	const children = entry.children ?? [];
 	const hasChildren = children.length > 0;
-	// While the tree is narrowed — by a filter or by only-modified — the folders
-	// on the way to what survived open themselves, or the matches would be
-	// buried under folders the user never asked to close.
+	// While narrowed, folders on the way to a match open themselves.
 	const narrowed = view.filter.length > 0 || view.onlyModified;
 	const expanded =
 		hasChildren &&

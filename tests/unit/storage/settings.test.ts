@@ -25,13 +25,10 @@ import { memoryStore, REFUSING_STORE } from "./storeStub.ts";
 
 interface Case {
 	setting: HeadSetting<unknown>;
-	/** Stored spellings the app writes itself, and the value each one is. */
 	valid: Array<[string, unknown]>;
-	/** Anything else that can end up under the key, and what it reads as. */
 	invalid: Array<[string, unknown]>;
 }
 
-/** Keeps each case's expected values the setting's own type. */
 function reading<T>(
 	setting: HeadSetting<T>,
 	valid: Array<[string, T]>,
@@ -49,7 +46,6 @@ const CASES: Case[] = [
 			["system", "system"],
 		],
 		[
-			// diffpack is dark for anyone who has not chosen otherwise.
 			["solarized", "dark"],
 			["Light", "dark"],
 			["", "dark"],
@@ -86,9 +82,7 @@ const CASES: Case[] = [
 			["nightfall", "nightfall"],
 		],
 		[
-			// No longer offered — `"github"` was the old app's light default,
-			// and never one of its own options — so no choice at all, which
-			// follows the page theme.
+			// "github" was the old app's default and is not offered: no choice, follow the page theme.
 			["github", null],
 			["solarized", null],
 			["", null],
@@ -102,8 +96,6 @@ const CASES: Case[] = [
 			["640", 640],
 		],
 		[
-			// Brought within bounds: the panel has to stay readable and leave
-			// the diff room, whatever build or screen stored the width.
 			["40", 220],
 			["2000", 640],
 			["-5", 220],
@@ -141,12 +133,10 @@ const CASES: Case[] = [
 	),
 ];
 
-/** A store holding `raw` under `key`, and nothing under any other. */
 function storeHolding(key: string, raw: string | null) {
 	return { getItem: (asked: string) => (asked === key ? raw : null) };
 }
 
-/** Every way a store can have nothing to give for `key`. */
 function storesWithNothingFor(key: string): Array<[string, unknown]> {
 	return [
 		["nothing is stored", storeHolding(key, null)],
@@ -155,19 +145,11 @@ function storesWithNothingFor(key: string): Array<[string, unknown]> {
 	];
 }
 
-/**
- * The head script ships as a string, so the only honest way to test its read
- * is to run it — against a stubbed store, the way `bootScript.test.ts` runs
- * the diff boot.
- */
 function readInHeadFrom(setting: HeadSetting<unknown>, store: unknown) {
 	return new Function("localStorage", `return ${readInHead(setting)};`)(store);
 }
 
-/**
- * What `useSetting` reads once mounted. It hands `readSetting` no store, so
- * the stub stands in as the global for the length of the read.
- */
+// `useSetting` hands `readSetting` no store, so the stub stands in as the global.
 function readOnceMountedFrom(setting: StoredSetting<unknown>, store: unknown) {
 	const global = globalThis as { localStorage?: unknown };
 	global.localStorage = store;
@@ -178,12 +160,6 @@ function readOnceMountedFrom(setting: StoredSetting<unknown>, store: unknown) {
 	}
 }
 
-/**
- * The pre-paint scripts and the components read the same stored values before
- * and after hydration. If they disagree, the page paints one answer and then
- * flips to the other — or, for the diff boot, builds a tree the session then
- * throws away.
- */
 for (const { setting, valid, invalid } of CASES) {
 	describe(`the ${setting.key} setting`, () => {
 		test.each([...valid, ...invalid])(
@@ -204,8 +180,7 @@ for (const { setting, valid, invalid } of CASES) {
 			},
 		);
 
-		// What is written has to read back as itself: the spellings are the
-		// old app's, and returning visitors already have them stored.
+		// The spellings are the old app's, and returning visitors already have them stored.
 		test.each(valid)(
 			"stores the value %p reads as in that spelling",
 			(raw, value) => {
@@ -215,10 +190,6 @@ for (const { setting, valid, invalid } of CASES) {
 	});
 }
 
-/**
- * The table is kept by hand, so a setting declared without a row in it would
- * never be held to its head read — the very drift this file is here to catch.
- */
 test("has a row for every setting declared in settings.ts", () => {
 	const exported: unknown[] = Object.values(settings);
 	const declared = exported.filter(
@@ -231,11 +202,6 @@ test("has a row for every setting declared in settings.ts", () => {
 	);
 });
 
-/**
- * A module that keeps a setting can hand in the store it is kept in — a test
- * does, to run that module against a store it controls — and the guard around
- * the page's own store holds around that one too.
- */
 describe("a store handed in", () => {
 	test("is the one read from and written to", () => {
 		const store = memoryStore();
@@ -252,11 +218,7 @@ describe("a store handed in", () => {
 	});
 });
 
-/**
- * Every script `__root.tsx` puts in `<head>`. The storage rule in the rule
- * pack cannot see a call inside a string — that is how the diff boot once read
- * another module's key unnoticed — so a hand-written read is caught here.
- */
+// The rule pack cannot see a `localStorage` call inside a string, so a hand-written read is caught here.
 const HEAD_SCRIPTS = {
 	THEME_SCRIPT,
 	TREE_WIDTH_SCRIPT,
@@ -276,11 +238,6 @@ test.each(Object.entries(HEAD_SCRIPTS))(
 	},
 );
 
-/**
- * History has no reading in `<head>`, so there is nothing to agree with; what
- * it has instead is a key per registry and a JSON value. `parseHistory`'s own
- * suite covers what else can be under the key.
- */
 describe("the search history setting", () => {
 	test("keeps the key the old app wrote, per registry", () => {
 		expect(searchHistory("npm").key).toBe("search_history_npm");
@@ -288,8 +245,7 @@ describe("the search history setting", () => {
 	});
 
 	test("is the same setting for a registry every time it is asked for", () => {
-		// `useSetting` reads again whenever it is handed a different setting, so
-		// a fresh one per render would be a read per render.
+		// `useSetting` reads again whenever it is handed a different setting.
 		expect(searchHistory("npm")).toBe(searchHistory("npm"));
 	});
 

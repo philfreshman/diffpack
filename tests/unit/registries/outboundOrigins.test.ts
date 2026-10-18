@@ -6,18 +6,7 @@ import { createPypiAdapter } from "#/lib/registries/pypi.ts";
 import type { Fetcher, RegistryAdapter } from "#/lib/registries/types.ts";
 import { json, stubFetch, text } from "./fetchStub.ts";
 
-/**
- * `fallow security` reports `getJson`/`getText` as SSRF candidates (CWE-918):
- * both hand `request()` a URL it did not build itself. The triage on #111 is
- * that a package name cannot steer the destination host, because every URL in
- * this layer is an absolute constant origin with the name appended — and a
- * relative path, however hostile, cannot introduce a new authority.
- *
- * That is an argument about how these URLs are assembled, so it stops being
- * true the moment one is assembled differently: `new URL(name, BASE)` would
- * let `https://evil.example` in `name` replace the base outright, and reads
- * almost identically. This asserts the property instead of restating it.
- */
+// Asserts the SSRF triage (#111, docs/security-candidates.md): a name is appended to a constant origin, never resolved with `new URL(name, BASE)`.
 const ALLOWED_ORIGINS: Record<string, string[]> = {
 	npm: ["https://registry.npmjs.org"],
 	crates: ["https://crates.io", "https://static.crates.io"],
@@ -29,12 +18,7 @@ const ALLOWED_ORIGINS: Record<string, string[]> = {
 	go: ["https://proxy.golang.org"],
 };
 
-/**
- * Names that would each redirect the request somewhere else if the name were
- * ever resolved against the registry URL rather than appended to it. The last
- * two also cover the module paths Go accepts, which are the only names in this
- * layer that legitimately contain slashes.
- */
+// The last two are shaped like Go module paths, the only names here that may contain slashes.
 const HOSTILE_NAMES = [
 	"https://evil.example/pkg",
 	"//evil.example/pkg",
@@ -43,7 +27,6 @@ const HOSTILE_NAMES = [
 	"github.com/Evil/../../evil.example",
 ];
 
-/** Every adapter behind its factory, so each gets a recording fetcher. */
 const ADAPTERS: {
 	id: string;
 	create: (fetcher: Fetcher) => RegistryAdapter;
@@ -54,7 +37,7 @@ const ADAPTERS: {
 	{ id: "go", create: createGoAdapter },
 ];
 
-/** Shapes every adapter can parse, so a rejection is never the reason a URL went unrecorded. */
+// Shapes every adapter can parse, so a rejection is never why a URL went unrecorded.
 function answerAnything(url: string): Response {
 	if (url.includes("proxy.golang.org")) return text("v1.0.0\n");
 	if (url.includes("api.diffpack.io")) return json([]);
@@ -76,8 +59,7 @@ for (const { id, create } of ADAPTERS) {
 			const adapter = create(fetcher);
 
 			for (const name of HOSTILE_NAMES) {
-				// A hostile name is an ordinary miss to an adapter — what matters
-				// is where it went before deciding that, not whether it threw.
+				// A hostile name is an ordinary miss; what matters is where the request went first.
 				await adapter.search(name).catch(() => []);
 				await adapter.versions(name).catch(() => []);
 			}

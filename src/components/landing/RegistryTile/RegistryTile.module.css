@@ -30,7 +30,6 @@
 	--tile-accent: var(--registry-pypi-rgb);
 }
 
-/* The old page wrote this box-shadow from inline onmouseover/onmouseout. */
 .tile:hover,
 .tile:focus-visible {
 	transform: scale(1.02);

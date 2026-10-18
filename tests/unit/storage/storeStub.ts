@@ -1,6 +1,5 @@
 import type { SettingStore } from "#/lib/storage/storedSetting.ts";
 
-/** A store that keeps what it is given for the length of a test. */
 export function memoryStore(): SettingStore {
 	const held = new Map<string, string>();
 

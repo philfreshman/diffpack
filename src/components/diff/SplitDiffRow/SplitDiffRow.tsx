@@ -3,12 +3,6 @@ import { highlightLine } from "#/lib/diff/highlight.ts";
 import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
 import styles from "./SplitDiffRow.module.css";
 
-/**
- * The same line in both files, side by side. A removal and the addition that
- * replaced it are one change, so they arrive here already set opposite each
- * other (`pairSplitRows`); a side with nothing on it is a line the other file
- * does not have.
- */
 export function SplitDiffRow({
 	left,
 	right,

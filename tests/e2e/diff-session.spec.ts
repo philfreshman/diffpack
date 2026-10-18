@@ -1,20 +1,11 @@
 import { expect, type Page, test } from "@playwright/test";
 
-/**
- * The engine, driven through the workspace rather than a harness: the URL is
- * the request for a comparison, so these navigate and then assert on what the
- * page ends up holding. They hit the real registries, which is the only place
- * the WASM can run (task 1).
- *
- * `node` is a two-file npm package, which keeps the downloads small.
- */
+// A two-file package, which keeps the downloads small.
 const NODE = "/npm/node/26.6.0/26.7.0";
 
-/** Downloading and extracting two archives is not a 10 s assertion. */
 const ENGINE = { timeout: 90_000 };
 
 const status = (page: Page) => page.getByTestId("diff-status");
-/** Files are reached through the tree; folders are `treeitem`s too. */
 const files = (page: Page) =>
 	page.getByRole("treeitem").and(page.locator("[data-type='file']"));
 
@@ -66,17 +57,13 @@ test("the file on screen is the file last asked for", async ({ page }) => {
 	);
 	expect(second).toBeDefined();
 
-	// What the second file looks like on its own, so a stale reply carrying the
-	// first file's lines is a different answer and not just a different label.
-	// The engine's `--- from/…` header, which the old assertion read, is not
-	// rendered any more — the parser strips it (task 11).
+	// The second file on its own, so a stale reply with the first file's lines is a different answer, not just a different label.
 	await page.goto(`${NODE}/${second}`);
 	const alone = await page.getByTestId("diff-view").getAttribute("data-rows");
 
 	await page.goto(NODE);
 	await ready(page);
-	// Clicked back to back: the reply to the first must not overwrite the
-	// second, whichever order the worker answers in.
+	// Back to back: the first reply must not overwrite the second, whichever arrives last.
 	await files(page).nth(0).click();
 	await files(page).nth(1).click();
 
@@ -108,9 +95,6 @@ test("nothing to compare, nothing started", async ({ page }) => {
 	await page.goto("/npm/express");
 
 	await expect(status(page)).toHaveAttribute("data-state", "idle");
-	// The panel and the bar are the workspace's frame and stand either way, but
-	// half a package name is not a comparison: nothing has been fetched, so
-	// there are no rows in the tree and nothing said about a count.
 	await expect(page.getByRole("treeitem")).toHaveCount(0);
 	await expect(status(page)).toBeEmpty();
 });
@@ -119,9 +103,7 @@ test("extracts a Go module and strips its versioned root", async ({ page }) => {
 	await page.goto("/go/github.com/go-chi/chi/v5/v5.3.1/v5.3.2");
 	await ready(page);
 
-	// Module zips prefix every entry with `<module>@<version>/`. That prefix
-	// embeds the version, so leaving it on would make every file read as
-	// removed-then-added, under a folder named after the version.
+	// Module zips prefix every entry with `<module>@<version>/`, which would make every file read as replaced.
 	await expect(files(page).filter({ hasText: "tree.go" })).toHaveCount(1);
 	await expect(page.locator("[data-path*='@v5.']")).toHaveCount(0);
 });

@@ -6,16 +6,8 @@ import {
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
 
-/**
- * express 4.18.2 → 5.1.0: a real, nested, thoroughly changed comparison, which
- * is what the tree exists for. It comes from the real registry, unstubbed: the
- * engine only runs in a worker, and real archives are what it has to cope
- * with. The made-up package below is the one exception, for a shape no real
- * package has.
- */
 const EXPRESS = "/npm/express/4.18.2/5.1.0";
 
-/** Downloading and extracting two archives is not a 10 s assertion. */
 const ENGINE = { timeout: 90_000 };
 
 const tree = (page: Page) => page.getByRole("tree");
@@ -30,26 +22,19 @@ async function ready(page: Page) {
 	);
 }
 
-/**
- * A package made up for a tree that is one folder deep, which no real registry
- * serves: every npm, crates.io and PyPI archive keeps its manifest at the root,
- * beside whatever folders it has. Its version list and its tarballs are
- * answered from here, and the engine unpacks them like any others.
- */
+// Stubbed for a tree one folder deep, which no real package has: each keeps its manifest at the root.
 const MADE_UP = "diffpack-made-up";
 
 const MADE_UP_FILES: Record<string, Record<string, string>> = {
 	"0.9.0": { "README.md": "one\n", "lib/index.js": "let one;\n" },
-	// Loose at the root, beside a folder there is to open by hand, and changed
-	// from 0.9.0 in nothing but whitespace.
+	// Changed from 0.9.0 only in whitespace.
 	"1.0.0": { "README.md": "one\n", "lib/index.js": "let  one;\n" },
 	// Everything under `src/`, and nothing beside it.
 	"2.0.0": { "src/index.js": "two\n" },
 	"3.0.0": { "src/index.js": "three\n" },
-	// Still all `src/`, now with a folder inside it to open by hand.
+	// Adds a folder inside `src/`.
 	"4.0.0": { "src/index.js": "four\n", "src/utils/a.js": "let a;\n" },
-	// `lib` a file here and a folder in 6.0.0: two nodes at one path. Their
-	// contents differ, or the engine would call it a rename and keep only one.
+	// `lib` is a file here and a folder in 6.0.0; the contents differ, or the engine sees a rename.
 	"5.0.0": { "README.md": "five\n", lib: "module.exports = 5;\n" },
 	"6.0.0": {
 		"README.md": "five\n",
@@ -63,8 +48,7 @@ async function serveMadeUpPackage(page: Page) {
 		Object.keys(MADE_UP_FILES).map((version) => [version, {}]),
 	);
 	await page.route(registry, (route) => route.fulfill({ json: { versions } }));
-	// The engine fetches from its worker, and a worker's requests are routed
-	// like the page's.
+	// The engine fetches from its worker, whose requests `page.route` also intercepts.
 	await page.route(`${registry}/-/*`, (route) => {
 		const version = /-([\d.]+)\.tgz$/.exec(route.request().url())?.[1] ?? "";
 		const files = MADE_UP_FILES[version];
@@ -72,11 +56,7 @@ async function serveMadeUpPackage(page: Page) {
 	});
 }
 
-/**
- * `files` packed the way npm packs a package: each under `package/`, which the
- * engine strips. A tar is a 512-byte header per file, the file padded out to
- * whole blocks, and two empty blocks to end on.
- */
+// npm's layout: every file under `package/`, which the engine strips.
 function tarball(files: Record<string, string>): Buffer {
 	const blocks = Object.entries(files).flatMap(([path, text]) => {
 		const content = Buffer.from(text);
@@ -98,8 +78,7 @@ function tarHeader(path: string, size: number): Buffer {
 	header.write(size.toString(8).padStart(11, "0"), 124);
 	header.write("0", 156); // a regular file
 	header.write("ustar\u000000", 257);
-	// The checksum is the sum of the header's bytes, its own field counted as
-	// eight spaces.
+	// The checksum sums the header with its own field counted as eight spaces.
 	header.write(" ".repeat(8), 148);
 	const sum = header.reduce((total, byte) => total + byte, 0);
 	header.write(`${sum.toString(8).padStart(6, "0")}\u0000 `, 148);
@@ -123,13 +102,10 @@ test("says what changed in each file, and how much", async ({ page }) => {
 	await ready(page);
 
 	const manifest = row(page, "package.json");
-	// The counts are the engine's, so the assertion is on their shape rather
-	// than on numbers npm could republish.
+	// Shape, not numbers: the counts come from the engine and real archives.
 	await expect(manifest.getByTestId("added")).toHaveText(/^\+\d+$/);
 	await expect(manifest.getByTestId("removed")).toHaveText(/^-\d+$/);
 
-	// A folder answers for everything under it, or a collapsed folder would say
-	// nothing changed inside it.
 	await expect(row(page, "lib").first().getByTestId("removed")).toHaveText(
 		/^-\d+$/,
 	);
@@ -139,9 +115,7 @@ test("opens on what changed, without the untouched files", async ({ page }) => {
 	await page.goto(EXPRESS);
 	await ready(page);
 
-	// only-modified is on for a first-time visitor, and the folders leading to
-	// what changed open themselves — so a nested file is one look away, not
-	// three clicks.
+	// only-modified is on by default, and folders on the way to a change open themselves.
 	await expect(row(page, "query.js")).toBeVisible();
 	await expect(row(page, "query.js")).toHaveAttribute("data-status", "removed");
 	await expect(
@@ -222,8 +196,7 @@ test("a new comparison starts with no folders chosen, and opens its only folder"
 	page,
 }) => {
 	await serveMadeUpPackage(page);
-	// Showing everything: with only-modified on, every folder with a change in
-	// it opens itself, and `src` would open whatever had carried over.
+	// Off, or only-modified would open `src` whatever had carried over.
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "false");
 	}, ONLY_MODIFIED.key);
@@ -235,18 +208,14 @@ test("a new comparison starts with no folders chosen, and opens its only folder"
 	await src.click();
 	await expect(src).toHaveAttribute("aria-expanded", "false");
 
-	// Other versions, chosen in the page rather than by loading another: a new
-	// page forgets every folder anyway, so only this way can one carry over.
+	// Chosen in the page: a page load forgets every folder, so only this way could one carry over.
 	const to = page.getByRole("combobox", { name: "To Version" });
 	await to.fill("4.0.0");
 	await page.getByRole("option", { name: "4.0.0", exact: true }).click();
 	await page.getByRole("button", { name: "Compare" }).click();
 	await expect(page).toHaveURL(`/npm/${MADE_UP}/2.0.0/4.0.0`);
 
-	// `src` was shut by hand in a comparison that had it too. Carried over,
-	// that choice would keep this one's only folder shut; a new comparison
-	// starts with nothing chosen, so it opens. Its tree, not the last one's:
-	// that had one file, this one has two.
+	// The count proves this is the new tree; `src`, shut in the last one, must not stay shut.
 	await expect(page.getByTestId("diff-status")).toHaveText(
 		"2 files, 2 changed",
 		ENGINE,
@@ -259,8 +228,7 @@ test("opening a folder inside the only folder leaves the only folder open", asyn
 	page,
 }) => {
 	await serveMadeUpPackage(page);
-	// Showing everything: with only-modified on, every folder with a change in
-	// it opens itself, which would hide `src` shutting.
+	// Off, so auto-opening cannot hide `src` shutting.
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "false");
 	}, ONLY_MODIFIED.key);
@@ -283,8 +251,7 @@ test("the same comparison keeps its folders, with another file open or whitespac
 	page,
 }) => {
 	await serveMadeUpPackage(page);
-	// Showing everything, so the file is still there once it counts as
-	// unchanged.
+	// Off, so the file stays listed once it counts as unchanged.
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "false");
 	}, ONLY_MODIFIED.key);
@@ -296,12 +263,10 @@ test("the same comparison keeps its folders, with another file open or whitespac
 
 	await index.click();
 	await expect(page).toHaveURL(`/npm/${MADE_UP}/0.9.0/1.0.0/lib/index.js`);
-	// The tree has taken the new address in, not only the location bar.
 	await expect(index).toHaveAttribute("aria-selected", "true");
 	await expect(lib).toHaveAttribute("aria-expanded", "true");
 
-	// The tree is built again, and the file that changed only in whitespace
-	// comes back unchanged: the same two versions, asked another way.
+	// Rebuilt with whitespace ignored; the same two versions keep their folders.
 	await page.getByRole("button", { name: "Settings" }).click();
 	await page.getByRole("button", { name: "Ignore whitespaces" }).click();
 	await expect(index).toHaveAttribute("data-status", "unchanged", ENGINE);
@@ -329,14 +294,11 @@ test("a path that is a file in one version and a folder in the other is two rows
 
 	await file.click();
 
-	// The file is open, and only the file: the folder shares its path, not
-	// its selection, and the tree is still one tab stop.
 	await expect(page).toHaveURL(`/npm/${MADE_UP}/5.0.0/6.0.0/lib`);
 	await expect(file).toHaveAttribute("aria-selected", "true");
 	await expect(folder).toHaveAttribute("aria-selected", "false");
 	await expect(page.locator('[role="treeitem"][tabindex="0"]')).toHaveCount(1);
 
-	// The arrows walk the two as two rows: on to the folder, then into it.
 	await page.keyboard.press("ArrowDown");
 	await expect(folder).toBeFocused();
 	await page.keyboard.press("ArrowDown");
@@ -369,7 +331,6 @@ test("shows at a glance which rows open and which are files", async ({
 		"data-icon",
 		"folder",
 	);
-	// A file has nothing to open, so it has no chevron at all.
 	await expect(row(page, "package.json").getByTestId("chevron")).toHaveCount(0);
 	await expect(row(page, "package.json").getByTestId("icon")).toHaveAttribute(
 		"data-icon",
@@ -384,7 +345,6 @@ test("the tree is one tab stop, and the arrows move inside it", async ({
 	await ready(page);
 	const rows = page.getByRole("treeitem");
 
-	// Roving tabindex: whatever the tree's row count, Tab reaches the tree once.
 	await expect(rows.first()).toHaveAttribute("tabindex", "0");
 	await expect(page.locator("[role='treeitem'][tabindex='0']")).toHaveCount(1);
 
@@ -413,7 +373,6 @@ test("left and right walk the folder structure", async ({ page }) => {
 	await middleware.focus();
 	await page.keyboard.press("ArrowLeft");
 
-	// Left closes an open folder; a second left goes up to its parent.
 	await expect(middleware).toHaveAttribute("aria-expanded", "false");
 	await page.keyboard.press("ArrowLeft");
 	await expect(row(page, "lib").first()).toBeFocused();
@@ -421,7 +380,6 @@ test("left and right walk the folder structure", async ({ page }) => {
 	await page.keyboard.press("ArrowRight");
 	await page.keyboard.press("ArrowRight");
 
-	// Right on an open folder steps into it rather than doing nothing.
 	await expect(row(page, "application.js")).toBeFocused();
 });
 
@@ -445,8 +403,6 @@ test("counts the comparison at the foot of the panel it describes", async ({
 	await page.goto(EXPRESS);
 	await ready(page);
 
-	// The count is about the tree, so it stands under the tree rather than over
-	// the whole body.
 	const panel = page.getByTestId("tree-panel");
 	const status = panel.getByTestId("diff-status");
 	await expect(status).toHaveText(/^\d+ files, \d+ changed$/);
@@ -488,14 +444,11 @@ test("the panel is resizable, within limits, and stays where it was put", async 
 	await ready(page);
 
 	expect(await width()).toBe(440);
-	// The handle announces the width the panel is at, not the default the
-	// server rendered it with.
+	// The width the panel is at, not the default the server rendered.
 	await expect(handle).toHaveAttribute("aria-valuenow", "440");
 });
 
 test("a stored width is applied before the first paint", async ({ page }) => {
-	// Applied by the pre-paint script, like the theme: a panel that starts at
-	// its default and jumps once React hydrates is a visible flash.
 	await page.addInitScript((key) => {
 		localStorage.setItem(key, "9999");
 	}, TREE_WIDTH.key);
@@ -505,7 +458,7 @@ test("a stored width is applied before the first paint", async ({ page }) => {
 		document.documentElement.style.getPropertyValue("--tree-panel-width"),
 	);
 
-	// Clamped, too: a stored width has to leave room for the diff.
+	// Clamped to leave room for the diff.
 	expect(applied).toBe("640px");
 });
 
@@ -522,7 +475,6 @@ test("the resizer answers the keyboard too", async ({ page }) => {
 	expect(
 		await panel.evaluate((node) => node.getBoundingClientRect().width),
 	).toBe(352);
-	// A slider-like control has to say where it is, not just look draggable.
 	await expect(handle).toHaveAttribute("aria-valuenow", "352");
 });
 
@@ -534,10 +486,8 @@ test("the sidebar collapses from its edge, reopens from the header, and stays ho
 	const panel = page.getByTestId("tree-panel");
 	const expand = page.getByRole("button", { name: "Expand sidebar" });
 
-	// The way back in only exists while there is somewhere to go back to.
 	await expect(expand).toBeHidden();
 
-	// Out of sight until the edge is reached for, like a dashboard's.
 	const collapse = page.getByRole("button", { name: "Collapse sidebar" });
 	await expect(collapse).toHaveCSS("opacity", "0");
 	await collapse.hover();
@@ -591,7 +541,7 @@ test("F finds: it opens a shut sidebar and lands in the filter", async ({
 	await expect(filter).toBeFocused();
 	await expect(page.getByTestId("tree-panel")).toBeVisible();
 
-	// Typing it is not asking for it: the F went into the field.
+	// Inside the field, F is just typing.
 	await page.keyboard.press("f");
 	await expect(filter).toHaveValue("f");
 });
@@ -616,8 +566,7 @@ test("dragged past its minimum the sidebar slides out, and let go there it snaps
 	await page.mouse.down();
 	await page.mouse.move(150, grip.y, { steps: 5 });
 
-	// Held: the box follows the pointer, and what is in it holds the minimum
-	// and slides out, fading and blurring — but nothing has shut.
+	// Held: the content keeps its 220px minimum and slides out, but nothing has shut.
 	await expect(panel).toBeVisible();
 	expect(
 		await panel.evaluate((node) => node.getBoundingClientRect().width),
@@ -634,7 +583,7 @@ test("dragged past its minimum the sidebar slides out, and let go there it snaps
 	await expect(panel).toBeHidden();
 
 	await page.getByRole("button", { name: "Expand sidebar" }).click();
-	// Back at the width it had before the drag, not the sliver it was left at.
+	// Back at its width before the drag, not the sliver it was left at.
 	await expect(panel).toHaveCSS("width", "320px");
 	await expect(content).toHaveCSS("opacity", "1");
 	await expect(content).not.toHaveCSS("filter", /blur/);

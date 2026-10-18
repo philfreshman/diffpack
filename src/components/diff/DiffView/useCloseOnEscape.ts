@@ -1,11 +1,6 @@
 import { useEffect, useRef } from "react";
 
-/**
- * Escape closes the file. It is read from the document rather than from the
- * viewer because the viewer is not what has focus while a file is being read
- * — but a field's Escape is the field's own (it closes a combobox's list), so
- * one typed into is left alone.
- */
+/** On the document because the viewer lacks focus; a field keeps its own Escape. */
 export function useCloseOnEscape(onClose: () => void): void {
 	const close = useRef(onClose);
 	close.current = onClose;

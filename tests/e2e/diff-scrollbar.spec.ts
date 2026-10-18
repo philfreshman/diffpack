@@ -1,13 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 
-/**
- * lodash 4.17.20 → 4.17.21: a handful of changes scattered through a
- * 17 000-line file. It is the file the minimap exists for — the changes are
- * nowhere near each other, and almost none of them are ever rendered.
- */
+// A few changes scattered through a 17 000-line file, almost none of them rendered.
 const LODASH = "/npm/lodash/4.17.20/4.17.21/lodash.js";
 
-/** Downloading and extracting two archives is not a 10 s assertion. */
 const ENGINE = { timeout: 90_000 };
 
 async function open(page: Page, path: string) {
@@ -32,8 +27,6 @@ test("shows the scrollbar while the file is being scrolled, then hides it", asyn
 	await page.mouse.wheel(0, 600);
 	await expect(scrollbar(page)).toHaveAttribute("data-shown", "true");
 
-	// It is a reading aid, not furniture: it gets out of the way once the
-	// reader has stopped moving.
 	await expect(scrollbar(page)).toHaveAttribute("data-shown", "false");
 });
 
@@ -49,8 +42,6 @@ test("scrolls the file by dragging the thumb", async ({ page }) => {
 	await page.mouse.move(grip.x + grip.width / 2, track.y + track.height / 2);
 	await page.mouse.up();
 
-	// Half way down the track is roughly half way through the file, and the
-	// thumb has followed the pointer rather than the rows it passed over.
 	expect(await scrollTop(page)).toBeGreaterThan(0);
 	const dropped = await thumb(page).boundingBox();
 	expect(dropped?.y ?? 0).toBeGreaterThan(track.y + track.height / 4);
@@ -74,8 +65,7 @@ test("marks every change in the file, not only the rendered ones", async ({
 	const markers = page.getByTestId("diff-marker");
 	await expect(markers.first()).toBeAttached();
 
-	// The rows on screen are the top of a 17 000-line file, so a minimap taken
-	// from the DOM could not put a marker anywhere near the bottom of the track.
+	// Only the top of the file is rendered, so markers taken from the DOM could not reach the bottom.
 	const track = await scrollbar(page).boundingBox();
 	const last = await markers.last().boundingBox();
 	if (!track || !last) throw new Error("no markers");

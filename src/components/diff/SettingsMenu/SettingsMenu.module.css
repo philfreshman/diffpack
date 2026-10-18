@@ -1,8 +1,3 @@
-/*
- * The gear and the menu behind it. The trigger is one of the toolbar's icon
- * buttons by eye — it sits in the same row as them — and everything it opens
- * borrows the surfaces the rest of the app is built from.
- */
 .root {
 	display: flex;
 }
@@ -14,16 +9,10 @@
 	list-style: none;
 }
 
-/*
- * The gear *is* one of the toolbar's icon buttons, so it borrows the surface
- * rather than restating it — the hover and the focus ring come with it, and
- * the two cannot drift apart the way two copies of the same rules can.
- */
 .gear {
 	composes: iconButton from "../../ui/IconButton/IconButton.module.css";
 }
 
-/* What it adds: a menu trigger stays lit while its menu is up. */
 .gear[data-popup-open] {
 	background-color: var(--color-surface-hover);
 }
@@ -36,7 +25,7 @@
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-lg);
 	background: var(--color-surface);
-	/* The same lift the combobox's list has: they are the same kind of thing. */
+	/* Matches the Combobox popup's shadow. */
 	box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
 }
 
@@ -57,7 +46,6 @@
 	list-style: none;
 }
 
-/* One row of the menu, whatever it holds: a switch, a fold, or a theme. */
 .option {
 	display: flex;
 	width: 100%;
@@ -93,8 +81,6 @@
 	background: transparent;
 }
 
-/* What the row is currently set to, said in the row rather than only inside
-   the fold it opens. */
 .value {
 	margin-left: auto;
 	color: var(--color-muted);

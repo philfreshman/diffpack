@@ -1,26 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 
-/**
- * The engine is started from the document head, before React exists. These
- * assert the three things that buys and the one thing it must not cost: the
- * comparison is under way without hydration, hydration does not then ask for
- * it a second time, and the stored whitespace answer is the one it was built
- * with.
- *
- * `node` is a two-file npm package, which keeps the downloads small.
- */
+// A two-file package, which keeps the downloads small.
 const NODE = "/npm/node/26.6.0/26.7.0";
 
-/** Downloading and extracting two archives is not a 10 s assertion. */
 const ENGINE = { timeout: 90_000 };
 
 const status = (page: Page) => page.getByTestId("diff-status");
 
-/**
- * Records every request the page makes of a worker, from before the head
- * script runs. The protocol is the seam: one `build-tree` on the wire is the
- * whole claim, whoever sent it.
- */
+// Installed before the head script runs, so the boot's own request is recorded too.
 async function recordWorkerRequests(page: Page) {
 	await page.addInitScript(() => {
 		const posted: unknown[] = [];
@@ -49,8 +36,7 @@ function buildTreeRequests(page: Page) {
 }
 
 test("builds the comparison without waiting for React", async ({ page }) => {
-	// Everything the app is, minus the worker: with the bundle gone, nothing
-	// can hydrate, so whatever the engine still manages it managed on its own.
+	// Every bundle but the worker's is blocked, so nothing hydrates and any result is the boot script's.
 	await page.route(/\/assets\/[^/]+\.js(\?.*)?$/, (route) =>
 		route.request().url().includes("diff.worker")
 			? route.continue()
@@ -67,8 +53,7 @@ test("builds the comparison without waiting for React", async ({ page }) => {
 			| undefined;
 		if (!boot) return "nothing was booted";
 
-		// By id: the worker's other messages share the channel, and the tree is
-		// the answer to the one request the script made.
+		// By id: the worker's other messages share the channel.
 		const answer = (reply: Reply) => reply.id === boot.id;
 		const reply =
 			boot.replies.find(answer) ??
@@ -84,8 +69,7 @@ test("builds the comparison without waiting for React", async ({ page }) => {
 	});
 
 	expect(outcome).toBe("built");
-	// And React really never ran: the store the page was served with is the
-	// store it still has.
+	// React never ran: the store is still the one the page was served with.
 	await expect(status(page)).toHaveAttribute("data-state", "idle");
 });
 
@@ -112,8 +96,7 @@ test("a deep link opened with ignore-whitespace on is built that way once", asyn
 	await page.goto(NODE);
 	await expect(status(page)).toHaveAttribute("data-state", "ready", ENGINE);
 
-	// The reason the session waits for a non-null answer at all: starting on the
-	// wrong one would build the tree twice.
+	// Why the session waits for the whitespace answer: starting on the wrong one would build twice.
 	expect(await buildTreeRequests(page)).toEqual([
 		expect.objectContaining({ ignoreWhitespace: true }),
 	]);
@@ -122,9 +105,8 @@ test("a deep link opened with ignore-whitespace on is built that way once", asyn
 test("a store that refuses to be read still builds the comparison once", async ({
 	page,
 }) => {
-	// Chrome with site data blocked: touching `localStorage` at all throws. The
-	// head script and the session both read that as the fallback, so the session
-	// adopts the boot's request rather than sending one of its own.
+	// Chrome with site data blocked: touching `localStorage` throws. Head script and session must
+	// fall back alike, or the session would not adopt the boot's request.
 	await page.addInitScript(() =>
 		Object.defineProperty(window, "localStorage", {
 			get() {
@@ -139,7 +121,6 @@ test("a store that refuses to be read still builds the comparison once", async (
 	await page.goto(NODE);
 	await expect(status(page)).toHaveAttribute("data-state", "ready", ENGINE);
 
-	// Booted from the head, and nothing sent after it: one request, the boot's.
 	expect(await page.evaluate(() => "__diffpackDiffBoot" in window)).toBe(true);
 	expect(await buildTreeRequests(page)).toEqual([
 		expect.objectContaining({ ignoreWhitespace: false }),

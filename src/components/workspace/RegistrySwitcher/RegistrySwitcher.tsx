@@ -9,11 +9,6 @@ import { registryAdapters } from "#/lib/registries/index.ts";
 import type { RegistryAdapter } from "#/lib/registries/types.ts";
 import styles from "./RegistrySwitcher.module.css";
 
-/**
- * The top of the sidebar, where a dashboard keeps its team switcher: which
- * registry this workspace is reading, and the way to the others. With the
- * wordmark gone from the workspace, it is also the way home.
- */
 export function RegistrySwitcher({ adapter }: { adapter: RegistryAdapter }) {
 	return (
 		<Menu

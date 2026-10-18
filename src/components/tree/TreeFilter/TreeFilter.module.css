@@ -40,8 +40,6 @@
 	outline-offset: -1px;
 }
 
-/* Stood down once there is something typed: the hint is for finding the field,
-   and a field in use has been found. */
 .shortcut {
 	position: absolute;
 	top: 50%;
@@ -54,8 +52,7 @@
 	display: none;
 }
 
-/* Pressed means "showing everything": the tree is no longer narrowed, and the
-   control that widened it is the one holding a state the user chose. */
+/* Accented when not pressed, i.e. while the tree shows every file. */
 .toggle {
 	flex-shrink: 0;
 	width: var(--control-height);

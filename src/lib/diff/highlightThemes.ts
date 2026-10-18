@@ -1,35 +1,15 @@
 import type { ResolvedTheme } from "#/lib/theme.ts";
 
-/**
- * The highlight.js themes the picker offers, and where each one's stylesheet
- * comes from.
- *
- * `value` is what gets persisted, and it is the old app's spelling — some of
- * these carry a `base16/` prefix and some do not, which is a wart, but the
- * stored value is a contract with visitors who already have one. `asset` is
- * where the stylesheet actually lives, which is what that wart was hiding: the
- * old picker found it by suffix-matching a recursive glob.
- */
 export interface HighlightTheme {
-	/** Persisted, and the `<option>` value. */
+	/** Persisted in the old app's spelling (inconsistent `base16/` prefix): do not change. */
 	value: string;
 	label: string;
-	/**
-	 * A path under `highlight.js/styles/`, or an absolute URL of our own for a
-	 * theme highlight.js does not ship.
-	 */
+	/** A path under `highlight.js/styles/`, or an absolute URL under `public/`. */
 	asset: string;
-	/**
-	 * Whether the stylesheet paints the code on a light ground or a dark one —
-	 * the `.hljs` background it sets, which the viewer's own frame then has to
-	 * follow. It is stated here rather than read from the stylesheet because
-	 * nothing may read a stylesheet before it has to be chosen; the unit suite
-	 * checks each of these against the file it names.
-	 */
+	/** The `.hljs` background's ground; a unit test checks it against the stylesheet. */
 	appearance: HighlightAppearance;
 }
 
-/** A theme's ground, in the same two words the page theme uses. */
 export type HighlightAppearance = ResolvedTheme;
 
 export const HIGHLIGHT_THEMES: readonly HighlightTheme[] = [
@@ -105,7 +85,6 @@ export const HIGHLIGHT_THEMES: readonly HighlightTheme[] = [
 		asset: "night-owl.css",
 		appearance: "dark",
 	},
-	// Not a highlight.js theme: ours, served from `public/`.
 	{
 		value: "nightfall",
 		label: "Nightfall",
@@ -165,27 +144,12 @@ export const HIGHLIGHT_THEMES: readonly HighlightTheme[] = [
 	},
 ];
 
-/**
- * What a visitor who has not chosen gets: whichever GitHub theme matches the
- * page.
- *
- * The old picker defaulted light to `"github"`, which is not one of its own
- * options — so a light-mode visitor who had never chosen saw an empty select.
- * `base16/github` is the listed light GitHub theme, and is the fix.
- */
 export function defaultHighlightTheme(theme: ResolvedTheme): string {
 	return theme === "dark" ? "github-dark" : "base16/github";
 }
 
-/**
- * The ground the chosen theme paints on, or `null` before one has been read.
- *
- * The viewer takes its own surfaces from this rather than from the page theme.
- * A light theme's stylesheet paints the code area white and colours the tokens
- * for it, while the added and removed washes are the page's — so a light theme
- * under a dark page gave alternating light and dark lines with the syntax
- * colours legible on only half of them (#139).
- */
+// The viewer's surfaces follow this, not the page theme: a light theme on a
+// dark page otherwise left syntax colours illegible on half the lines (#139).
 export function highlightAppearance(
 	value: string | null,
 ): HighlightAppearance | null {

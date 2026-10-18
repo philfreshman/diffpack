@@ -12,25 +12,12 @@ import {
 } from "#/lib/starfield/field.ts";
 import styles from "./StarField.module.css";
 
-/**
- * The night sky, drawn on one WebGL canvas rather than as a hundred animated
- * elements. Every star is a diff mark — a white `+` or `−` on a faint disc, so
- * the field reads as stars at a glance and as a diff when you look at it. The
- * marks fill a cube that wraps around the camera, which drifts slowly forward
- * through them; the pointer slides the camera the other way, and the parallax
- * between near and far marks is what gives the sky its depth.
- *
- * The backdrop under it all is `--cosmic-backdrop` reproduced in GLSL, because
- * the canvas covers the CSS one. If WebGL is unavailable the canvas is dropped
- * and the CSS gradient is what the visitor gets.
- */
 const FOV = 60;
-/** Marks are out of sight before the wrap at `FIELD_HALF` can be seen happening. */
+// Marks must be faded out before they reach the wrap at FIELD_HALF.
 const FADE_START = 24;
 const FADE_END = 35;
-/** World units per second: a drift, not a flight. */
 const DRIFT_SPEED = 0.9;
-/** Far enough that the camera's slide never reaches it. */
+// Far enough that the camera's slide never reaches it.
 const CLOUD_RADIUS = 150;
 
 const SHOOTING_MIN_MS = 14000;
@@ -53,25 +40,17 @@ varying float vPlus;
 const float HALF = ${FIELD_HALF}.0;
 
 void main() {
-	// The drift happens here rather than on the CPU: the field is one cube that
-	// repeats, so travelling through it is an offset and a modulo, and the
-	// position buffer never has to be rewritten or re-uploaded.
+	// Drift as an offset and a modulo, so the position buffer is never re-uploaded.
 	vec3 wrapped = mod(position + uOffset + HALF, 2.0 * HALF) - HALF;
 	vec4 mv = modelViewMatrix * vec4(wrapped, 1.0);
 	float depth = -mv.z;
 
-	// One pulse takes aPeriod ms; aPhase staggers the field so the marks do not
-	// blink in unison.
 	float pulse = 0.5 + 0.5 * sin((uTime / aPeriod + aPhase) * 6.2831853);
 	vAlpha = 0.5 + pulse * 0.5;
-	// The nearest marks are wide on screen; left at full brightness they read as
-	// glyphs stuck to the page rather than as marks close by.
 	vAlpha *= smoothstep(4.5, 11.0, depth) * mix(0.7, 1.0, smoothstep(11.0, 24.0, depth));
-	// And the farthest have to be gone before they reach the edge of the cube.
 	vAlpha *= 1.0 - smoothstep(${FADE_START}.0, ${FADE_END}.0, depth);
 
-	// Barely any size pulse: a glyph that breathes reads as a wobble, not a
-	// twinkle. The brightness above does that work instead.
+	// Keep the size pulse tiny: a breathing glyph reads as a wobble.
 	gl_PointSize = clamp(
 		aSize * (1.0 + pulse * 0.12) * uPixelRatio * (95.0 / depth),
 		uPixelRatio * 2.2,
@@ -95,17 +74,12 @@ float box(vec2 p, vec2 halfSize) {
 
 void main() {
 	vec2 p = gl_PointCoord - 0.5;
-	// The bar of a −, and the same bar turned upright to finish a +.
 	float d = box(p, vec2(0.32, 0.085));
 	if (vPlus > 0.5) d = min(d, box(p, vec2(0.085, 0.32)));
 
-	// One pixel, expressed in sprite units. A distant mark is only two or three
-	// pixels across, so this smears it back into a soft speck — the level of
-	// detail comes out of the antialiasing for free.
+	// One pixel in sprite units; it also blurs distant marks into soft specks.
 	float aa = max(1.2 / vSize, 0.02);
 	float glyph = 1.0 - smoothstep(-aa, aa, d);
-	// A faint disc behind the mark, so it still reads as a star at a glance and
-	// only resolves into a + or a − when you look at it.
 	float halo = pow(smoothstep(0.44, 0.02, length(p)), 1.6) * 0.32;
 
 	float a = min(1.0, glyph + halo) * vAlpha;
@@ -138,8 +112,7 @@ void main() {
 
 interface Streak {
 	mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
-	/* The uniform object is held rather than read back off the material:
-	   `uniforms` is an index signature, so every read would need a null check. */
+	// Held here because `material.uniforms` is an index signature.
 	alpha: { value: number };
 	startedAt: number;
 	from: THREE.Vector3;
@@ -152,13 +125,11 @@ export function StarField() {
 	const [webglFailed, setWebglFailed] = useState(false);
 
 	useEffect(() => {
-		// The canvas only exists under the dark theme, and only after mount.
 		if (theme !== "dark") return;
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		// A canvas animation loop is invisible to the CSS reduced-motion query, so
-		// the preference has to be honoured here: draw the sky once and stop.
+		// The CSS reduced-motion rule cannot reach a canvas loop: draw once and stop.
 		const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 		let renderer: THREE.WebGLRenderer;
@@ -166,14 +137,10 @@ export function StarField() {
 			renderer = new THREE.WebGLRenderer({
 				canvas,
 				antialias: false,
-				// Only when the sky is a single frame that is never redrawn: the
-				// drawing buffer is otherwise undefined after the browser composites
-				// it, and a still sky has nothing to put back.
+				// A still sky is drawn once, so its buffer must survive compositing.
 				preserveDrawingBuffer: still,
 			});
 		} catch {
-			// No WebGL. The CSS `--cosmic-backdrop` behind this canvas is the
-			// fallback, so the canvas just gets out of its way.
 			setWebglFailed(true);
 			return;
 		}
@@ -183,7 +150,7 @@ export function StarField() {
 		const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 400);
 		scene.add(camera);
 
-		// --- the backdrop, riding on the camera so it stays glued to the screen --
+		// Repeats `--cosmic-backdrop` in GLSL, since the canvas covers the CSS one.
 		const uRes = { value: new THREE.Vector2(1, 1) };
 		const uHue = { value: 0 };
 		const backdropMaterial = new THREE.ShaderMaterial({
@@ -209,9 +176,8 @@ export function StarField() {
 		backdrop.renderOrder = -2;
 		camera.add(backdrop);
 
-		// --- the clouds, on a sphere the camera never leaves --------------------
 		// The drift moves the field, not the camera, so a sphere at the origin
-		// stays around the viewer however long the page is left open.
+		// always surrounds the viewer.
 		const uCloudTime = { value: 0 };
 		const uCloudFlow = { value: new THREE.Vector3() };
 		const cloudGeometry = new THREE.SphereGeometry(CLOUD_RADIUS, 48, 24);
@@ -250,13 +216,11 @@ export function StarField() {
 			blending: THREE.AdditiveBlending,
 		});
 		const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
-		// Tilted, so the band in the cloud shader does not lie flat across the
-		// middle of the screen looking like a seam.
+		// Tilted so the cloud band does not look like a seam across the screen.
 		clouds.rotation.set(0.16, 0, 0.42);
 		clouds.renderOrder = -1;
 		scene.add(clouds);
 
-		// --- the field ----------------------------------------------------------
 		const rng = createRng(FIELD_SEED);
 		const marks = generateMarks(MARK_COUNT, rng);
 		const positions = new Float32Array(MARK_COUNT * 3);
@@ -282,8 +246,7 @@ export function StarField() {
 		geometry.setAttribute("aPhase", new THREE.BufferAttribute(phases, 1));
 		geometry.setAttribute("aPeriod", new THREE.BufferAttribute(periods, 1));
 		geometry.setAttribute("aPlus", new THREE.BufferAttribute(pluses, 1));
-		// The cube wraps, so three.js must not cull it against a bounding box that
-		// only describes where the marks started.
+		// The cube wraps, so culling against the starting bounds would hide marks.
 		geometry.boundingSphere = new THREE.Sphere(
 			new THREE.Vector3(),
 			FIELD_HALF * 2,
@@ -303,7 +266,6 @@ export function StarField() {
 		});
 		scene.add(new THREE.Points(geometry, markMaterial));
 
-		// --- shooting stars -----------------------------------------------------
 		const streakGeometry = new THREE.PlaneGeometry(1, 1);
 		const streaks: Streak[] = [];
 		const idle: Streak[] = [];
@@ -322,7 +284,6 @@ export function StarField() {
 				}),
 			);
 			mesh.visible = false;
-			// Down and to the right.
 			mesh.rotation.z = -Math.PI / 4;
 			scene.add(mesh);
 			idle.push({
@@ -359,9 +320,8 @@ export function StarField() {
 			const z = -10 - rng() * 26;
 			const halfH = halfHeightAt(z);
 			const halfW = halfH * (width / height);
-			// Shooting stars start in the upper-left quadrant and travel down-right.
 			streak.from.set(-halfW + rng() * halfW, halfH - rng() * halfH, z);
-			// 300px of screen travel, expressed at this star's depth.
+			// 300px of screen travel at this star's depth.
 			streak.travel = (300 / height) * halfH * 2;
 			streak.startedAt = now;
 			streak.mesh.visible = true;
@@ -390,20 +350,15 @@ export function StarField() {
 			uHue.value = hueAt(t);
 			uCloudTime.value = t;
 
-			// The camera slides against the pointer and never turns: the view comes
-			// back to where it was, and only the parallax between near and far marks
-			// says anything happened. Both axes are inverted — the camera moves away
-			// from the cursor, so the field drifts towards it.
+			// The camera slides away from the pointer and never rotates, so forwards
+			// stays -z.
 			pointer.lerp(target, 0.03);
 			camera.position.x = -pointer.x * 0.5 + Math.sin(t / 17) * 0.5;
 			camera.position.y = pointer.y * 0.3 + Math.cos(t / 23) * 0.35;
 
-			// Forwards is always -z, since nothing rotates the camera.
 			uOffset.value.z += DRIFT_SPEED * dt;
-			// Kept small: the offset is taken modulo the cube anyway, and letting it
-			// grow all session would eat float precision.
+			// Wrapped here too, or float precision erodes over a long session.
 			uOffset.value.z %= FIELD_HALF * 2;
-			// The clouds drift with the travel rather than on a clock of their own.
 			uCloudFlow.value.set(0, 0, uOffset.value.z * 0.004);
 
 			if (now >= nextLaunchAt) {
@@ -432,8 +387,7 @@ export function StarField() {
 			}
 
 			renderer.render(scene, camera);
-			// The fade-in waits on this rather than on mount, so the sky never
-			// fades up over a canvas that has nothing on it yet.
+			// The CSS fade-in waits for this, not for mount.
 			canvas.dataset.drawn = "true";
 		};
 
@@ -474,7 +428,6 @@ export function StarField() {
 			draw(now);
 			frame = requestAnimationFrame(tick);
 		};
-		// One shooting star on arrival, then rarely.
 		const start = performance.now();
 		launch(start);
 		nextLaunchAt =
@@ -489,8 +442,7 @@ export function StarField() {
 		};
 	}, [theme]);
 
-	// A night sky under a light theme is just noise on a white page, and without
-	// WebGL the CSS backdrop is the sky.
+	// Without WebGL the CSS `--cosmic-backdrop` is the fallback sky.
 	if (theme !== "dark" || webglFailed) return null;
 
 	return (

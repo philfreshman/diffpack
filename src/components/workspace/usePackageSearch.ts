@@ -2,10 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { RegistryAdapter, SearchResult } from "#/lib/registries/types.ts";
 
-/** A single character matches most of a registry; two is where results mean something. */
 const MIN_QUERY_LENGTH = 2;
 
-/** Long enough that a typed word is one request, short enough to feel live. */
 const SEARCH_DEBOUNCE_MS = 300;
 
 function useDebouncedValue<T>(value: T, delay: number): T {
@@ -21,17 +19,10 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export interface PackageSearch {
 	results: SearchResult[];
-	/** True while the query the user can see is still being answered. */
 	loading: boolean;
-	/** False while below the minimum length, or while the debounce is pending. */
 	searching: boolean;
 }
 
-/**
- * Debounce, cancellation of the superseded request, caching and the loading
- * flag are all Query's — the old app hand-rolled every one of them around an
- * `AbortController` per keystroke.
- */
 export function usePackageSearch(
 	adapter: RegistryAdapter,
 	query: string,
@@ -46,9 +37,7 @@ export function usePackageSearch(
 		enabled,
 	});
 
-	// Between the keystroke and the debounce firing there is no request yet, but
-	// the field is not idle either: showing the previous query's results as if
-	// they answered this one is the bug the spinner exists to prevent.
+	// Loading during the debounce too, so old results never pass as this query's.
 	const pending = trimmed !== debounced && trimmed.length >= MIN_QUERY_LENGTH;
 
 	return {

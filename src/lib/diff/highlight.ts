@@ -1,39 +1,14 @@
 import hljs from "highlight.js";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 
-/**
- * Syntax highlighting for the viewer: which language a file is in, and one
- * line of it marked up.
- *
- * The language is decided once for the whole file — `highlightAuto` on every
- * line separately would be both slow and inconsistent, since a line like `}`
- * tells it nothing.
- */
-
-/** How much of the file the language is guessed from, when it has to be. */
 const SAMPLE_LINES = 200;
 const SAMPLE_CHARS = 20_000;
-/**
- * And how much of any one line of it.
- *
- * `highlightAuto` runs every grammar it knows over what it is handed, and its
- * cost climbs with the length of a *line* far faster than with the number of
- * them: 200 lines of source is under two hundred milliseconds, while a single
- * line of the same length is closer to a second, and a whole minified file —
- * a `.eslintcache`, a bundle — is twenty seconds of frozen page. The head of
- * a line is also all the evidence there is in it; the rest is more of the
- * same.
- */
+// `highlightAuto` cost climbs steeply with line length: a minified file
+// sampled whole froze the page for ~20s.
 const SAMPLE_LINE_CHARS = 400;
 
-/**
- * What the file is written in.
- *
- * Its extension first: highlight.js knows most of them as aliases, and a name
- * is far better evidence than a guess taken from a *diff*, where both versions
- * of every line are interleaved — express's `package.json` reads as Perl that
- * way. Guessing is the fallback for the files that have no extension to read.
- */
+// Extension first: guessing from a diff, with both versions interleaved,
+// misreads files (express's `package.json` comes out as Perl).
 export function detectLanguage(path: string, lines: DiffLine[]): string | null {
 	const named = languageFromPath(path);
 	if (named) return named;
@@ -47,8 +22,7 @@ export function detectLanguage(path: string, lines: DiffLine[]): string | null {
 function languageFromPath(path: string): string | null {
 	const name = path.split("/").at(-1) ?? path;
 	const dot = name.lastIndexOf(".");
-	// No extension, and a leading dot is a name rather than one: `.gitignore`
-	// is not a `gitignore` file.
+	// A leading dot is a name, not an extension: `.gitignore`.
 	if (dot < 1) return null;
 
 	const extension = name.slice(dot + 1).toLowerCase();
@@ -63,9 +37,7 @@ function detectionSample(lines: DiffLine[]): string {
 	for (const [index, line] of lines.entries()) {
 		if (index >= SAMPLE_LINES || budget <= 0) break;
 		if (!line.content) continue;
-		// Cut to the budgets rather than counted against them afterwards: a
-		// file with no newlines in it is a single line of half a megabyte, and
-		// counting only notices once the whole of it is already in the sample.
+		// Cut before adding: a file with no newlines is one huge line.
 		const head = line.content.slice(0, Math.min(SAMPLE_LINE_CHARS, budget));
 		sampled.push(head);
 		budget -= head.length;
@@ -74,31 +46,14 @@ function detectionSample(lines: DiffLine[]): string {
 	return sampled.join("\n");
 }
 
-/**
- * The rendered lines are the visible ones, and scrolling brings the same ones
- * back — so the markup is kept rather than recomputed. The cache is dropped
- * whole when it fills; a diff session is short, and an eviction order would
- * cost more than it saves.
- */
+// Dropped whole when full; an eviction order would cost more than it saves.
 const CACHE_LIMIT = 20_000;
 const cache = new Map<string, string>();
 
-/**
- * Past this, a line is shown as plain text.
- *
- * Marking one up costs roughly its own length again in `<span>`s, and that
- * markup goes into a single cell of a single row — a 580 000-character line
- * becomes over six megabytes of DOM that the browser cannot lay out. No line
- * anyone reads is this long: the ones that are come from files written by a
- * machine, where the colouring was never going to help.
- */
+// Longer lines stay plain: their markup is megabytes of DOM the browser cannot lay out.
 const MAX_HIGHLIGHT_CHARS = 10_000;
 
-/**
- * One line, marked up. A language highlight.js does not know — and a file it
- * could not place at all — leaves the line as text, escaped either way: the
- * markup goes into the row as HTML, so nothing may survive from the archive.
- */
+// Always escaped: the result is inserted as HTML, so archive content must not survive unescaped.
 export function highlightLine(
 	content: string,
 	language: string | null,

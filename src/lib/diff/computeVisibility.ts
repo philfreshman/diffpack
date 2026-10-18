@@ -1,6 +1,5 @@
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 
-/** One row of the viewer: a line of the file, or a fold standing in for many. */
 export type DiffRow =
 	| { kind: "line"; index: number; line: DiffLine }
 	| {
@@ -11,33 +10,21 @@ export type DiffRow =
 			expanders: Expander[];
 	  };
 
-/**
- * A way to open part of a fold, and the lines it would reveal. The range lives
- * here so the button is a button — it does no arithmetic of its own.
- */
 export interface Expander {
 	direction: "up" | "down" | "all";
 	start: number;
 	end: number;
 }
 
-/** What the user has done to this file that changes how much of it shows. */
 export interface DiffView {
-	/** Line indices revealed by hand, which outrank folding. */
 	expanded: ReadonlySet<number>;
 	expandAll: boolean;
 }
 
-/** Untouched lines kept either side of a change so it can be read in place. */
 const CONTEXT_LINES = 3;
 
-/** How much of a fold one arrow takes. */
 const EXPAND_STEP = 20;
 
-/**
- * The file as rows to render: the changes, the context around them, and one
- * fold per run of everything else.
- */
 export function computeVisibility(
 	lines: DiffLine[],
 	view: DiffView,
@@ -73,8 +60,7 @@ export function computeVisibility(
 }
 
 function visibleFlags(lines: DiffLine[], view: DiffView): boolean[] {
-	// A file nothing happened to is being read rather than reviewed, and folding
-	// it would leave the viewer showing one fold and nothing else.
+	// An unchanged file folded would be one fold and nothing else.
 	const unchangedFile = lines.every((line) => line.type === "unchanged");
 	if (view.expandAll || unchangedFile) {
 		return new Array<boolean>(lines.length).fill(true);
@@ -83,9 +69,7 @@ function visibleFlags(lines: DiffLine[], view: DiffView): boolean[] {
 	const shown = new Array<boolean>(lines.length).fill(false);
 
 	for (const [index, line] of lines.entries()) {
-		// Opening a fold is a request for a counted number of lines, so a line
-		// revealed by hand brings no context of its own — otherwise every click
-		// would reveal more than the count it offered.
+		// A line revealed by hand brings no context, or a click would reveal more than it offered.
 		if (view.expanded.has(index)) shown[index] = true;
 		if (line.type === "unchanged") continue;
 
@@ -99,12 +83,7 @@ function visibleFlags(lines: DiffLine[], view: DiffView): boolean[] {
 	return shown;
 }
 
-/**
- * A fold in the body of the file can be walked inward from either end. One
- * against the top or bottom cannot — there is no file beyond it to walk
- * toward, and a partial reveal would leave a sliver pinned to the edge — so it
- * offers only to open whole.
- */
+// A fold touching the top or bottom only opens whole: a partial reveal would leave a sliver at the edge.
 function expandersFor(start: number, end: number, total: number): Expander[] {
 	const whole: Expander = { direction: "all", start, end };
 	if (start === 0 || end === total - 1) return [whole];

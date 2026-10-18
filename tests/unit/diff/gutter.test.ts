@@ -13,9 +13,7 @@ function file(length: number): DiffLine[] {
 
 describe("gutterChars", () => {
 	test("is wide enough for the highest line number in the file", () => {
-		// The width is the file's, not the visible rows' — a virtualised list
-		// renders a new set of rows on every scroll, and a width derived from
-		// them would shift the content sideways as the numbers grew.
+		// Sized by the file, not the visible rows: a virtualised list would shift sideways on scroll.
 		expect(gutterChars(file(1200))).toBe(4);
 	});
 

@@ -1,9 +1,3 @@
-/*
- * The scroller. Only the rows near the viewport exist in the DOM, so the table
- * is stretched to the full height of the file and each row is placed at its
- * own offset — expand-all on a long file is thousands of lines, and a plain
- * list of them is what made the old renderer bypass React.
- */
 .viewer {
 	--diff-line-height: 1.5rem;
 
@@ -20,9 +14,6 @@
 	overflow: hidden;
 }
 
-/* The file being left, while the next one is fetched: it stays where it is,
-   softened, rather than being swapped for a spinner — a diff that empties out
-   and comes back throws the reader's eye away from the place they were. */
 .viewer[data-pending] {
 	filter: blur(3px);
 	pointer-events: none;
@@ -33,15 +24,9 @@
 	flex: 1;
 	min-height: 0;
 	overflow: auto;
-	/* The file's scrollbar is drawn over this one — see DiffScrollbar — and two
-	   of them would only compete for the same edge. */
+	/* DiffScrollbar draws over this edge instead. */
 	scrollbar-width: none;
-	/* Stated rather than left to `auto`, and inherited by every row. Only the
-	   rows near the viewport exist, so under a still pointer the element being
-	   hit changes on every scroll step — between a row and the stretched table
-	   behind it, between a line's text and a fold's padding — and `auto` reads
-	   each of those differently. The file is text wherever the pointer is over
-	   it, so the cursor says so and stops flickering. */
+	/* Not `auto`: virtual rows change the hit element on every scroll step, so the cursor flickers. */
 	cursor: text;
 }
 
@@ -49,8 +34,7 @@
 	display: none;
 }
 
-/* A table laid out by hand: the rows are absolutely positioned, so the usual
-   table algorithm has nothing to do here. */
+/* Rows are absolutely positioned, so the table layout algorithm is switched off. */
 .sizer,
 .sizer tbody {
 	display: block;

@@ -1,8 +1,3 @@
-/*
- * One row of the split view: the old file on the left, the new on the right.
- * Each half is a gutter and a content cell, and the two halves share the width
- * evenly so the columns line up down the file.
- */
 .row {
 	composes: row from "../DiffRow/DiffRow.module.css";
 }
@@ -19,7 +14,6 @@
 	border-right: 1px solid var(--color-border);
 }
 
-/* A side with no line on it: the other file simply has nothing here. */
 .half[data-type="none"] {
 	background: var(--color-surface);
 }

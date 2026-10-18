@@ -5,9 +5,6 @@ import { metaTags } from "#/lib/url/documentMeta.ts";
 import { parseSlug } from "#/lib/url/slug.ts";
 
 export const Route = createFileRoute("/$registry/$")({
-	// One catch-all replaces the middleware and the four `vercel.json` rewrites:
-	// the segments are read here, on the server, not off `location.pathname` in a
-	// component after the page has already booted.
 	loader: ({ params }) =>
 		parseSlug(requireAdapter(params.registry), params._splat ?? ""),
 	head: ({ params, loaderData }) =>

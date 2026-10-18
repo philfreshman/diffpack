@@ -2,14 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { buildDiffBootScript, type DiffBoot } from "#/lib/worker/bootScript.ts";
 import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
 
-/** Stands in for the hashed URL Vite interpolates at build time. */
 const WORKER_URL = "/assets/diff.worker-test.js";
 
-/**
- * The script ships as a string in the document head, so the only honest way to
- * test it is to run it — against a document that is entirely stubbed. What it
- * spawns and what it posts is its whole observable behaviour.
- */
 function boot(
 	pathname: string,
 	stored: Record<string, string> = {},
@@ -108,9 +102,6 @@ describe("the diff boot script", () => {
 	});
 
 	test("leaves behind a request the client adopts as the same comparison", () => {
-		// The script spells its comparison out by hand, so this is what holds that
-		// spelling to the one the client compares by: a field named differently
-		// would not be adopted, and the page would build the tree twice.
 		const { posted, window } = boot("/npm/@types/node/26.0.0/26.7.0");
 		const booted = window.__diffpackDiffBoot as DiffBoot;
 		const client = createDiffClient(
@@ -162,9 +153,7 @@ describe("the diff boot script", () => {
 	});
 
 	test("still boots, whitespace-exact, when the store refuses to be read", () => {
-		// A private-mode store that throws is no answer, which is the setting's
-		// fallback: the same thing the session reads once mounted, so it adopts
-		// this request rather than issuing its own.
+		// A private-mode store can throw on read.
 		const refusing = {
 			getItem() {
 				throw new Error("SecurityError");

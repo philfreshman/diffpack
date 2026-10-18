@@ -84,9 +84,6 @@ describe("metaTags", () => {
 	});
 
 	test("a shared comparison previews as that comparison", () => {
-		// A link to a diff is pasted into a chat far more often than the site's
-		// front page is, so the preview has to be the comparison's rather than
-		// the site's — the old app served one set of tags for every URL.
 		const tags = metaTags(npmAdapter, {
 			registry: "npm",
 			package: "express",

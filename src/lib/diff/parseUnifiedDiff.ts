@@ -1,22 +1,12 @@
 import type { FileDiff } from "#/lib/worker/protocol.ts";
 
-/** One line of a file as the viewer shows it. */
 export interface DiffLine {
 	type: "added" | "removed" | "unchanged";
-	/** The text itself, with the diff engine's marker already taken off. */
 	content: string;
-	/** Its number in the old file, or `null` when it is not in the old file. */
 	oldNumber: number | null;
-	/** Its number in the new file, or `null` when it is not in the new file. */
 	newNumber: number | null;
 }
 
-/**
- * The engine's output as a line model the renderer can lay out directly.
- *
- * It emits every line of the file, marked, with no `@@` headers — so the two
- * gutter numbers are counted here rather than read off a hunk header.
- */
 export function parseUnifiedDiff(file: FileDiff): DiffLine[] {
 	const raws = file.data.split("\n");
 	if (!file.isDiff) {
@@ -62,12 +52,6 @@ export function parseUnifiedDiff(file: FileDiff): DiffLine[] {
 	return lines;
 }
 
-/**
- * The engine writes `--- from/x` and `+++ to/x` ahead of the first line. They
- * name the file, which the toolbar already does, so they are not content. The
- * side a file is missing from is named `/dev/null` instead: `--- /dev/null` for
- * an added file, `+++ /dev/null` for a removed one.
- */
 function isHeader(raw: string): boolean {
 	return (
 		raw.startsWith("--- from/") ||

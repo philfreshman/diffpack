@@ -1,13 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { THEME_SELECTION } from "#/lib/storage/settings.ts";
 
-/**
- * The sky is a WebGL canvas, so there is nothing to read back out of it: its
- * drawing buffer is undefined once the browser has composited it, and asking
- * for a 2d context on it fails outright. What the component offers instead is
- * `data-drawn`, set the first time a frame actually reaches the canvas — which
- * is the thing worth waiting for anyway.
- */
+// A composited WebGL canvas cannot be read back, so `data-drawn` marks the first frame instead.
 function skyIsDrawn(page: Page) {
 	return expect(page.getByTestId("star-field")).toHaveAttribute(
 		"data-drawn",
@@ -44,14 +38,11 @@ test("holds the sky still when the visitor asks for reduced motion", async ({
 }) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/");
-	// The sky is client-only now that it depends on the theme, so the canvas
-	// arrives after hydration rather than in the server's HTML.
+	// Client-only, so the canvas arrives after hydration.
 	await expect(page.getByTestId("star-field")).toBeAttached();
 	await skyIsDrawn(page);
 
-	// Marks pulse, the field drifts and shooting stars travel, so an animating
-	// sky composites differently from one moment to the next; a still one does
-	// not. The screenshot is the only honest way to compare — see above.
+	// Screenshots, since the canvas cannot be read: a moving sky differs between them, a still one does not.
 	const first = await page.screenshot();
 	await page.waitForTimeout(600);
 	expect((await page.screenshot()).equals(first)).toBe(true);
@@ -60,8 +51,7 @@ test("holds the sky still when the visitor asks for reduced motion", async ({
 test("the sky reaches the screen, rather than being painted over", async ({
 	browser,
 }) => {
-	// Reduced motion holds the sky still, so two screenshots of the same page
-	// differ only because of what is or is not painted.
+	// Reduced motion holds the sky still, so the screenshots differ only by what is painted.
 	const page = await browser.newPage({ reducedMotion: "reduce" });
 	await page.goto("/");
 	await expect(page.getByTestId("star-field")).toBeAttached();

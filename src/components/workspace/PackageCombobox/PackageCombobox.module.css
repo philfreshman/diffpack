@@ -1,7 +1,6 @@
 .field {
 	display: flex;
 	min-width: 0;
-	/* Twice a version field: the text it holds is the longest in the row. */
 	flex: 2 1 0;
 	flex-direction: column;
 	gap: var(--space-1);
@@ -16,7 +15,6 @@
 	white-space: nowrap;
 }
 
-/* The key hint, after the spinner when the registry is answering. */
 .trailing {
 	display: inline-flex;
 	align-items: center;
