@@ -5,10 +5,6 @@ import { dragFrame } from "#/lib/tree/gesture.ts";
 import { createSidebar } from "#/lib/tree/sidebar.ts";
 import { memoryStore, REFUSING_STORE } from "../storage/storeStub.ts";
 
-/**
- * `<html>` as far as the sidebar touches it: its attributes, and the custom
- * properties on its inline style.
- */
 function fakeDocument(): Document {
 	const attributes = new Set<string>();
 	const properties = new Map<string, string>();
@@ -31,7 +27,6 @@ function fakeDocument(): Document {
 	return { documentElement } as unknown as Document;
 }
 
-/** A clock whose time comes only when the test says so. */
 function fakeClock() {
 	const waiting: Array<{ ms: number; then: () => void }> = [];
 
@@ -40,18 +35,15 @@ function fakeClock() {
 		after(ms: number, then: () => void) {
 			waiting.push({ ms, then });
 		},
-		/** Everything waiting has waited long enough. */
 		elapse() {
 			for (const { then } of waiting.splice(0)) then();
 		},
-		/** Only the first thing waiting has waited long enough. */
 		elapseFirst() {
 			waiting.shift()?.then();
 		},
 	};
 }
 
-/** A sidebar on a page of its own, kept in `store`. */
 function page(store: SettingStore = memoryStore()) {
 	const document = fakeDocument();
 	const clock = fakeClock();
@@ -62,13 +54,12 @@ function page(store: SettingStore = memoryStore()) {
 		sidebar,
 		store,
 		clock,
-		// The names the stylesheets select on, spelled out: they are the other
-		// half of the contract, and do not import the module's constants.
+		// Spelled out: the stylesheets select on these names and do not import the module's constants.
 		shut: () => html.hasAttribute("data-tree-collapsed"),
 		dragging: () => html.hasAttribute("data-tree-dragging"),
 		snapping: () => html.hasAttribute("data-tree-snapping"),
 		shownWidth: () => html.style.getPropertyValue("--tree-panel-width"),
-		/** What the pre-paint script does for a visitor who left it shut. */
+		// What the pre-paint script does for a visitor who left it shut.
 		loadShut: () => html.toggleAttribute("data-tree-collapsed", true),
 	};
 }
@@ -94,7 +85,6 @@ describe("opening and closing", () => {
 	});
 
 	test("asked for what it already is, it changes and stores nothing", () => {
-		// The F shortcut opens the panel whether or not it is shut.
 		const { sidebar, store, shut } = page();
 
 		sidebar.open();
@@ -220,7 +210,6 @@ describe("dragging the edge", () => {
 });
 
 describe("snapping shut", () => {
-	/** A panel chosen at 400px, dragged down past its minimum and let go. */
 	function letGoPastTheMinimum() {
 		const it = page();
 		it.sidebar.resize(400);
@@ -246,8 +235,6 @@ describe("snapping shut", () => {
 
 		expect(shut()).toBe(true);
 		expect(snapping()).toBe(false);
-		// Reopening gives back the panel that was there, not the sliver it was
-		// dragged down to — and the sliver was never a width anyone chose.
 		expect(shownWidth()).toBe("400px");
 		expect(sidebar.width()).toBe(400);
 		expect(store.getItem(TREE_WIDTH.key)).toBe("400");
@@ -255,7 +242,6 @@ describe("snapping shut", () => {
 	});
 
 	test("opened while it is snapping, the snap is taken back", () => {
-		// The header's way back in shows the moment the snap starts.
 		const { sidebar, store, clock, snapping, shut, shownWidth } =
 			letGoPastTheMinimum();
 
@@ -269,8 +255,7 @@ describe("snapping shut", () => {
 	});
 
 	test("a snap taken back does not cut short the next one", () => {
-		// Opened mid-snap and dragged shut again at once: the first snap's
-		// wait runs out while the second is still animating.
+		// The first snap's wait runs out while the second is still animating.
 		const { sidebar, clock, snapping, shut } = letGoPastTheMinimum();
 		sidebar.open();
 		sidebar.startDrag();
@@ -286,9 +271,7 @@ describe("snapping shut", () => {
 	});
 
 	test("waits exactly as long as the stylesheet takes to animate it", async () => {
-		// The wait is `--duration-fast` written again in TypeScript. Shorter,
-		// and the panel vanishes mid-animation; longer, and it sits at nothing
-		// before it is marked shut.
+		// The wait is `--duration-fast` written again in TypeScript.
 		const css = await Bun.file("src/styles/globals.css").text();
 		const duration = css.match(/--duration-fast:\s*(\d+)ms;/)?.[1];
 		const { clock } = letGoPastTheMinimum();

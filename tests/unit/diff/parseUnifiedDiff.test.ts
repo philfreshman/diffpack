@@ -3,9 +3,6 @@ import { parseUnifiedDiff } from "#/lib/diff/parseUnifiedDiff.ts";
 
 describe("parseUnifiedDiff", () => {
 	test("numbers each line against the sides it exists on", () => {
-		// A removal has no line in the new file and an addition none in the old,
-		// so the two counters advance independently — this is what puts the
-		// gutter numbers of a real diff out of step with each other.
 		const lines = parseUnifiedDiff({
 			isDiff: true,
 			data: ["  one", "- two", "+ dos", "  three"].join("\n"),
@@ -22,8 +19,6 @@ describe("parseUnifiedDiff", () => {
 	});
 
 	test("the file's own header is not a line of it", () => {
-		// The engine prefixes every diff with `--- from/x` / `+++ to/x`. Left in,
-		// they would render as two lines and push every gutter number down by two.
 		const lines = parseUnifiedDiff({
 			isDiff: true,
 			data: ["--- from/index.js", "+++ to/index.js", "  one"].join("\n"),
@@ -35,9 +30,6 @@ describe("parseUnifiedDiff", () => {
 	});
 
 	test("an added or removed file's header is not a line of it either", () => {
-		// A file with no old version is headed `--- /dev/null`, and one with no new
-		// version `+++ /dev/null`. Read as content, the `/dev/null` side showed up
-		// as a first line on both sides of every added and every removed file.
 		const added = parseUnifiedDiff({
 			isDiff: true,
 			data: ["--- /dev/null", "+++ to/index.js", "+ one"].join("\n"),
@@ -56,9 +48,7 @@ describe("parseUnifiedDiff", () => {
 	});
 
 	test("a file that did not change is all of it, unmarked", () => {
-		// The engine returns unchanged files as their own content — no markers, no
-		// header — so slicing a prefix off would eat the first two characters of
-		// every line, and `--- from/x` in a text file is text, not a header.
+		// The engine returns an unchanged file as its raw content: no markers, no header.
 		const lines = parseUnifiedDiff({
 			isDiff: false,
 			data: ["const x = 1;", "--- from/README"].join("\n"),
@@ -81,9 +71,7 @@ describe("parseUnifiedDiff", () => {
 	});
 
 	test("tells the marker apart from text that looks like one", () => {
-		// Markdown list items and CLI flags start with the same characters the
-		// engine marks with. Only the first two count, and an unchanged line is
-		// marked with two spaces, so its own leading dash survives the strip.
+		// Only the first two characters are the marker.
 		const lines = parseUnifiedDiff({
 			isDiff: true,
 			data: ["  - kept item", "- - dropped item", "+   indented"].join("\n"),

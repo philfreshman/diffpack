@@ -79,8 +79,6 @@ describe("visibleRows", () => {
 	});
 
 	test("a folder whose own name matches keeps everything under it", () => {
-		// Filtering to a folder is asking for that folder, not for the files in
-		// it whose names happen to repeat its own.
 		const rows = visibleRows(NESTED, {
 			...SHOW_ALL,
 			filter: "lib",
@@ -95,8 +93,6 @@ describe("visibleRows", () => {
 	});
 
 	test("filtering opens the folders on the way to a match", () => {
-		// Nothing has been expanded by hand: a filter whose matches are all
-		// buried would otherwise look like no matches at all.
 		const rows = visibleRows(NESTED, { ...SHOW_ALL, filter: "index" });
 
 		expect(rows.map((row) => row.entry.path)).toEqual(["lib", "lib/index.js"]);
@@ -123,7 +119,6 @@ describe("visibleRows", () => {
 	});
 
 	test("a package that is one folder deep opens that folder", () => {
-		// Otherwise the whole tree reads as a single unopened row.
 		const single: DiffFileEntry = {
 			path: "",
 			type: "directory",
@@ -144,7 +139,6 @@ describe("visibleRows", () => {
 	});
 
 	test("the only folder stays open when a folder inside it is opened by hand", () => {
-		// Opening `src/a` is a choice about `src/a`, not about `src`.
 		const single: DiffFileEntry = {
 			path: "",
 			type: "directory",
@@ -181,8 +175,7 @@ describe("visibleRows", () => {
 	});
 
 	test("a path that is a file and a folder is two rows, and only the folder opens", () => {
-		// `lib` a file in one version and a folder in the other: the engine
-		// sends both, the old version's first.
+		// `lib` is a file in one version and a folder in the other; the engine sends the old version's first.
 		const both: DiffFileEntry = {
 			path: "",
 			type: "directory",

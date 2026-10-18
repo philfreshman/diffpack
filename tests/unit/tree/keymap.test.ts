@@ -15,19 +15,6 @@ function row(
 	};
 }
 
-/**
- * The shape every case below is read against:
- *
- * ```
- * 0  lib               open
- * 1    lib/router      shut
- * 2    lib/index.js
- * 3  package.json
- * ```
- *
- * One open folder, one shut folder inside it, a leaf beside the shut folder,
- * and a leaf back at the top — which is every position ← and → distinguish.
- */
 const ROWS: readonly TreeRow[] = [
 	row("lib", 0, { expanded: true }),
 	row("lib/router", 1, { expanded: false }),
@@ -66,7 +53,6 @@ describe("↑ ↓ Home End", () => {
 
 describe("Enter and Space", () => {
 	test("activate whatever the tab stop is on, folder or file", () => {
-		// The row decides what activating it means — the key does not.
 		expect(treeCommand("Enter", ROWS, 3)).toEqual({
 			kind: "activate",
 			index: 3,
@@ -92,8 +78,6 @@ describe("→", () => {
 	});
 
 	test("does nothing on a leaf, rather than walking to the next sibling", () => {
-		// `package.json` is last; `lib/index.js` has a sibling row after it, and
-		// stepping to it would be ↓ wearing → as a disguise.
 		expect(treeCommand("ArrowRight", ROWS, 2)).toBeUndefined();
 		expect(treeCommand("ArrowRight", ROWS, 3)).toBeUndefined();
 	});
@@ -133,8 +117,7 @@ describe("←", () => {
 	});
 
 	test("goes up to the folder, not to a file at the same path", () => {
-		// `lib` a file in one version and a folder in the other: two rows at
-		// one path, the file first.
+		// `lib` is a file in one version and a folder in the other, the file first.
 		const rows = [
 			row("lib", 0),
 			row("lib", 0, { expanded: true }),

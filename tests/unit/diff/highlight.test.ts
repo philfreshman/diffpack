@@ -13,9 +13,7 @@ function unchanged(...contents: string[]): DiffLine[] {
 
 describe("detectLanguage", () => {
 	test("takes the language from the file's name when it can", () => {
-		// Auto-detection on a *diff* is a poor guess — express's `package.json`
-		// reads as Perl to it, with both versions of every key interleaved. The
-		// name of the file is the better evidence, and it is right here.
+		// Auto-detection on a diff guesses badly: express's `package.json` reads as Perl.
 		const json = unchanged('{ "name": "express" }');
 
 		expect(detectLanguage("package.json", json)).toBe("json");
@@ -37,8 +35,7 @@ describe("detectLanguage", () => {
 });
 
 test("decides from the head of the file, not the whole of it", () => {
-	// Sampling is what keeps opening a 40 000-line file cheap; a detector
-	// that read all of it would answer "css" here.
+	// Sampling keeps a long file cheap; reading all of this one would answer "css".
 	const lines = unchanged(
 		...Array.from({ length: 200 }, (_, index) => `\t"key${index}": 1,`),
 		...Array.from({ length: 4000 }, () => "a { color: red; }"),
@@ -48,10 +45,7 @@ test("decides from the head of the file, not the whole of it", () => {
 });
 
 test("reads the head of a line rather than the whole of it", () => {
-	// A file with no newlines in it — a `.eslintcache`, a minified bundle — is
-	// one line of half a megabyte. Handed that whole, `highlightAuto` runs
-	// every grammar it knows over all of it and the page stops answering for
-	// the better part of a minute, so only the head of a line is evidence.
+	// A minified file is one huge line, and `highlightAuto` over all of it freezes the page.
 	const head = ".button { color: red; padding: 4px; } ".repeat(11);
 	const tail = '{"name":"node","version":"26.7.0"},'.repeat(12_000);
 
@@ -78,12 +72,7 @@ describe("highlightLine", () => {
 	});
 
 	test("escapes markup even when highlight.js actually marks up the line", () => {
-		// The two cases above both fall back to this file's own `escapeHtml` —
-		// no language, or a line too long to highlight. The line here is
-		// neither: it takes the `hljs.highlight` branch, and package source
-		// (npm, PyPI, crates, Go) is attacker-controlled, so this is the
-		// guarantee the two `dangerouslySetInnerHTML` call sites actually rely
-		// on. Asserted here rather than assumed.
+		// This takes the `hljs.highlight` branch. Package source is attacker-controlled, and `dangerouslySetInnerHTML` relies on this.
 		const html = highlightLine("<img src=x onerror=alert(1)>", "xml");
 
 		expect(html).not.toContain("<img");
@@ -95,10 +84,7 @@ describe("highlightLine", () => {
 	});
 
 	test("leaves a line too long to be read as plain text", () => {
-		// Marking a line up costs roughly its own length again in `<span>`s,
-		// and all of it goes into one cell of one row: the half-megabyte line
-		// of a `.eslintcache` came to over six megabytes of DOM, which is what
-		// froze the tab rather than the highlighting itself.
+		// Markup costs about the line's length again in `<span>`s; a half-megabyte line froze the tab.
 		const line = '{"name":"node"},'.repeat(10_000);
 
 		expect(highlightLine(line, "json")).toBe(line);

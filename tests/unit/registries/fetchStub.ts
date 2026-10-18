@@ -1,4 +1,3 @@
-/** Records what an adapter asked for, and answers with canned responses. */
 export function stubFetch(
 	handler: (url: string) => Response | Promise<Response>,
 ) {
