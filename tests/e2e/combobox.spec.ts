@@ -1,11 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
-/**
- * The `Combobox` primitive's contract, driven through its two real call sites:
- * the version selectors for the filtered case, package search for the case
- * where the caller has already filtered the list. Both registries are stubbed,
- * because none of this should depend on what npm published today.
- */
+// Through both call sites: version selectors filter locally, package search arrives filtered.
 const VERSIONS = {
 	versions: {
 		"4.16.0": {},
@@ -31,11 +26,9 @@ const RESULTS = [
 
 const input = (page: Page) =>
 	page.getByRole("combobox", { name: "From Version" });
-/* Scoped to the list it belongs to: the toolbar's theme picker is a `<select>`
-   whose options are options too, and it is on screen throughout. */
+// Scoped to the listbox: the toolbar's theme picker has options of its own on screen.
 const options = (page: Page) => page.getByRole("listbox").getByRole("option");
 
-/** What a screen reader would announce as the current row. */
 async function highlighted(page: Page): Promise<string | null> {
 	const id = await input(page).getAttribute("aria-activedescendant");
 	return id ? page.locator(`#${id}`).textContent() : null;
@@ -48,21 +41,17 @@ async function stubVersions(page: Page, delayMs = 0) {
 	});
 }
 
-/**
- * The wait for `data-ready` matters: Playwright acts as soon as an element is
- * actionable, which can be before React has hydrated it.
- */
+// Playwright acts as soon as an element is actionable, which can be before React hydrates it.
 async function hydrated(page: Page) {
 	await expect(page.locator("[data-ready]").first()).toBeAttached();
 }
 
-/** A version field is dead weight until the list it filters has arrived. */
 async function ready(page: Page) {
 	await hydrated(page);
 	await expect(input(page)).toBeEnabled();
 }
 
-/** Opens the list and waits for it, so a key press cannot outrun it. */
+// Waits for the list, so a key press cannot outrun it.
 async function open(page: Page) {
 	await ready(page);
 	await input(page).click();
@@ -89,8 +78,7 @@ test("moves the highlight with the arrow keys, wrapping at both ends", async ({
 	await input(page).press("ArrowDown");
 	expect(await highlighted(page)).toBe("5.1.0");
 
-	// The input itself is part of the loop, per the ARIA practices guide, so
-	// stepping off the last row lands there before coming back to the first.
+	// Per the ARIA practices guide the input is part of the loop, between the last row and the first.
 	for (let i = 0; i < 4; i += 1) await input(page).press("ArrowDown");
 	expect(await highlighted(page)).toBe("4.16.0");
 
@@ -118,9 +106,7 @@ test("Enter takes the highlighted row", async ({ page }) => {
 test("Enter with nothing highlighted does nothing where there is no such thing", async ({
 	page,
 }) => {
-	// A version selector's list is the only truth, so it leaves `onSubmitText`
-	// out; package search, whose registry cannot be searched for every package,
-	// is where Enter on raw text means something.
+	// Version selectors leave `onSubmitText` out; only package search takes raw text on Enter.
 	await stubVersions(page);
 	await page.goto("/npm/express");
 	await open(page);
@@ -133,8 +119,7 @@ test("Enter with nothing highlighted does nothing where there is no such thing",
 });
 
 test("Escape closes the list and keeps the text", async ({ page }) => {
-	// Package search, because a version field deliberately puts the selected
-	// version back when the list closes — its filter text is transient.
+	// Package search, since a version field puts its chosen version back on close.
 	await page.route("https://registry.npmjs.org/-/v1/search**", (route) =>
 		route.fulfill({ json: { objects: RESULTS } }),
 	);
@@ -179,8 +164,7 @@ test("says so when nothing matches, instead of showing an empty box", async ({
 test("says the list is on its way while the caller fetches it", async ({
 	page,
 }) => {
-	// The stub holds the request open: a list that arrives instantly makes the
-	// in-flight state impossible to observe.
+	// Held open, or the in-flight state could not be observed.
 	await stubVersions(page, 5_000);
 	await page.goto("/npm/express");
 	await hydrated(page);
@@ -210,8 +194,7 @@ test("closes when focus leaves the field", async ({ page }) => {
 	await page.goto("/npm/express");
 	await open(page);
 
-	// Tab rather than clicking elsewhere: while the list is open Base UI holds
-	// the rest of the document inert, which is its own answer to outside clicks.
+	// Tab, not an outside click: while the list is open Base UI makes the rest of the document inert.
 	await input(page).press("Tab");
 
 	await expect(options(page)).toHaveCount(0);
@@ -229,7 +212,6 @@ test("leaves the list alone when the caller has already filtered it", async ({
 
 	await search.fill("web framework");
 
-	// Neither result's name contains the query; a local substring filter would
-	// have thrown away what the search API just answered.
+	// Neither name contains the query, so a local filter would drop both.
 	await expect(options(page)).toHaveText([/express/, /expressive/]);
 });

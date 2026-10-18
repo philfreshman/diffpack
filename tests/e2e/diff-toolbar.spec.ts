@@ -5,22 +5,13 @@ import {
 	SPLIT_VIEW,
 } from "#/lib/storage/settings.ts";
 
-/**
- * express 4.18.2 → 5.1.0, the same comparison the viewer suite reads:
- * `package.json` is small and thoroughly changed.
- */
 const MANIFEST = "/npm/express/4.18.2/5.1.0/package.json";
 
-/** Downloading and extracting two archives is not a 10 s assertion. */
 const ENGINE = { timeout: 90_000 };
 
 const toolbar = (page: Page) => page.getByTestId("diff-toolbar");
 
-/**
- * lodash 4.17.20 → 4.17.21: a handful of changes in a 17 000-line file, so
- * there is plenty folded away to open, and plenty of file between one
- * difference and the next.
- */
+// A handful of changes in a 17 000-line file: plenty folded, and far apart.
 const LODASH = "/npm/lodash/4.17.20/4.17.21/lodash.js";
 
 async function open(page: Page, path: string) {
@@ -28,7 +19,6 @@ async function open(page: Page, path: string) {
 	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
 }
 
-/** The comparison with nothing open in it: the frame, before the file. */
 const EXPRESS = "/npm/express/4.18.2/5.1.0";
 
 test("stands whether or not a file is open", async ({ page }) => {
@@ -39,12 +29,9 @@ test("stands whether or not a file is open", async ({ page }) => {
 		ENGINE,
 	);
 
-	// The tree and the bar are the workspace's frame: choosing a file fills a
-	// layout that is already on screen rather than replacing one.
 	await expect(page.getByTestId("tree-panel")).toBeVisible();
 	await expect(toolbar(page)).toBeVisible();
 	await expect(page.getByTestId("file-counter")).toHaveText("14 files");
-	// Nothing to navigate through yet, so nothing that navigates is live.
 	await expect(
 		toolbar(page).getByRole("button", { name: "Next difference" }),
 	).toBeDisabled();
@@ -58,8 +45,7 @@ test("walks the changed files, and closes the one it is on", async ({
 }) => {
 	await open(page, MANIFEST);
 
-	// `package.json` is the last changed file of the comparison, so there is
-	// nowhere further down to step.
+	// `package.json` is the last changed file.
 	await expect(page.getByTestId("file-counter")).toHaveText("14/14 files");
 	await expect(
 		toolbar(page).getByRole("button", { name: "Next file" }),
@@ -82,16 +68,12 @@ test("blurs the file it is holding rather than emptying the pane", async ({
 	await open(page, MANIFEST);
 	const view = page.getByTestId("diff-view");
 
-	// `data-pending` is what the workspace marks the viewer with while the next
-	// file is on its way (the rule itself is unit-tested); this is the part
-	// that has to survive the build — a stylesheet that stopped matching would
-	// leave the pane looking as if nothing were happening.
+	// Set by hand: this checks the built stylesheet still matches `data-pending`.
 	await expect(view).toHaveCSS("filter", "none");
 
 	await view.evaluate((node) => node.setAttribute("data-pending", ""));
 
 	await expect(view).toHaveCSS("filter", /blur/);
-	// And the rows are still there to be read through it.
 	await expect(view.locator("tr").first()).toBeVisible();
 });
 
@@ -122,15 +104,13 @@ test("counts the differences, and scrolls to them one at a time", async ({
 	expect(await top()).toBe(first);
 });
 
-/** The gear, and what it opens. */
 const settings = (page: Page) =>
 	toolbar(page).getByRole("button", { name: "Settings" });
 
 const themeFold = (page: Page) => page.getByTestId("theme-fold");
 
 async function openSettings(page: Page) {
-	// A menu opened by a click stays open until it is dismissed, and the gear
-	// toggles — so it is shut first, or the click meant to open it closes it.
+	// The gear toggles, so shut an open menu first or this click would close it.
 	if (await themeFold(page).count()) await settings(page).click();
 	await expect(themeFold(page)).toHaveCount(0);
 	await settings(page).click();
@@ -140,15 +120,9 @@ async function openSettings(page: Page) {
 const ignoreWhitespace = (page: Page) =>
 	page.getByRole("button", { name: "Ignore whitespaces" });
 
-/**
- * express `lib/utils.js` 4.18.2 → 5.1.0. `git diff` calls it 37 added and 72
- * removed; `git diff -w` calls it 36 and 71, so exactly one of its pairs is a
- * line that differs in nothing but whitespace — which is what makes it the
- * file where the setting has something to show.
- */
+// Exactly one changed pair differs only in whitespace: `git diff` says +37 -72, `git diff -w` +36 -71.
 const UTILS = "/npm/express/4.18.2/5.1.0/lib/utils.js";
 
-/** What the tree says a file's change amounts to, as `+37` / `-72`. */
 async function counts(page: Page, path: string) {
 	const row = page
 		.getByRole("treeitem")
@@ -163,8 +137,6 @@ test("the gear opens the settings, whitespace among them", async ({ page }) => {
 	await open(page, MANIFEST);
 	await openSettings(page);
 
-	// It says whether it is on the way a chosen theme does, and it is off until
-	// it is asked for.
 	await expect(ignoreWhitespace(page)).toBeEnabled();
 	await expect(ignoreWhitespace(page)).toHaveAttribute("aria-pressed", "false");
 
@@ -180,7 +152,6 @@ test("ignoring whitespace takes a reformatted line out of the diff", async ({
 
 	await openSettings(page);
 	await ignoreWhitespace(page).click();
-	// A new comparison: the tree is built again against the other question.
 	await expect(page.getByTestId("diff-status")).toHaveAttribute(
 		"data-state",
 		"ready",
@@ -188,8 +159,6 @@ test("ignoring whitespace takes a reformatted line out of the diff", async ({
 	);
 	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
 
-	// One pair fewer, both sides — the reformatted line and the line it
-	// replaced fold together into context.
 	const ignored = await counts(page, "lib/utils.js");
 	expect(ignored.added).toBe(exact.added - 1);
 	expect(ignored.removed).toBe(exact.removed - 1);
@@ -207,9 +176,7 @@ test("the choice survives a reload, the way the layout does", async ({
 	await openSettings(page);
 	await expect(ignoreWhitespace(page)).toHaveAttribute("aria-pressed", "true");
 
-	// Pinned against the constant the app writes through, the way split view's
-	// is: assert only the button and a renamed key still passes while every
-	// returning visitor's choice is silently dropped.
+	// The stored key too: checking only the button would let a renamed key drop returning visitors' choice.
 	expect(
 		await page.evaluate(
 			(key) => localStorage.getItem(key),
@@ -231,7 +198,6 @@ test("opens the whole file, and folds it back up", async ({ page }) => {
 	const folded = await viewer.getAttribute("data-rows");
 	await toolbar(page).getByRole("button", { name: "Expand all" }).click();
 
-	// Nothing is stood down any more: the file is showing every line it has.
 	await expect(page.getByTestId("fold")).toHaveCount(0);
 	await expect(viewer).not.toHaveAttribute("data-rows", folded ?? "");
 
@@ -254,8 +220,7 @@ test("puts the old file beside the new one, and remembers that it was asked", as
 		.click();
 
 	await expect(splitRows(page).first()).toBeVisible();
-	// The preference outlives the page: it is the same key the old app wrote,
-	// so a returning visitor's choice still stands.
+	// The old app's key, so a returning visitor's choice still stands.
 	expect(
 		await page.evaluate((key) => localStorage.getItem(key), SPLIT_VIEW.key),
 	).toBe("true");
@@ -277,9 +242,7 @@ test("counts the same differences however the file is shown", async ({
 	const count = page.getByTestId("difference-count");
 	const folded = await count.innerText();
 
-	// The count is where the arrows stop, taken from the rows on screen.
-	// Opening every fold and setting the file out in two columns both move
-	// each difference to another row, without splitting one or joining two.
+	// The count comes from the rows on screen; neither expanding nor splitting may split or join a difference.
 	await toolbar(page).getByRole("button", { name: "Expand all" }).click();
 	await expect(page.getByTestId("fold")).toHaveCount(0);
 	await expect(count).toHaveText(folded);
@@ -293,7 +256,6 @@ test("counts the same differences however the file is shown", async ({
 
 const themeLink = (page: Page) => page.locator("link#highlight-theme");
 
-/** The themes, a fold in from the gear. */
 async function openThemes(page: Page) {
 	await openSettings(page);
 	await themeFold(page).click();
@@ -328,14 +290,10 @@ test("names the theme in force, and ticks it among the rest", async ({
 	await page.getByRole("button", { name: "Nord", exact: true }).click();
 	await openSettings(page);
 
-	// The row says what it is set to without being opened — which is the whole
-	// reason the picker can afford to be behind a fold.
 	await expect(themeFold(page)).toContainText("Nord");
 
 	await themeFold(page).click();
 
-	// And inside, the one in force is the one marked, so the tick and the row
-	// cannot disagree.
 	await expect(page.locator('[data-theme="nord"]')).toHaveAttribute(
 		"aria-pressed",
 		"true",
@@ -352,9 +310,6 @@ test("the fold shows every theme it has, rather than clipping them", async ({
 	await open(page, MANIFEST);
 	await openThemes(page);
 
-	// The popup is as tall as its list rather than a height it gave itself: a
-	// fold that keeps the last themes behind a scroll of its own reads as a
-	// shorter list than it is.
 	const overflow = await page
 		.getByTestId("theme-popup")
 		.evaluate((node) => node.scrollHeight - node.clientHeight);
@@ -375,15 +330,11 @@ test("every theme it offers is one it can serve", async ({ page }) => {
 	);
 	expect(values).toHaveLength(23);
 
-	// The stylesheets are named one by one so the build emits only these — a
-	// theme that fell out of that list would offer a choice that colours
-	// nothing, which is invisible until someone picks it.
+	// The build emits only the stylesheets named one by one; a theme missing there colours nothing.
 	for (const value of values) {
 		await openThemes(page);
 		await page.locator(`[data-theme="${value}"]`).click();
-		// The stylesheet is this theme's, not whichever one was showing before:
-		// a theme missing from the list would otherwise leave the previous
-		// theme's `<link>` in place and look like it had worked.
+		// Otherwise a missing theme leaves the previous `<link>` in place and looks like it worked.
 		const name = value.split("/").at(-1) ?? value;
 		await expect(themeLink(page), value).toHaveAttribute(
 			"href",
@@ -396,12 +347,7 @@ test("every theme it offers is one it can serve", async ({ page }) => {
 	}
 });
 
-/**
- * How light every surface the viewer paints is, as luma in 0–1: the scroller,
- * which the syntax theme's stylesheet paints, and the washes on the changed
- * and folded rows, which the viewer paints itself. A theme is only coherent if
- * these all sit on one side of the middle.
- */
+// Luma (0–1) of the scroller's ground and every row wash; a coherent theme keeps them all on one side of 0.5.
 async function surfaceLumas(page: Page) {
 	return page.evaluate(() => {
 		const luma = (color: string) => {
@@ -412,8 +358,7 @@ async function surfaceLumas(page: Page) {
 		};
 		const opaque = (node: Element) => {
 			const background = getComputedStyle(node).backgroundColor;
-			// A row with no wash of its own shows the scroller's ground, and says
-			// nothing about whether the two agree.
+			// A transparent row shows the scroller's ground and proves nothing.
 			return background.startsWith("rgba(0, 0, 0, 0") ? null : background;
 		};
 
@@ -432,9 +377,7 @@ test("a light syntax theme brings the whole viewer with it, dark page or not", a
 	page,
 }) => {
 	await open(page, MANIFEST);
-	// The page is dark — the default — and the theme about to be chosen is
-	// light. That pairing used to give a file of alternating light and dark
-	// lines, with the syntax colours legible on only half of them (#139).
+	// A dark page with a light syntax theme once gave alternating light and dark rows (#139).
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
 	await openThemes(page);
@@ -446,13 +389,10 @@ test("a light syntax theme brings the whole viewer with it, dark page or not", a
 		"data-syntax",
 		"light",
 	);
-	// Every wash in the viewer, not only the code's ground: the added and
-	// removed rows and the folds are what disagreed with it.
 	for (const luma of await surfaceLumas(page))
 		expect(luma).toBeGreaterThan(0.5);
 
-	// And back the other way, so this is the syntax theme deciding rather than
-	// the viewer having simply been made light.
+	// And back, so it is the syntax theme deciding rather than a viewer that is always light.
 	await openThemes(page);
 	await page.getByRole("button", { name: "Monokai", exact: true }).click();
 
@@ -466,16 +406,12 @@ test("a light syntax theme brings the whole viewer with it, dark page or not", a
 test("colours the code by what the tokens are", async ({ page }) => {
 	await open(page, MANIFEST);
 
-	// The language is the file's name, not a guess taken from the diff: with
-	// both versions of every key interleaved, auto-detection reads this file as
-	// Perl.
+	// From the file name: with both versions of each key interleaved, auto-detection says Perl.
 	await expect(page.getByTestId("diff-view")).toHaveAttribute(
 		"data-language",
 		"json",
 	);
 
-	// Its keys are attributes, then — and highlight.js's classes are what a
-	// theme's stylesheet is written against.
 	await expect(
 		page.getByTestId("diff-view").locator("span.hljs-attr").first(),
 	).toBeVisible();

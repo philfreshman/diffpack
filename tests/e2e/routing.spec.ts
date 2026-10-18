@@ -1,9 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
-/**
- * What the route parsed out of the URL, stated on the workspace shell. It is
- * server-rendered, so these assertions hold before any registry has answered.
- */
+// Server-rendered, so these hold before any registry has answered.
 const workspace = (page: Page) => page.getByTestId("workspace");
 
 test("serves a deep link straight from its URL", async ({ page }) => {
@@ -90,7 +87,6 @@ test("the sidebar's switcher moves between registries and back home", async ({
 	await page.goto("/npm");
 	await expect(page.locator("[data-ready]").first()).toBeAttached();
 
-	// No wordmark in the workspace: the switcher is the way out of it.
 	await expect(page.getByRole("link", { name: "diffpack" })).toHaveCount(0);
 
 	const switcher = page.getByRole("button", { name: /Switch registry/ });

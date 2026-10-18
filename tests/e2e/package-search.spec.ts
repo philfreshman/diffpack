@@ -19,25 +19,17 @@ const RESULTS = [
 const field = (page: Page) =>
 	page.getByRole("combobox", { name: "Package Name" });
 
-/**
- * A row's accessible name is its package name *and* its description, so it is
- * matched by the name it renders rather than by the whole string.
- */
+// A row's accessible name includes its description, so match the rendered name.
 const option = (page: Page, name: string) =>
 	page
 		.getByRole("option")
 		.filter({ has: page.getByText(name, { exact: true }) });
 
-/**
- * The registry is stubbed: these tests are about debounce, the icon slot,
- * history and the URL, none of which should depend on npm being up or on what
- * it happens to return today.
- */
+// Stubbed so these do not depend on npm being up or on what it returns today.
 async function stubNpmSearch(page: Page, urls: string[] = [], delayMs = 0) {
 	await page.route(SEARCH_URL, async (route) => {
 		urls.push(route.request().url());
-		// A stub answers instantly, which makes an in-flight state impossible to
-		// observe; a test about that state has to hold the request open.
+		// Held open on request, or the in-flight state could not be observed.
 		if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
 		await route.fulfill({ json: { objects: RESULTS } });
 	});
@@ -93,7 +85,6 @@ test("selecting a result becomes the URL", async ({ page }) => {
 test("shows search, then a spinner, then clears on Escape", async ({
 	page,
 }) => {
-	// A stub that answers instantly makes the in-flight state impossible to see.
 	await stubNpmSearch(page, [], 2_000);
 	await page.goto("/npm");
 	await ready(page);
@@ -107,8 +98,7 @@ test("shows search, then a spinner, then clears on Escape", async ({
 	await option(page, "express").click();
 	await expect(slot).toHaveAttribute("data-state", "selected");
 
-	// Focusing the field opens its list, and the first Escape only closes that;
-	// the second, with the list shut, is the one that clears.
+	// Focusing opens the list: the first Escape closes it, the second clears.
 	await field(page).press("Escape");
 	await page.keyboard.press("Escape");
 
@@ -128,7 +118,6 @@ test("/ reaches the field; Escape closes the list, then empties it", async ({
 
 	await page.locator("body").press("/");
 	await expect(field(page)).toBeFocused();
-	// The / went nowhere: it moved focus, it was not typed.
 	await expect(field(page)).toHaveValue("");
 
 	await page.keyboard.type("expr");
@@ -152,13 +141,10 @@ test("offers the packages this registry has been asked for before", async ({
 	await field(page).fill("express");
 	await option(page, "express").click();
 
-	// A fresh visit: history is the only thing an empty field can offer.
 	await page.goto("/npm");
 	await ready(page);
 	await field(page).click();
 
-	// The whole result is remembered, description and all — history is what was
-	// picked, not just its name.
 	await expect(page.getByRole("option")).toHaveCount(1);
 	await expect(option(page, "express")).toBeVisible();
 });
@@ -197,8 +183,7 @@ test("tells a Go user what it can resolve, and takes a full module path", async 
 	await field(page).fill("chi");
 	await expect(page.getByText("Type a full module path")).toBeVisible();
 
-	// Nothing is highlighted, so Enter takes the text as typed — the only way to
-	// reach a module the proxy cannot be searched for.
+	// With nothing highlighted, Enter takes the typed text: Go has no search.
 	await field(page).fill("github.com/go-chi/chi/v5");
 	await field(page).press("Enter");
 

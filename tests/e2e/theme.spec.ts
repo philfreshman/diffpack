@@ -1,11 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { THEME_SELECTION } from "#/lib/storage/settings.ts";
 
-/**
- * Captures the theme as it stood at the browser's first paint. The first
- * `requestAnimationFrame` callback of a fresh document runs before that paint,
- * so a wrong value here is exactly the flash a user would see.
- */
+// A fresh document's first `requestAnimationFrame` runs before its first paint.
 async function recordFirstPaintTheme(page: Page) {
 	await page.addInitScript(() => {
 		requestAnimationFrame(() => {
@@ -103,7 +99,6 @@ test("the toggle cycles the selection and remembers it", async ({ page }) => {
 	await expect(html).toHaveAttribute("data-theme", "dark");
 	expect(await stored()).toBe("dark");
 
-	// The choice survives a reload, not just this page's lifetime.
 	await page.reload();
 	await expect(html).toHaveAttribute("data-theme-selection", "dark");
 });
