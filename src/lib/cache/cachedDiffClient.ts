@@ -64,7 +64,7 @@ export function createCachedDiffClient(
 		path: string,
 		oldPath: string | undefined,
 	): Promise<FileDiff> {
-		const patch = cached.entry.patches[path];
+		const patch = cached.entry.patches.get(path);
 		if (patch) return patch;
 
 		await buildHere(comparison, cached);
@@ -74,7 +74,10 @@ export function createCachedDiffClient(
 	return {
 		async buildTree(comparison: Comparison): Promise<DiffFileEntry> {
 			const entry = await findEntry(comparison).catch(() => null);
-			if (!entry) return local.buildTree(comparison);
+			if (!entry) {
+				held = null;
+				return local.buildTree(comparison);
+			}
 
 			held = { key: comparisonKey(comparison), entry, builtHere: null };
 			return entry.tree;

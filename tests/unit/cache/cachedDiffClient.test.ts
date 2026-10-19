@@ -41,7 +41,7 @@ const localFile: FileDiff = { data: "# zod\n", isDiff: false };
 
 const entry: CachedEntry = {
 	tree: cachedTree,
-	patches: { "index.js": cachedPatch },
+	patches: new Map([["index.js", cachedPatch]]),
 };
 
 function localClient() {
@@ -98,6 +98,32 @@ describe("a diff client in front of the server's cache", () => {
 		expect(calls).toEqual(["build zod", "get README.md"]);
 	});
 
+	test("works out a file named like an object's own methods here", async () => {
+		const { client, calls } = clientFinding(entry);
+		await client.buildTree(zod);
+
+		for (const path of ["constructor", "toString", "__proto__"]) {
+			expect(await client.getFile(zod, path, undefined)).toEqual(localFile);
+		}
+		expect(calls).toContain("get constructor");
+	});
+
+	test("forgets a cached entry once the same comparison misses", async () => {
+		const local = localClient();
+		let found: CachedEntry | null = entry;
+		const client = createCachedDiffClient(
+			local.client,
+			async () => found,
+			() => null,
+		);
+		await client.buildTree(zod);
+
+		found = null;
+		await client.buildTree(zod);
+
+		expect(await client.getFile(zod, "index.js", undefined)).toEqual(localFile);
+	});
+
 	test("builds on this device what the cache does not hold", async () => {
 		const { client, calls } = clientFinding(null);
 
@@ -117,7 +143,10 @@ describe("a diff client in front of the server's cache", () => {
 	});
 
 	test("builds a cached comparison here once, however many files it lacks", async () => {
-		const { client, calls } = clientFinding({ tree: cachedTree, patches: {} });
+		const { client, calls } = clientFinding({
+			tree: cachedTree,
+			patches: new Map(),
+		});
 		await client.buildTree(zod);
 
 		await Promise.all([

@@ -6,6 +6,7 @@ import type {
 } from "#/lib/worker/protocol.ts";
 import {
 	CACHE_SCHEMA,
+	canonicalThreshold,
 	comparisonDiffKey,
 	type DiffKey,
 	diffId,
@@ -13,7 +14,7 @@ import {
 
 export interface CachedEntry {
 	tree: DiffFileEntry;
-	patches: Record<string, FileDiff>;
+	patches: ReadonlyMap<string, FileDiff>;
 }
 
 interface ServedPatch {
@@ -22,6 +23,8 @@ interface ServedPatch {
 }
 
 interface ServedEntry {
+	schema: number;
+	similarity_threshold: number;
 	engine: string;
 	registry: string;
 	package: string;
@@ -63,6 +66,9 @@ function isServedEntry(value: unknown): value is ServedEntry {
 
 function describes(served: ServedEntry, key: DiffKey): boolean {
 	return (
+		served.schema === key.schema &&
+		canonicalThreshold(served.similarity_threshold) ===
+			canonicalThreshold(key.similarityThreshold) &&
 		served.engine === key.engine &&
 		served.registry === key.registry &&
 		served.package === key.package &&
@@ -73,7 +79,7 @@ function describes(served: ServedEntry, key: DiffKey): boolean {
 }
 
 function cachedEntryOf(served: ServedEntry): CachedEntry {
-	const patches = Object.fromEntries(
+	const patches = new Map(
 		Object.entries(served.patches).map(([path, patch]) => [
 			path,
 			{ data: patch.data, isDiff: patch.is_diff },

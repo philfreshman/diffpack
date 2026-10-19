@@ -39,13 +39,17 @@ export function comparisonDiffKey(
 	};
 }
 
+export function canonicalThreshold(threshold: number): string {
+	return threshold.toFixed(THRESHOLD_DECIMALS);
+}
+
 export function canonicalString(key: DiffKey): string {
 	const text = JSON.stringify;
 	return (
 		`{"engine":${text(key.engine)},"from":${text(key.from)},` +
 		`"ignore_whitespace":${key.ignoreWhitespace},"package":${text(key.package)},` +
 		`"registry":${text(key.registry)},"schema":${key.schema},` +
-		`"similarity_threshold":${text(key.similarityThreshold.toFixed(THRESHOLD_DECIMALS))},` +
+		`"similarity_threshold":${text(canonicalThreshold(key.similarityThreshold))},` +
 		`"to":${text(key.to)}}`
 	);
 }

@@ -74,7 +74,7 @@ describe("looking a comparison up in the server's cache", () => {
 		]);
 		expect(entry).toEqual({
 			tree,
-			patches: { "index.js": { data: "-a\n+b\n", isDiff: true } },
+			patches: new Map([["index.js", { data: "-a\n+b\n", isDiff: true }]]),
 		});
 	});
 
@@ -121,11 +121,21 @@ describe("looking a comparison up in the server's cache", () => {
 			{ to: "4.0.1" },
 			{ engine: "0.4.0" },
 			{ ignore_whitespace: true },
+			{ schema: 2 },
+			{ similarity_threshold: 0.6 },
 		]) {
 			const { lookUp } = lookupAnswering(() => json(servedEntry(other)));
 
 			expect(await lookUp(zod)).toBeNull();
 		}
+	});
+
+	test("takes an entry whose threshold agrees to the key's four decimals", async () => {
+		const { lookUp } = lookupAnswering(() =>
+			json(servedEntry({ similarity_threshold: 0.750000001 })),
+		);
+
+		expect(await lookUp(zod)).not.toBeNull();
 	});
 
 	test("gives up on a server too slow to answer, and is a miss", async () => {

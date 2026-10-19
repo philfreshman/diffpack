@@ -1,4 +1,8 @@
-import { CACHE_SCHEMA, ENGINE_VERSION } from "#/lib/cache/diffKey.ts";
+import {
+	CACHE_SCHEMA,
+	canonicalThreshold,
+	ENGINE_VERSION,
+} from "#/lib/cache/diffKey.ts";
 import { CACHE_ORIGIN, LOOKUP_TIMEOUT_MS } from "#/lib/cache/entryLookup.ts";
 import { MODULE_VERSION } from "#/lib/registries/go.ts";
 import { registryAdapters } from "#/lib/registries/index.ts";
@@ -82,7 +86,7 @@ worker.postMessage(Object.assign({id:boot.id,type:"build-tree"},comparison));
 window.${DIFF_BOOT_GLOBAL}=boot;
 return null};
 var j=JSON.stringify;
-var canonical='{"engine":'+j(${text(cache.engine)})+',"from":'+j(from)+',"ignore_whitespace":'+comparison.ignoreWhitespace+',"package":'+j(pkg)+',"registry":'+j(registry)+',"schema":${CACHE_SCHEMA},"similarity_threshold":'+j(${text(SIMILARITY_THRESHOLD.toFixed(4))})+',"to":'+j(to)+'}';
+var canonical='{"engine":'+j(${text(cache.engine)})+',"from":'+j(from)+',"ignore_whitespace":'+comparison.ignoreWhitespace+',"package":'+j(pkg)+',"registry":'+j(registry)+',"schema":${CACHE_SCHEMA},"similarity_threshold":'+j(${text(canonicalThreshold(SIMILARITY_THRESHOLD))})+',"to":'+j(to)+'}';
 var served=Promise.resolve().then(function(){
 return crypto.subtle.digest("SHA-256",new TextEncoder().encode(canonical))}).then(function(digest){
 var id=Array.prototype.map.call(new Uint8Array(digest),function(b){return(b<16?"0":"")+b.toString(16)}).join("");
