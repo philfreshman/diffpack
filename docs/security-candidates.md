@@ -56,13 +56,16 @@ with the name appended to its path.
 ```ts
 `${REGISTRY_URL}/${encodeURIComponent(name)}`     // npm, crates, pypi
 `${PROXY_URL}/${escapeModulePath(name)}/@v/list`  // go
+`${proxyOrigin}/v1/composer/p2/${encodedName(name)}.json`  // composer
 ```
 
 A relative path cannot introduce a new authority, however hostile it is. `../../evil.example`
 normalizes away inside the same origin; `//evil.example` becomes a path beginning with two slashes,
 not a host; `https://evil.example/pkg` becomes a path segment that happens to contain a colon.
-Three of the four adapters additionally `encodeURIComponent` the name, so it cannot even leave its
-segment; Go does not, because a module path legitimately contains slashes.
+Three of the five adapters additionally `encodeURIComponent` the name, so it cannot even leave its
+segment. Composer encodes the vendor and the package separately, and refuses any name that is not
+`vendor/package` before building a URL. Go does not encode, because a module path legitimately
+contains slashes.
 
 **What would break it** is assembling one of these URLs differently — `new URL(name, BASE)` reads
 almost the same and *does* let a name replace the base outright. So the property is asserted rather
@@ -86,7 +89,7 @@ same way and is outside every JavaScript analysis.
 ### 3–4 · `dangerouslySetInnerHTML` in the diff rows
 
 The input here is genuinely attacker-controlled in the strongest sense available: it is arbitrary
-source text out of an npm, PyPI, crates.io or Go archive, so anyone who can publish a package can
+source text out of an npm, PyPI, crates.io, Go or Composer archive, so anyone who can publish a package can
 choose it. A diff viewer that renders `<img onerror=…>` from a package's own source would be
 trivially exploitable.
 

@@ -268,6 +268,14 @@ const SHOTS = [
 		// `go.mod` is unchanged between these tags, so the tree hides it.
 		act: (page) => openFile(page, CHI, "tree.go"),
 	},
+	{
+		name: "28-composer-registry",
+		theme: "dark",
+		async act(page) {
+			await page.goto(`${BASE_URL}/composer`);
+			await page.getByTestId("workspace").waitFor();
+		},
+	},
 ];
 
 async function main() {
