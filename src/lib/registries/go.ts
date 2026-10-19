@@ -6,11 +6,9 @@ import type { Fetcher, RegistryAdapter, SearchResult } from "./types.ts";
 const PROXY_URL = "https://proxy.golang.org";
 
 const MAX_SEARCH_RESULTS = 10;
-// The diffpack proxy refuses longer search text (its docs/contract.md).
-const LONGEST_KEYWORD_SEARCH = 100;
+const PROXY_LONGEST_SEARCH_TEXT = 100;
 
-// pkg.go.dev lists packages, so one module can come back once per package.
-const SearchResponse = z.object({
+const PackageSearchResponse = z.object({
 	items: z
 		.array(
 			z.object({
@@ -23,7 +21,9 @@ const SearchResponse = z.object({
 		.nullable(),
 });
 
-type SearchItem = NonNullable<z.infer<typeof SearchResponse>["items"]>[number];
+type FoundPackage = NonNullable<
+	z.infer<typeof PackageSearchResponse>["items"]
+>[number];
 
 // Tells a path's "/v5" major-version suffix (no dots) apart from `v5.3.1`.
 export const MODULE_VERSION = /^v\d+\.\d+\.\d+/;
@@ -60,7 +60,7 @@ function compareVersionsDesc(a: string, b: string): number {
 	return right.suffix.localeCompare(left.suffix);
 }
 
-function moduleDescription(packages: SearchItem[]): string | undefined {
+function moduleDescription(packages: FoundPackage[]): string | undefined {
 	const root = packages.find((item) => item.packagePath === item.modulePath);
 	return (
 		root?.synopsis ||
@@ -69,8 +69,8 @@ function moduleDescription(packages: SearchItem[]): string | undefined {
 	);
 }
 
-function groupByModule(items: SearchItem[]): Map<string, SearchItem[]> {
-	const packagesByModule = new Map<string, SearchItem[]>();
+function groupByModule(items: FoundPackage[]): Map<string, FoundPackage[]> {
+	const packagesByModule = new Map<string, FoundPackage[]>();
 	for (const item of items) {
 		const packages = packagesByModule.get(item.modulePath) ?? [];
 		packagesByModule.set(item.modulePath, [...packages, item]);
@@ -83,11 +83,11 @@ function startsWithDomain(path: string): boolean {
 	return firstElement.includes(".");
 }
 
-function servedByModuleProxy(item: SearchItem): boolean {
+function servedByModuleProxy(item: FoundPackage): boolean {
 	return startsWithDomain(item.modulePath);
 }
 
-function modulesOf(items: SearchItem[]): SearchResult[] {
+function modulesOf(items: FoundPackage[]): SearchResult[] {
 	const packagesByModule = groupByModule(items.filter(servedByModuleProxy));
 	return [...packagesByModule].map(([name, packages]) => ({
 		name,
@@ -97,7 +97,7 @@ function modulesOf(items: SearchItem[]): SearchResult[] {
 }
 
 function isAcceptedSearchText(query: string): boolean {
-	return query.length > 0 && query.length <= LONGEST_KEYWORD_SEARCH;
+	return query.length > 0 && query.length <= PROXY_LONGEST_SEARCH_TEXT;
 }
 
 function looksLikeModulePath(query: string): boolean {
@@ -183,7 +183,7 @@ export function createGoAdapter(
 			proxyOrigin,
 		);
 
-		return modulesOf(SearchResponse.parse(payload).items ?? []).slice(
+		return modulesOf(PackageSearchResponse.parse(payload).items ?? []).slice(
 			0,
 			MAX_SEARCH_RESULTS,
 		);
