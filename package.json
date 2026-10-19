@@ -13,6 +13,7 @@
 		"generate-routes": "tsr generate",
 		"test": "bun test tests/unit",
 		"test:e2e": "playwright test",
+		"test:networked": "bun test tests/networked",
 		"screenshots": "bun scripts/capture-screenshots.mjs",
 		"lint": "biome lint .",
 		"format": "biome format .",

@@ -117,6 +117,8 @@ jobs:
       # in playwright.config.ts. It is a production build, not `vite dev`.
       - run: bun run test:e2e
 
+      - run: bun run test:networked
+
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
