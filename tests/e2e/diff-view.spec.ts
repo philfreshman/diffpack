@@ -39,6 +39,41 @@ test("stands the untouched lines down into folds", async ({ page }) => {
 	await expect(folds(page).first()).toHaveText(/Collapsed \d+ lines/);
 });
 
+test("a drag across a fold copies the lines, not the fold", async ({
+	page,
+}) => {
+	await open(page, LODASH);
+
+	// A fold in the body, so there are lines on both sides of it.
+	const fold = folds(page)
+		.filter({ has: page.getByRole("button", { name: /lines down$/ }) })
+		.first();
+	await fold.scrollIntoViewIfNeeded();
+	const start = Number(await fold.getAttribute("data-index"));
+	// Inside the code, clear of the scrollbar drawn over the right edge.
+	const code = (index: number) =>
+		page
+			.getByTestId("diff-view")
+			.locator(`tr[data-index="${index}"] td`)
+			.last()
+			.boundingBox();
+	const above = await code(start - 1);
+	const below = await code(start + 1);
+	if (!above || !below)
+		throw new Error("the rows around the fold are not drawn");
+
+	await page.mouse.move(above.x + 4, above.y + above.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(below.x + 4, below.y + below.height / 2, {
+		steps: 10,
+	});
+	await page.mouse.up();
+
+	const selected = await page.evaluate(() => getSelection()?.toString() ?? "");
+	expect(selected).not.toBe("");
+	expect(selected).not.toContain("Collapsed");
+});
+
 test("opens a fold twenty lines at a time", async ({ page }) => {
 	await open(page, LODASH);
 
@@ -126,6 +161,38 @@ test("puts the old file beside the new one when that is the preference", async (
 		.getByTestId("diff-view")
 		.locator('tr[data-left-type="removed"][data-right-type="added"]');
 	await expect(replaced.first()).toBeVisible();
+});
+
+test("a drag in the split view selects only the side it started in", async ({
+	page,
+}) => {
+	await page.addInitScript(
+		(key) => localStorage.setItem(key, "true"),
+		SPLIT_VIEW.key,
+	);
+	await open(page, MANIFEST);
+
+	const view = page.getByTestId("diff-view");
+	const replaced = view
+		.locator('tr[data-left-type="removed"][data-right-type="added"]')
+		.first();
+	const from = await view.getByTestId("left-content").first().boundingBox();
+	const to = await replaced.getByTestId("right-content").boundingBox();
+	if (!from || !to) throw new Error("the split rows are not laid out");
+
+	// Down the left side, then across into the right one.
+	await page.mouse.move(from.x + 1, from.y + from.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(to.x + to.width - 1, to.y + to.height / 2, {
+		steps: 10,
+	});
+	await page.mouse.up();
+
+	const selected = await page.evaluate(() => getSelection()?.toString() ?? "");
+	const newer = await replaced.getByTestId("right-content").textContent();
+	// An unchanged line appears on both sides; selected from one, it appears once.
+	expect(selected.split('"name"').length - 1).toBe(1);
+	expect(selected).not.toContain(newer?.trim());
 });
 
 const treeRow = (page: Page, path: string) =>

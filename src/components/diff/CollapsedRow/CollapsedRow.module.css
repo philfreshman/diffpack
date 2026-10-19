@@ -1,6 +1,8 @@
 .row {
 	background: var(--color-fold-surface);
 	color: var(--color-muted);
+	/* A fold stands in for lines; it is not one, so it stays out of a copy. */
+	user-select: none;
 }
 
 .expanders {

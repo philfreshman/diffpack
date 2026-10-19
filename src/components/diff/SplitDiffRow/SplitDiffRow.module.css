@@ -10,6 +10,12 @@
 	border-right: 1px solid var(--color-border);
 }
 
+/* A drag selects only the side it started in, which DiffView marks on press. */
+[data-selecting="left"] .half[data-side="right"],
+[data-selecting="right"] .half[data-side="left"] {
+	user-select: none;
+}
+
 .half[data-type="none"] {
 	background: var(--color-surface);
 }
