@@ -78,8 +78,18 @@ function groupByModule(items: SearchItem[]): Map<string, SearchItem[]> {
 	return packagesByModule;
 }
 
+function startsWithDomain(path: string): boolean {
+	const [firstElement = ""] = path.split("/");
+	return firstElement.includes(".");
+}
+
+function servedByModuleProxy(item: SearchItem): boolean {
+	return startsWithDomain(item.modulePath);
+}
+
 function modulesOf(items: SearchItem[]): SearchResult[] {
-	return [...groupByModule(items)].map(([name, packages]) => ({
+	const packagesByModule = groupByModule(items.filter(servedByModuleProxy));
+	return [...packagesByModule].map(([name, packages]) => ({
 		name,
 		version: packages[0]?.version,
 		description: moduleDescription(packages),
@@ -87,8 +97,7 @@ function modulesOf(items: SearchItem[]): SearchResult[] {
 }
 
 function looksLikeModulePath(query: string): boolean {
-	const [host = ""] = query.split("/");
-	return query.includes("/") && host.includes(".");
+	return query.includes("/") && startsWithDomain(query);
 }
 
 export function createGoAdapter(

@@ -248,6 +248,36 @@ describe("go keyword search", () => {
 			},
 		]);
 	});
+
+	test("leaves out the standard library, which the Go module proxy does not serve", async () => {
+		const { fetcher } = stubFetch(() =>
+			goSearchAnswer([
+				{
+					packagePath: "net/http",
+					modulePath: "std",
+					version: "v1.27.2",
+					synopsis:
+						"Package http provides HTTP client and server implementations.",
+				},
+				{
+					packagePath: "cmd/go",
+					modulePath: "cmd",
+					version: "v1.27.2",
+				},
+				{
+					packagePath: "github.com/gin-gonic/gin",
+					modulePath: "github.com/gin-gonic/gin",
+					version: "v1.12.0",
+				},
+			]),
+		);
+
+		const results = await createGoAdapter(fetcher, PROXY).search("http");
+
+		expect(results.map((result) => result.name)).toEqual([
+			"github.com/gin-gonic/gin",
+		]);
+	});
 });
 
 describe("go keyword search outcomes", () => {
