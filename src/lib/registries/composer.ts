@@ -76,6 +76,10 @@ export function createComposerAdapter(
 		},
 
 		downloadUrl(name, version) {
+			if (!PACKAGE_NAME.test(name)) {
+				return `${PACKAGIST_URL}/search/?q=${encodeURIComponent(name)}`;
+			}
+
 			return `${PACKAGIST_URL}/packages/${encodedName(name)}#${encodeURIComponent(version)}`;
 		},
 	};

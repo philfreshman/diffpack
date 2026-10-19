@@ -122,4 +122,10 @@ describe("composer downloadUrl", () => {
 			"https://packagist.org/packages/monolog/monolog#3.12.1",
 		);
 	});
+
+	test("sends a name that is not vendor/package to Packagist's search, not up the site's paths", () => {
+		expect(composerAdapter.downloadUrl("../x", "1.0.0")).toBe(
+			"https://packagist.org/search/?q=..%2Fx",
+		);
+	});
 });
