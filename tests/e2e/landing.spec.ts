@@ -104,6 +104,17 @@ test("describes itself for anything that links to it", async ({ request }) => {
 	);
 });
 
+test("shares the site-wide description, naming every registry", async ({
+	request,
+}) => {
+	const html = await (await request.get("/")).text();
+	const shared =
+		"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io, Go, PyPI and Packagist.";
+
+	expect(html).toContain(`property="og:description" content="${shared}"`);
+	expect(html).toContain(`property="twitter:description" content="${shared}"`);
+});
+
 test("hangs the nebula behind the stars, in the dark theme only", async ({
 	page,
 }) => {
