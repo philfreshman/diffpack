@@ -38,6 +38,7 @@ export class CodedError extends Error {
 
 	constructor({ message, code, resetsAt, status }: Failure) {
 		super(message);
+		this.name = "CodedError";
 		this.code = code;
 		this.resetsAt = resetsAt;
 		this.status = status;

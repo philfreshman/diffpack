@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { failureOf, isProxyLimit } from "#/lib/failure/failure.ts";
+import { CodedError, failureOf, isProxyLimit } from "#/lib/failure/failure.ts";
 
 function engineError(
 	message: string,
@@ -77,5 +77,17 @@ describe("isProxyLimit", () => {
 		expect(isProxyLimit("proxy_unreachable")).toBe(true);
 		expect(isProxyLimit("not_found")).toBe(false);
 		expect(isProxyLimit(null)).toBe(false);
+	});
+});
+
+describe("CodedError", () => {
+	test("names itself in stack traces and logs", () => {
+		const error = new CodedError({
+			message: "Paused",
+			code: "quota_exhausted",
+		});
+
+		expect(error.name).toBe("CodedError");
+		expect(String(error)).toBe("CodedError: Paused");
 	});
 });
