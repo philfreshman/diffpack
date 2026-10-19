@@ -10,14 +10,13 @@ const option = (page: Page, name: string) =>
 		.getByRole("option")
 		.filter({ has: page.getByText(name, { exact: true }) });
 
-/** Playwright clicks as soon as an element exists; React may not own it yet. */
-async function ready(page: Page) {
+async function untilHydrated(page: Page) {
 	await expect(page.locator("[data-ready]").first()).toBeAttached();
 }
 
 test("finds a Packagist package and opens it", async ({ page }) => {
 	await page.goto("/composer");
-	await ready(page);
+	await untilHydrated(page);
 
 	await field(page).fill("monolog");
 	await option(page, "monolog/monolog").click();
@@ -31,7 +30,7 @@ test("finds a Packagist package and opens it", async ({ page }) => {
 
 test("lists the versions the proxy reads from Packagist", async ({ page }) => {
 	await page.goto("/composer/monolog/monolog");
-	await ready(page);
+	await untilHydrated(page);
 	await expect(from(page)).toBeEnabled();
 
 	await from(page).click();
@@ -44,7 +43,7 @@ test("links each version to its Packagist page rather than offering a download",
 	page,
 }) => {
 	await page.goto("/composer/monolog/monolog/3.12.0/3.12.1");
-	await ready(page);
+	await untilHydrated(page);
 
 	const link = page.getByRole("link", { name: "Packagist page for 3.12.0" });
 
