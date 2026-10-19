@@ -121,6 +121,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 							file={session.file}
 							highlight={highlight}
 							onClose={closeFile}
+							registryLabel={adapter.label}
 							sessionStatus={session.status}
 							shown={shown}
 						/>
@@ -211,6 +212,7 @@ function TreeStatus({
 }
 
 interface FilePaneProps {
+	registryLabel: string;
 	sessionStatus: DiffSessionState["status"];
 	file: OpenFile | null;
 	shown: FileModelControls | null;
@@ -219,6 +221,7 @@ interface FilePaneProps {
 }
 
 function FilePane({
+	registryLabel,
 	sessionStatus,
 	file,
 	shown,
@@ -228,7 +231,9 @@ function FilePane({
 	return (
 		<>
 			{sessionStatus === "idle" && (
-				<p className={styles.empty}>Choose a package and two versions.</p>
+				<p className={styles.empty}>
+					{`Compare two versions of any ${registryLabel} package. Search for a package, pick two versions, and see every file that was added, removed, renamed or changed.`}
+				</p>
 			)}
 			{/* Only the first file: later ones keep the previous file blurred instead. */}
 			{file?.status === "loading" && !shown && (
