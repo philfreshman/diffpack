@@ -1,17 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RegistryGrid } from "#/components/landing/RegistryGrid/RegistryGrid.tsx";
+import { SiteAbout } from "#/components/landing/SiteAbout/SiteAbout.tsx";
 import { StarField } from "#/components/landing/StarField/StarField.tsx";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { GithubIcon } from "#/components/ui/icons.tsx";
+import { homeHead } from "#/lib/url/homeHead.ts";
 import styles from "./index.module.css";
 
-const DESCRIPTION =
-	"Compare package versions across ecosystems. Source-aware dependency review for npm, crates.io, Go, PyPI and Packagist.";
-
 export const Route = createFileRoute("/")({
-	head: () => ({
-		meta: [{ name: "description", content: DESCRIPTION }],
-	}),
+	head: homeHead,
 	component: Home,
 });
 
@@ -32,6 +29,8 @@ function Home() {
 				</header>
 
 				<RegistryGrid />
+
+				<SiteAbout />
 
 				<footer className={styles.footer}>
 					<p className={styles.footerText}>

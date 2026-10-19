@@ -150,11 +150,12 @@ test("serves every icon and card image it points at", async ({
 		"/site.webmanifest",
 	]);
 	expect(referenced.cards).toEqual([
-		"/web-app-manifest-512x512.png",
-		"/web-app-manifest-512x512.png",
+		"https://diffpack.io/web-app-manifest-512x512.png",
+		"https://diffpack.io/web-app-manifest-512x512.png",
 	]);
 
-	for (const href of [...referenced.icons, ...referenced.cards]) {
+	const cardPaths = referenced.cards.map((card) => new URL(card).pathname);
+	for (const href of [...referenced.icons, ...cardPaths]) {
 		const response = await request.get(href);
 		expect(response.status(), href).toBe(200);
 	}
@@ -220,7 +221,9 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 	expect([type, name]).toEqual(["event", "page_view"]);
 	expect(params.page_path).toBe("/");
 	// The title of the page arrived at, not the one just left.
-	expect(params.page_title).toBe("diffpack");
+	expect(params.page_title).toBe(
+		"diffpack: compare npm, crates.io, Go, PyPI and Packagist versions",
+	);
 });
 
 // A hydration mismatch only shows as a console error; the pre-paint `<head>` scripts are the usual cause.

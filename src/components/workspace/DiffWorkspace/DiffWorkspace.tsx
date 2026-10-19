@@ -21,6 +21,7 @@ import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
 import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
+import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
 import { ProxyLimitNotice } from "../ProxyLimitNotice/ProxyLimitNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
@@ -121,6 +122,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 							file={session.file}
 							highlight={highlight}
 							onClose={closeFile}
+							intro={workspaceIntro(adapter, slug)}
 							sessionStatus={session.status}
 							shown={shown}
 						/>
@@ -211,6 +213,7 @@ function TreeStatus({
 }
 
 interface FilePaneProps {
+	intro: string;
 	sessionStatus: DiffSessionState["status"];
 	file: OpenFile | null;
 	shown: FileModelControls | null;
@@ -219,6 +222,7 @@ interface FilePaneProps {
 }
 
 function FilePane({
+	intro,
 	sessionStatus,
 	file,
 	shown,
@@ -227,8 +231,10 @@ function FilePane({
 }: FilePaneProps) {
 	return (
 		<>
-			{sessionStatus === "idle" && (
-				<p className={styles.empty}>Choose a package and two versions.</p>
+			{(sessionStatus === "idle" || sessionStatus === "loading") && (
+				<p className={styles.empty} data-testid="workspace-intro">
+					{intro}
+				</p>
 			)}
 			{/* Only the first file: later ones keep the previous file blurred instead. */}
 			{file?.status === "loading" && !shown && (
