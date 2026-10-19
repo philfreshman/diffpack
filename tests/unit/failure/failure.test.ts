@@ -36,6 +36,26 @@ describe("failureOf", () => {
 		});
 	});
 
+	test("reads a plain object's message and code, not its string form", () => {
+		const thrown = {
+			message: "diffpack couldn't reach its proxy",
+			code: "proxy_unreachable",
+		};
+
+		expect(failureOf(thrown)).toEqual({
+			message: "diffpack couldn't reach its proxy",
+			code: "proxy_unreachable",
+		});
+	});
+
+	test("keeps the code of a plain object with no message", () => {
+		expect(failureOf({ code: "not_found", status: 404 })).toEqual({
+			message: "[object Object]",
+			code: "not_found",
+			status: 404,
+		});
+	});
+
 	test("survives nothing being thrown at all", () => {
 		expect(failureOf(undefined)).toEqual({ message: "undefined" });
 	});

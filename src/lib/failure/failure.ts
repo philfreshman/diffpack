@@ -60,7 +60,13 @@ export function failureFrom(
 	};
 }
 
+function messageOf(thrown: object): string {
+	const { message } = thrown as Record<string, unknown>;
+	return typeof message === "string" ? message : String(thrown);
+}
+
 export function failureOf(error: unknown): Failure {
-	if (!(error instanceof Error)) return { message: String(error) };
-	return failureFrom(error.message, { ...error });
+	if (typeof error !== "object" || error === null)
+		return { message: String(error) };
+	return failureFrom(messageOf(error), { ...error });
 }
