@@ -108,7 +108,10 @@ Adding a registry touches more than the adapter:
 ## The engine and the worker protocol
 
 `src/lib/worker/`. The engine is a `wasm-pack --target web` module that
-`diff.worker.ts` initializes once against the `.wasm` URL Vite fingerprints. It is excluded from
+`diff.worker.ts` initializes once against the `.wasm` URL Vite fingerprints, then calls
+`set_proxy_origin(PROXY_ORIGIN)` (`src/lib/proxy/origin.ts`), without which every Composer request
+fails with `proxy_not_configured` (`engineReady.ts`: a refused origin leaves the other registries
+working, and a failed start is retried on the next message). The engine is excluded from
 `optimizeDeps`, and has to stay excluded. Changing how a diff is *computed* is a PR in
 `philfreshman/diffpack-engine`, not here; `DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg bun run dev`
 tries an unreleased build.
