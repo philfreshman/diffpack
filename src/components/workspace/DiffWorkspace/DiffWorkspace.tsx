@@ -111,16 +111,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 						/>
 					)}
 
-					{progress && (
-						<DiffProgress
-							packageName={slug.package}
-							from={slug.from}
-							to={slug.to}
-							progress={progress}
-						/>
-					)}
-
-					{pane === "file" && (
+					{pane !== "versions-failure" && (
 						<section className={styles.file} data-testid="diff-file">
 							<DiffToolbar
 								path={session.file?.path ?? ""}
@@ -135,14 +126,23 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								onIgnoreWhitespaceChange={whitespace.set}
 								highlight={highlight}
 							/>
-							<FilePane
-								file={session.file}
-								highlight={highlight}
-								onClose={closeFile}
-								intro={workspaceIntro(adapter, slug)}
-								sessionStatus={session.status}
-								shown={shown}
-							/>
+							{progress ? (
+								<DiffProgress
+									packageName={slug.package}
+									from={slug.from}
+									to={slug.to}
+									progress={progress}
+								/>
+							) : (
+								<FilePane
+									file={session.file}
+									highlight={highlight}
+									onClose={closeFile}
+									intro={workspaceIntro(adapter, slug)}
+									sessionStatus={session.status}
+									shown={shown}
+								/>
+							)}
 						</section>
 					)}
 				</main>
