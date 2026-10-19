@@ -30,11 +30,14 @@ the compiled engine down with everything else.
 
 ### The Composer proxy
 
-Packagist's version metadata sends no CORS header, so the browser reads Composer versions through
-[diffpack-proxy](https://github.com/philfreshman/diffpack-proxy), a Cloudflare Worker. The app
-uses the deployed one, `https://diffpack-proxy.philipswiezak.workers.dev`, unless
-`VITE_DIFFPACK_PROXY_ORIGIN` names another. It answers pages on `http://localhost:<port>`, so
-`bun run dev` works against it as is. To run against a local copy instead:
+Packagist's version metadata and the archives it lists send no CORS header, so the browser reads
+Composer versions and downloads Composer archives through
+[diffpack-proxy](https://github.com/philfreshman/diffpack-proxy), a Cloudflare Worker. The version
+list asks it from the page; the diff worker hands the same origin to the engine with
+`set_proxy_origin` before anything else runs. Both use the deployed proxy,
+`https://diffpack-proxy.philipswiezak.workers.dev`, unless `VITE_DIFFPACK_PROXY_ORIGIN` names
+another, and so does every e2e run. It answers pages on `http://localhost:<port>`, so `bun run dev`
+works against it as is. To run against a local copy instead:
 
 ```bash
 cd ../diffpack-proxy && bun run dev    # wrangler dev on :8787
