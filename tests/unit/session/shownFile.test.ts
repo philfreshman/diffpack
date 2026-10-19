@@ -7,8 +7,10 @@ const MANIFEST: ShownFile = {
 	diff: { data: "- 1\n+ 2", isDiff: true },
 };
 
+const NO_FAILURE = { error: null, errorCode: null, resetsAt: null };
+
 function opening(path: string): OpenFile {
-	return { path, status: "loading", diff: null, error: null };
+	return { path, status: "loading", diff: null, ...NO_FAILURE };
 }
 
 describe("shownFile", () => {
@@ -18,7 +20,7 @@ describe("shownFile", () => {
 				path: "package.json",
 				status: "ready",
 				diff: MANIFEST.diff,
-				error: null,
+				...NO_FAILURE,
 			}),
 		).toEqual(MANIFEST);
 	});
@@ -38,6 +40,7 @@ describe("shownFile", () => {
 				path: "lib/view.js",
 				status: "error",
 				diff: null,
+				...NO_FAILURE,
 				error: "gone",
 			}),
 		).toBeNull();

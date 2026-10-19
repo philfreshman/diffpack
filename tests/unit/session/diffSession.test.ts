@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { CodedError } from "#/lib/failure/failure.ts";
 import { createDiffSession } from "#/lib/session/diffSession.ts";
 import type { DiffSlug } from "#/lib/url/slug.ts";
 import type {
@@ -152,6 +153,38 @@ describe("a comparison", () => {
 
 		expect(session.store.state.status).toBe("error");
 		expect(session.store.state.error).toBe("404 fetching express@5.1.0");
+	});
+
+	test("keeps the code and reset time of a failure, for the notice", async () => {
+		const { stub, session } = toldOf(SLUG);
+
+		take(stub.trees, 0).reject(
+			new CodedError({
+				message: "Composer diffs are paused",
+				code: "quota_exhausted",
+				resetsAt: "2026-10-20T00:00:00Z",
+			}),
+		);
+		await settled();
+
+		expect(session.store.state).toMatchObject({
+			status: "error",
+			error: "Composer diffs are paused",
+			errorCode: "quota_exhausted",
+			resetsAt: "2026-10-20T00:00:00Z",
+		});
+	});
+
+	test("a failure without a code has no code and no reset time", async () => {
+		const { stub, session } = toldOf(SLUG);
+
+		take(stub.trees, 0).reject(new Error("404 fetching express@5.1.0"));
+		await settled();
+
+		expect(session.store.state).toMatchObject({
+			errorCode: null,
+			resetsAt: null,
+		});
 	});
 
 	test("a superseded comparison never lands", async () => {
@@ -393,6 +426,26 @@ describe("the file the URL names", () => {
 			status: "error",
 		});
 		expect(stub.filesAsked).toHaveLength(0);
+	});
+
+	test("keeps the code and reset time of a failed read", async () => {
+		const { stub, session } = await readySession();
+		session.follow({ ...SLUG, file: "index.js" });
+
+		take(stub.fileReplies, 0).reject(
+			new CodedError({
+				message: "diffpack couldn't reach its proxy",
+				code: "proxy_unreachable",
+			}),
+		);
+		await settled();
+
+		expect(session.store.state.file).toMatchObject({
+			status: "error",
+			error: "diffpack couldn't reach its proxy",
+			errorCode: "proxy_unreachable",
+			resetsAt: null,
+		});
 	});
 
 	test("on screen is the one the URL named last", async () => {
