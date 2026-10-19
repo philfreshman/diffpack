@@ -57,9 +57,13 @@ test("links each version to its Packagist page rather than offering a download",
 });
 
 const MONOLOG = "/composer/monolog/monolog/3.12.0/3.12.1";
+const PROXY_ROUTES =
+	"https://diffpack-proxy.philipswiezak.workers.dev/v1/composer/**";
 const ENGINE = { timeout: 90_000 };
+const RESETS_AT = "2026-10-20T00:00:00Z";
 
 const status = (page: Page) => page.getByTestId("diff-status");
+const notice = (page: Page) => page.getByTestId("proxy-limit-notice");
 const treeRow = (page: Page, name: string) =>
 	page
 		.getByTestId("tree-panel")
@@ -89,6 +93,26 @@ async function recordBuildRequests(page: Page) {
 			).filter((request) => request.type === "build-tree"),
 		);
 }
+
+function answerAsTheProxy(status: number, body: object) {
+	return {
+		status,
+		contentType: "application/json",
+		headers: {
+			"access-control-allow-origin": "*",
+			"access-control-expose-headers": "Retry-After, Diffpack-Proxy-Error",
+			"diffpack-proxy-error": String((body as { error?: string }).error),
+			"retry-after": "3600",
+		},
+		body: JSON.stringify(body),
+	};
+}
+
+const QUOTA_EXHAUSTED = answerAsTheProxy(503, {
+	error: "quota_exhausted",
+	message: "diffpack's Composer proxy has used today's free allowance.",
+	resetsAt: RESETS_AT,
+});
 
 test("compares two monolog releases through the proxy", async ({ page }) => {
 	await page.goto(`${MONOLOG}/src/Monolog/Logger.php`);
@@ -180,4 +204,56 @@ test("ignoring whitespace rebuilds the Composer comparison that way", async ({
 		expect.objectContaining({ registry: "composer", ignoreWhitespace: false }),
 		expect.objectContaining({ registry: "composer", ignoreWhitespace: true }),
 	]);
+});
+
+test.describe("when the proxy cannot serve, a state no real package produces, so only the proxy is stubbed", () => {
+	test.use({ locale: "en-US", timezoneId: "Europe/Warsaw" });
+
+	test("a used-up daily quota pauses Composer until a local time", async ({
+		page,
+	}) => {
+		await page.route(PROXY_ROUTES, (route) => route.fulfill(QUOTA_EXHAUSTED));
+
+		await page.goto(MONOLOG);
+
+		await expect(status(page)).toHaveAttribute("data-state", "error", ENGINE);
+		await expect(notice(page)).toHaveAttribute("data-code", "quota_exhausted");
+		await expect(notice(page)).toContainText(
+			"Composer diffs are paused for today.",
+		);
+		await expect(notice(page)).toContainText("It comes back at 2:00 AM GMT+2.");
+	});
+
+	test("a proxy that does not answer says so", async ({ page }) => {
+		await page.route(PROXY_ROUTES, (route) => route.abort());
+
+		await page.goto(MONOLOG);
+
+		await expect(status(page)).toHaveAttribute("data-state", "error", ENGINE);
+		await expect(notice(page)).toHaveAttribute(
+			"data-code",
+			"proxy_unreachable",
+		);
+		await expect(notice(page)).toContainText(
+			"diffpack couldn't reach its Composer download proxy.",
+		);
+	});
+
+	test("a version list the proxy refuses shows the notice, not an empty list", async ({
+		page,
+	}) => {
+		await page.route(
+			"https://diffpack-proxy.philipswiezak.workers.dev/v1/composer/p2/**",
+			(route) => route.fulfill(QUOTA_EXHAUSTED),
+		);
+
+		await page.goto("/composer/monolog/monolog");
+
+		await expect(notice(page)).toHaveAttribute("data-code", "quota_exhausted");
+		await expect(from(page)).toHaveAttribute(
+			"placeholder",
+			"Versions unavailable",
+		);
+		await expect(page.getByText("No versions")).toHaveCount(0);
+	});
 });
