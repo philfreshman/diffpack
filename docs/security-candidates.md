@@ -123,10 +123,11 @@ highlight.js really does mark the line up, and on a line too long to highlight (
 once when the module loads, not per request. Everything it interpolates is fixed at build time:
 the registry ids, the Go version pattern's source, the worker's fingerprinted asset URL, the
 installed engine version, the cache schema and similarity threshold, the 1.5 s timeout, the cache
-origin (`VITE_DIFFPACK_CACHE_ORIGIN` at build time, else `https://mcp.diffpack.io`) and the
-`ignore-whitespace-preference` parser, which `readInHead` emits as source and which only ever
-yields `true` or `false`. Strings go in through `JSON.stringify`, and none of them contains `<`, so
-none can close the `<script>` element early.
+origin (`VITE_DIFFPACK_CACHE_ORIGIN` at build time, else `https://mcp.diffpack.io`), the names of
+the two `window` globals it leaves its result on, and the `ignore-whitespace-preference` parser,
+which `readInHead` emits as source and which only ever yields `true` or `false`. Strings go in
+through `JSON.stringify`, except the two global names, which are constant identifiers; numbers go
+in as they are. None of them contains `<`, so none can close the `<script>` element early.
 
 The script does read untrusted input, but only after it is in the page and only as data. It splits
 `location.pathname` into a registry, a package and two versions, then uses them three ways: it
@@ -142,10 +143,17 @@ It is inline for the same reason as the next three: it has to start the engine b
 
 ### 6–8 · Inline `<script>` for theme, tree width and analytics
 
-`THEME_SCRIPT`, `TREE_WIDTH_SCRIPT` and `GA_SCRIPT` are module-level template literals whose only
-interpolations are `JSON.stringify` of other module constants — a storage key, a default theme, two
-theme colors, a measurement ID. No request data, route param or user input reaches any of them, and
-they are fully determined at build time.
+`THEME_SCRIPT`, `TREE_WIDTH_SCRIPT` and `GA_SCRIPT` are module-level template literals built from
+two kinds of constant. One is `JSON.stringify` of other module constants: two theme colors, the
+tree width's custom property and the collapsed attribute's name, a measurement ID. The other is the
+parser `readInHead` emits as source for a stored setting (theme, tree width, tree collapsed), with
+its storage key passed through `JSON.stringify`. No request data, route param or user input reaches
+any of them, and they are fully determined at build time.
+
+At run time the first two read `localStorage`, which is the visitor's own and not attacker input,
+and even so the parsers only let through one of the offered themes, an integer clamped to
+220–640, or `true` or `false`. The result goes into the page through `setAttribute` and
+`style.setProperty`, never as markup.
 
 They are inline because they have to be: the first two run before the first paint to set
 `data-theme` and the tree width, which is what stops the page rendering in one theme and flipping;
@@ -180,6 +188,9 @@ took no arguments and read no environment, and fallow put its blast radius at 0.
 ## Blind spots
 
 The report ends with a note that ~1600 call sites use patterns it could not resolve (dynamic
-dispatch, computed members, aliased bindings), most of them in `tests/e2e/`. That is expected for
-Playwright specs and is not a finding; `bunx fallow security blind-spots` groups them if the
-distribution is ever worth looking at.
+dispatch, computed members, aliased bindings). Almost all are dynamic dispatch, and the ten files
+with the most are all tests: eight Playwright specs in `tests/e2e/`, led by `file-tree.spec.ts`,
+and two unit tests. That is expected for test code and is not a finding. `bunx fallow security
+--format json` lists those files under `unresolved_callee_diagnostics.top_files`;
+`bunx fallow security blind-spots` groups only a small sample of sites, so it is not the way to
+see where they are.
