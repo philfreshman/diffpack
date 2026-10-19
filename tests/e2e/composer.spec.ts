@@ -57,10 +57,9 @@ test("links each version to its Packagist page rather than offering a download",
 });
 
 const MONOLOG = "/composer/monolog/monolog/3.12.0/3.12.1";
-const PROXY_ROUTES =
-	"https://diffpack-proxy.philipswiezak.workers.dev/v1/composer/**";
+const PROXY = "https://diffpack-proxy.philipswiezak.workers.dev";
 const ENGINE = { timeout: 90_000 };
-const RESETS_AT = "2026-10-20T00:00:00Z";
+const RESETS_AT = "2026-10-20T05:30:00Z";
 
 const status = (page: Page) => page.getByTestId("diff-status");
 const notice = (page: Page) => page.getByTestId("proxy-limit-notice");
@@ -94,14 +93,20 @@ async function recordBuildRequests(page: Page) {
 		);
 }
 
-function answerAsTheProxy(status: number, body: object) {
+interface ProxyErrorBody {
+	error: string;
+	message: string;
+	resetsAt?: string;
+}
+
+function answerAsTheProxy(httpStatus: number, body: ProxyErrorBody) {
 	return {
-		status,
+		status: httpStatus,
 		contentType: "application/json",
 		headers: {
 			"access-control-allow-origin": "*",
 			"access-control-expose-headers": "Retry-After, Diffpack-Proxy-Error",
-			"diffpack-proxy-error": String((body as { error?: string }).error),
+			"diffpack-proxy-error": body.error,
 			"retry-after": "3600",
 		},
 		body: JSON.stringify(body),
@@ -198,12 +203,15 @@ test("ignoring whitespace rebuilds the Composer comparison that way", async ({
 		.click();
 	await page.getByRole("button", { name: "Ignore whitespaces" }).click();
 
-	await expect(status(page)).toHaveAttribute("data-state", "ready", ENGINE);
-	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
-	expect(await buildRequests()).toEqual([
-		expect.objectContaining({ registry: "composer", ignoreWhitespace: false }),
+	await expect.poll(buildRequests).toEqual([
+		expect.objectContaining({
+			registry: "composer",
+			ignoreWhitespace: false,
+		}),
 		expect.objectContaining({ registry: "composer", ignoreWhitespace: true }),
 	]);
+	await expect(status(page)).toHaveAttribute("data-state", "ready", ENGINE);
+	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
 });
 
 test.describe("when the proxy cannot serve, a state no real package produces, so only the proxy is stubbed", () => {
@@ -212,7 +220,9 @@ test.describe("when the proxy cannot serve, a state no real package produces, so
 	test("a used-up daily quota pauses Composer until a local time", async ({
 		page,
 	}) => {
-		await page.route(PROXY_ROUTES, (route) => route.fulfill(QUOTA_EXHAUSTED));
+		await page.route(`${PROXY}/v1/composer/**`, (route) =>
+			route.fulfill(QUOTA_EXHAUSTED),
+		);
 
 		await page.goto(MONOLOG);
 
@@ -221,11 +231,28 @@ test.describe("when the proxy cannot serve, a state no real package produces, so
 		await expect(notice(page)).toContainText(
 			"Composer diffs are paused for today.",
 		);
-		await expect(notice(page)).toContainText("It comes back at 2:00 AM GMT+2.");
+		await expect(notice(page)).toContainText("It comes back at 7:30 AM GMT+2.");
+	});
+
+	test("an archive download the proxy refuses fails the comparison with the notice", async ({
+		page,
+	}) => {
+		await page.route(`${PROXY}/v1/composer/archive**`, (route) =>
+			route.fulfill(QUOTA_EXHAUSTED),
+		);
+
+		await page.goto(MONOLOG);
+
+		await expect(status(page)).toHaveAttribute("data-state", "error", ENGINE);
+		await expect(notice(page)).toHaveAttribute("data-code", "quota_exhausted");
+		await expect(from(page)).not.toHaveAttribute(
+			"placeholder",
+			"Versions unavailable",
+		);
 	});
 
 	test("a proxy that does not answer says so", async ({ page }) => {
-		await page.route(PROXY_ROUTES, (route) => route.abort());
+		await page.route(`${PROXY}/v1/composer/**`, (route) => route.abort());
 
 		await page.goto(MONOLOG);
 
@@ -242,9 +269,8 @@ test.describe("when the proxy cannot serve, a state no real package produces, so
 	test("a version list the proxy refuses shows the notice, not an empty list", async ({
 		page,
 	}) => {
-		await page.route(
-			"https://diffpack-proxy.philipswiezak.workers.dev/v1/composer/p2/**",
-			(route) => route.fulfill(QUOTA_EXHAUSTED),
+		await page.route(`${PROXY}/v1/composer/p2/**`, (route) =>
+			route.fulfill(QUOTA_EXHAUSTED),
 		);
 
 		await page.goto("/composer/monolog/monolog");
