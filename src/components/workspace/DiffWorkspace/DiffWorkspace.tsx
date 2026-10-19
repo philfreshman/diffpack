@@ -11,7 +11,11 @@ import { useSetting } from "#/components/storage/useSetting.ts";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
-import { type FailureCode, isProxyLimit } from "#/lib/failure/failure.ts";
+import {
+	type FailureCode,
+	failureOf,
+	isProxyLimit,
+} from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
@@ -20,6 +24,7 @@ import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { ProxyLimitNotice } from "../ProxyLimitNotice/ProxyLimitNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
+import { useVersions } from "../useVersions.ts";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
 
@@ -42,6 +47,9 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const fileIndex = changed.findIndex(
 		(entry) => entry.path === session.file?.path,
 	);
+
+	// The header's list, shared through the query cache: no second request.
+	const versions = useVersions(adapter, slug.package);
 
 	const split = useSetting(SPLIT_VIEW);
 	// What is on screen, not what was last asked for: it lags while the blur shows.
@@ -93,14 +101,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />
 				<main className={styles.body}>
-					{session.status === "error" && (
-						<FailureNotice
-							message={session.error}
-							code={session.errorCode}
-							resetsAt={session.resetsAt}
-							testId="diff-error"
-						/>
-					)}
+					<WorkspaceFailure session={session} versionsError={versions.error} />
 
 					<section className={styles.file} data-testid="diff-file">
 						<DiffToolbar
@@ -127,6 +128,35 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 				</main>
 			</div>
 		</div>
+	);
+}
+
+interface WorkspaceFailureProps {
+	session: DiffSessionState;
+	versionsError: Error | null;
+}
+
+// A failed build says more than the version list it was started from.
+function WorkspaceFailure({ session, versionsError }: WorkspaceFailureProps) {
+	if (session.status === "error")
+		return (
+			<FailureNotice
+				message={session.error}
+				code={session.errorCode}
+				resetsAt={session.resetsAt}
+				testId="diff-error"
+			/>
+		);
+	if (!versionsError) return null;
+
+	const { message, code, resetsAt } = failureOf(versionsError);
+	return (
+		<FailureNotice
+			message={message}
+			code={code}
+			resetsAt={resetsAt}
+			testId="versions-error"
+		/>
 	);
 }
 

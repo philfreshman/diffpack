@@ -9,7 +9,14 @@ export interface VersionComboboxProps {
 	value: string;
 	onChange(version: string): void;
 	loading?: boolean;
+	unavailable?: boolean;
 	downloadUrl?: string;
+}
+
+function placeholderFor(loading: boolean, unavailable: boolean): string {
+	if (loading) return "Loading…";
+	if (unavailable) return "Versions unavailable";
+	return "Select version";
 }
 
 // No `onSubmitText`: unlike package search, only listed versions are valid.
@@ -19,6 +26,7 @@ export function VersionCombobox({
 	value,
 	onChange,
 	loading = false,
+	unavailable = false,
 	downloadUrl,
 }: VersionComboboxProps) {
 	const [inputValue, setInputValue] = useState(value);
@@ -59,7 +67,7 @@ export function VersionCombobox({
 				loading={loading}
 				loadingMessage="Loading versions…"
 				emptyMessage={versions.length ? "No matching versions" : "No versions"}
-				placeholder={loading ? "Loading…" : "Select version"}
+				placeholder={placeholderFor(loading, unavailable)}
 				disabled={!loading && versions.length === 0}
 			/>
 		</div>
