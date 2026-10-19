@@ -1,0 +1,7 @@
+.about {
+	max-width: 36rem;
+	margin: var(--space-12) 0 0;
+	color: var(--color-muted);
+	font-size: var(--text-sm);
+	text-align: center;
+}
