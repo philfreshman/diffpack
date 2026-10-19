@@ -145,6 +145,7 @@ function WorkspaceFailure({ session, versionsError }: WorkspaceFailureProps) {
 				code={session.errorCode}
 				resetsAt={session.resetsAt}
 				testId="diff-error"
+				className={styles.error}
 			/>
 		);
 	if (!versionsError) return null;
@@ -156,6 +157,7 @@ function WorkspaceFailure({ session, versionsError }: WorkspaceFailureProps) {
 			code={code}
 			resetsAt={resetsAt}
 			testId="versions-error"
+			className={styles.error}
 		/>
 	);
 }
@@ -165,6 +167,7 @@ interface FailureNoticeProps {
 	code: FailureCode | null | undefined;
 	resetsAt: string | null | undefined;
 	testId: string;
+	className?: string;
 }
 
 function FailureNotice({
@@ -172,12 +175,13 @@ function FailureNotice({
 	code,
 	resetsAt,
 	testId,
+	className,
 }: FailureNoticeProps) {
 	if (isProxyLimit(code))
 		return <ProxyLimitNotice code={code} resetsAt={resetsAt} />;
 
 	return (
-		<p className={styles.error} role="alert" data-testid={testId}>
+		<p className={className} role="alert" data-testid={testId}>
 			{message}
 		</p>
 	);
@@ -231,9 +235,12 @@ function FilePane({
 				<Spinner label={`Loading ${file.path}…`} />
 			)}
 			{file?.status === "error" && (
-				<p role="alert" data-testid="file-error">
-					{file.error}
-				</p>
+				<FailureNotice
+					message={file.error}
+					code={file.errorCode}
+					resetsAt={file.resetsAt}
+					testId="file-error"
+				/>
 			)}
 			{shown && (
 				// Keyed by path, so restoring scroll is a plain mount effect.
