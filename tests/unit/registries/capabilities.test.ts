@@ -6,7 +6,7 @@ import { npmAdapter } from "#/lib/registries/npm.ts";
 import { pypiAdapter } from "#/lib/registries/pypi.ts";
 
 describe("capabilities", () => {
-	test("every registry has keyword search and needs no hint", () => {
+	test("every registry invites a keyword search", () => {
 		for (const adapter of [
 			npmAdapter,
 			cratesAdapter,
@@ -14,8 +14,6 @@ describe("capabilities", () => {
 			goAdapter,
 			composerAdapter,
 		]) {
-			expect(adapter.capabilities.discoverySearch).toBe(true);
-			expect(adapter.capabilities.searchHint).toBeUndefined();
 			expect(adapter.capabilities.searchPlaceholder).toContain("Search");
 		}
 	});

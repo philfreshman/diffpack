@@ -64,7 +64,7 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 				inputValue={inputValue}
 				onInputValueChange={setInputValue}
 				onSelect={(item) => choose(item.name)}
-				// The only way to reach a Go module, whose search takes one exact path.
+				// Reaches a Go module that pkg.go.dev's search does not list, by its exact path.
 				onSubmitText={choose}
 				itemToText={(item) => item.name}
 				renderItem={(item) => (
@@ -79,10 +79,7 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 				filter={null}
 				loading={loading}
 				loadingMessage="Searching…"
-				emptyMessage={
-					adapter.capabilities.searchHint ??
-					(searching ? "No packages found" : "Type to search")
-				}
+				emptyMessage={searching ? "No packages found" : "Type to search"}
 				placeholder={adapter.capabilities.searchPlaceholder}
 				leading={<SearchIcon width="16" height="16" />}
 				trailing={<SearchState state={state} filled={inputValue !== ""} />}

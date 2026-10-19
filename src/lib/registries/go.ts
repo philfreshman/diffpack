@@ -180,10 +180,7 @@ export function createGoAdapter(
 		id: "go",
 		label: "Go",
 		tagline: "Go modules & standard ecosystem",
-		capabilities: {
-			discoverySearch: true,
-			searchPlaceholder: "Search Go modules…",
-		},
+		capabilities: { searchPlaceholder: "Search Go modules…" },
 		packagePath: {
 			parse(segments) {
 				const versionIndex = segments.findIndex((segment) =>

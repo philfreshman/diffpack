@@ -21,7 +21,7 @@ export function createPypiAdapter(fetcher: Fetcher = fetch): RegistryAdapter {
 		id: "pypi",
 		label: "PyPI",
 		tagline: "Python packages",
-		capabilities: { discoverySearch: true, searchPlaceholder: "Search PyPI…" },
+		capabilities: { searchPlaceholder: "Search PyPI…" },
 		packagePath: singleSegmentPath,
 
 		async search(query, signal) {

@@ -18,9 +18,7 @@ export type Fetcher = (
 ) => Promise<Response>;
 
 export interface RegistryCapabilities {
-	discoverySearch: boolean;
 	searchPlaceholder: string;
-	searchHint?: string;
 }
 
 export interface VersionLinkCopy {
