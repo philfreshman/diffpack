@@ -2,8 +2,10 @@ import init, {
 	build_diff_tree_for_package,
 	get_diff_for_path,
 	prefetch_package,
+	set_proxy_origin,
 } from "@philfreshman/diffpack-engine";
 import wasmUrl from "@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url";
+import { PROXY_ORIGIN } from "#/lib/proxy/origin.ts";
 import {
 	failedReply,
 	SIMILARITY_THRESHOLD,
@@ -14,7 +16,9 @@ import {
 let wasmReady: Promise<unknown> | null = null;
 
 function ensureWasm() {
-	wasmReady ??= init({ module_or_path: wasmUrl });
+	wasmReady ??= init({ module_or_path: wasmUrl }).then(() =>
+		set_proxy_origin(PROXY_ORIGIN),
+	);
 	return wasmReady;
 }
 
