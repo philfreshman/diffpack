@@ -146,9 +146,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#the-engine) for the detail.
 
 <br>
 
-### The three repositories
+### The four repositories
 
-diffpack is split across three repositories that are meant to be cloned as siblings under one
+diffpack is split across four repositories that are meant to be cloned as siblings under one
 parent directory — which is what `DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg` and every relative
 path below assumes:
 
@@ -156,6 +156,7 @@ path below assumes:
 <parent>/
 ├── diffpack/          github.com/philfreshman/diffpack
 ├── diffpack-engine/   github.com/philfreshman/diffpack-engine
+├── diffpack-proxy/    github.com/philfreshman/diffpack-proxy
 └── diffpack-server/   github.com/philfreshman/diffpack-server
 ```
 
@@ -163,11 +164,12 @@ path below assumes:
 | :-- | :-- |
 | **diffpack** | The web app — TanStack Start, the UI, the registry adapters, the worker that drives the engine. Deployed to [diffpack.io](https://diffpack.io). |
 | **diffpack-engine** | The Rust crate compiled to WebAssembly: fetching archives, extraction, the diff and the file tree. Published to npm as `@philfreshman/diffpack-engine` and consumed by the app as a pinned dependency; the app never builds it. |
+| **diffpack-proxy** | A Cloudflare Worker that fetches Packagist's version metadata and Composer archives for the browser and adds the CORS header they lack. It streams the bytes without storing them and serves only archives Packagist lists. The app and the engine call it for Composer only. |
 | **diffpack-server** | An MCP server at `mcp.diffpack.io` that diffs packages for AI agents with the same engine, natively, and caches the results. The app reads that cache by `diff_id` and computes the key itself, held to the server's `fixtures/cache-key-vectors.json`. |
 
-Nothing links the three at build time except that npm package, so a change that crosses a boundary
-crosses a release: see [the engine section](#the-engine-is-a-separate-repo) for how an engine change
-reaches the app.
+Nothing links them at build time except that npm package (the proxy is reached over HTTP, at run
+time), so a change that crosses a boundary crosses a release: see
+[the engine section](#the-engine-is-a-separate-repo) for how an engine change reaches the app.
 
 <br>
 

@@ -71,15 +71,16 @@ around it is not, so do not let that command overwrite this file wholesale.
 
 ## The sibling repositories
 
-Three repositories carry diffpack, and they are meant to be checked out as siblings of this one —
-`../diffpack-engine`, `../diffpack-server` — which is the layout every relative path in the docs
-assumes (`DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg` among them).
+Four repositories carry diffpack, and they are meant to be checked out as siblings of this one —
+`../diffpack-engine`, `../diffpack-proxy`, `../diffpack-server` — which is the layout every
+relative path in the docs assumes (`DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg` among them).
 
 | Repo | Sibling path | Remote | What it is |
 | :--- | :--- | :--- | :--- |
 | diffpack | *this checkout* | `philfreshman/diffpack` | The app: routes, components, `src/lib`, the diff worker. |
 | diffpack-engine | `../diffpack-engine` | `philfreshman/diffpack-engine` | The Rust → WebAssembly engine, consumed here as the pinned npm package `@philfreshman/diffpack-engine`. |
-| diffpack-server | `../diffpack-server` | `philfreshman/diffpack-server` | Empty so far — one commit, a one-line README. Nothing here imports or calls it. |
+| diffpack-proxy | `../diffpack-proxy` | `philfreshman/diffpack-proxy` | A Cloudflare Worker that fetches Packagist's metadata and Composer archives for the browser and adds the CORS header they lack. The Composer adapter and the engine call it at `PROXY_ORIGIN` (`src/lib/proxy/origin.ts`); its routes and error codes are in its `docs/contract.md`. |
+| diffpack-server | `../diffpack-server` | `philfreshman/diffpack-server` | The MCP server at `mcp.diffpack.io`, which diffs packages for AI agents with the native engine. Nothing here imports it; the app reads its diff cache by `diff_id` (`src/lib/cache/`). |
 
 The boundary is real: nothing in this checkout compiles or tests the engine, and editing
 `../diffpack-engine` from a diffpack task changes nothing the app runs until a release moves the
