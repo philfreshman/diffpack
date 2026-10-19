@@ -321,6 +321,22 @@
       },
       "canonical": "{\"engine\":\"0.4.1\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
       "diff_id": "cce25cb7060fe37ce7f13d6a8ea04d92238f71dd61788c4423c8bbdfdff5fae4"
+    },
+    {
+      "name": "go/github.com/Masterminds/semver/v3 module path",
+      "why": "A Go module path goes in as typed: its capitals and its `/v3` major-version suffix stay, and the proxy's `!` escaping is a URL's business, not the key's.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "go",
+        "package": "github.com/Masterminds/semver/v3",
+        "from": "v3.2.0",
+        "to": "v3.2.1",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"v3.2.0\",\"ignore_whitespace\":false,\"package\":\"github.com/Masterminds/semver/v3\",\"registry\":\"go\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"v3.2.1\"}",
+      "diff_id": "9f6700c846a8cd09f8e9b76c1addcafd2779c945f1a04e74597d1d5444ef75d5"
     }
   ]
 }

@@ -81,6 +81,9 @@ jobs:
 
       - run: bun run check:vectors
 
+      - run: bun run check:vectors:development
+        continue-on-error: true
+
   e2e:
     name: end-to-end
     needs: changes

@@ -1,9 +1,5 @@
 import { CACHE_SCHEMA, ENGINE_VERSION } from "#/lib/cache/diffKey.ts";
-import {
-	CACHE_ORIGIN,
-	CACHED_REGISTRIES,
-	LOOKUP_TIMEOUT_MS,
-} from "#/lib/cache/entryLookup.ts";
+import { CACHE_ORIGIN, LOOKUP_TIMEOUT_MS } from "#/lib/cache/entryLookup.ts";
 import { MODULE_VERSION } from "#/lib/registries/go.ts";
 import { registryAdapters } from "#/lib/registries/index.ts";
 import { IGNORE_WHITESPACE } from "#/lib/storage/settings.ts";
@@ -85,7 +81,6 @@ worker.onmessage=function(event){boot.replies.push(event.data)};
 worker.postMessage(Object.assign({id:boot.id,type:"build-tree"},comparison));
 window.${DIFF_BOOT_GLOBAL}=boot;
 return null};
-if(${text(CACHED_REGISTRIES)}.indexOf(registry)<0){start();return}
 var j=JSON.stringify;
 var canonical='{"engine":'+j(${text(cache.engine)})+',"from":'+j(from)+',"ignore_whitespace":'+comparison.ignoreWhitespace+',"package":'+j(pkg)+',"registry":'+j(registry)+',"schema":${CACHE_SCHEMA},"similarity_threshold":'+j(${text(SIMILARITY_THRESHOLD.toFixed(4))})+',"to":'+j(to)+'}';
 var served=Promise.resolve().then(function(){

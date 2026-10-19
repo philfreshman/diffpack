@@ -11,8 +11,6 @@ import {
 	diffId,
 } from "./diffKey.ts";
 
-export const CACHED_REGISTRIES: readonly string[] = ["npm", "crates", "pypi"];
-
 export interface CachedEntry {
 	tree: DiffFileEntry;
 	patches: Record<string, FileDiff>;
@@ -114,8 +112,6 @@ export function createEntryLookup({
 	return async function lookUp(
 		comparison: Comparison,
 	): Promise<CachedEntry | null> {
-		if (!CACHED_REGISTRIES.includes(comparison.registry)) return null;
-
 		try {
 			return cachedEntryFrom(await fetchEntry(comparison), comparison, engine);
 		} catch {

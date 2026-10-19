@@ -279,14 +279,4 @@ describe("the diff boot script, in front of the server's cache", () => {
 			]);
 		}
 	});
-
-	test("asks nothing about a registry the server does not cache", async () => {
-		const { fetched, posted } = await boot(
-			"/go/github.com/go-chi/chi/v5/v5.0.0/v5.3.1",
-			{ fetch: answering },
-		);
-
-		expect(fetched).toEqual([]);
-		expect(posted).toMatchObject([{ type: "build-tree" }]);
-	});
 });

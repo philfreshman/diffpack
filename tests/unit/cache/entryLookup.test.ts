@@ -146,19 +146,4 @@ describe("looking a comparison up in the server's cache", () => {
 		expect(await lookUp(zod)).toBeNull();
 		expect(aborted).toBe(true);
 	});
-
-	test("does not ask about a registry the server does not cache", async () => {
-		const { lookUp, calls } = lookupAnswering(() => json(servedEntry()));
-
-		const entry = await lookUp({
-			registry: "go",
-			pkg: "github.com/Masterminds/semver/v3",
-			from: "v3.2.0",
-			to: "v3.3.0",
-			ignoreWhitespace: false,
-		});
-
-		expect(entry).toBeNull();
-		expect(calls).toEqual([]);
-	});
 });
