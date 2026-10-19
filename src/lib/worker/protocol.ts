@@ -1,3 +1,5 @@
+import { type Failure, failureOf } from "#/lib/failure/failure.ts";
+
 /** Rename detection threshold, as a content-similarity ratio. */
 export const SIMILARITY_THRESHOLD = 0.75;
 
@@ -61,6 +63,16 @@ export type WorkerRequestInput = WorkerRequest extends infer T
 		: never
 	: never;
 
+type FailedResponse = { id: number; ok: false; error: string } & Omit<
+	Failure,
+	"message"
+>;
+
 export type WorkerResponse =
 	| { id: number; ok: true; data: unknown }
-	| { id: number; ok: false; error: string };
+	| FailedResponse;
+
+export function failedReply(id: number, thrown: unknown): FailedResponse {
+	const { message, ...details } = failureOf(thrown);
+	return { id, ok: false, error: message, ...details };
+}

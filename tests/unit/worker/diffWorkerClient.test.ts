@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { failureOf } from "#/lib/failure/failure.ts";
 import type { DiffBoot } from "#/lib/worker/bootScript.ts";
 import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
-import type {
-	Comparison,
-	DiffFileEntry,
-	WorkerRequest,
+import {
+	type Comparison,
+	type DiffFileEntry,
+	failedReply,
+	type WorkerRequest,
 } from "#/lib/worker/protocol.ts";
 
 const COMPARISON: Comparison = {
@@ -266,5 +268,39 @@ describe("the engine's one active diff", () => {
 			{ id: 1, type: "build-tree", ...COMPARISON },
 		]);
 		await expect(overtaken).rejects.toThrow("overtaken");
+	});
+});
+
+describe("a failure's code", () => {
+	test("reaches the caller from the engine, through the worker's reply", async () => {
+		const { client, spawned } = clientWith(null);
+		const failed = client.buildTree(COMPARISON);
+		await settled();
+		const thrown = Object.assign(new Error("Composer diffs are paused"), {
+			code: "quota_exhausted",
+			resetsAt: "2026-10-20T00:00:00Z",
+			status: 503,
+		});
+
+		spawned[0]?.reply(failedReply(0, thrown));
+
+		expect(failureOf(await failed.catch((error) => error))).toEqual({
+			message: "Composer diffs are paused",
+			code: "quota_exhausted",
+			resetsAt: "2026-10-20T00:00:00Z",
+			status: 503,
+		});
+	});
+
+	test("is absent when the engine threw a plain string, as 0.4.1 does", async () => {
+		const { client, spawned } = clientWith(null);
+		const failed = client.buildTree(COMPARISON);
+		await settled();
+
+		spawned[0]?.reply(failedReply(0, "404 Not Found"));
+
+		expect(failureOf(await failed.catch((error) => error))).toEqual({
+			message: "404 Not Found",
+		});
 	});
 });

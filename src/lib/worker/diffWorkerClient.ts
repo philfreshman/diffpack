@@ -1,3 +1,4 @@
+import { CodedError } from "#/lib/failure/failure.ts";
 import { type DiffBoot, readDiffBoot } from "./bootScript.ts";
 import {
 	type Comparison,
@@ -38,7 +39,7 @@ export function createDiffClient(
 		if (!entry) return;
 		pending.delete(message.id);
 		if (message.ok) entry.resolve(message.data);
-		else entry.reject(new Error(message.error));
+		else entry.reject(new CodedError({ ...message, message: message.error }));
 	}
 
 	function awaitReply<T>(id: number): Promise<T> {
