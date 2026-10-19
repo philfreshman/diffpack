@@ -1,6 +1,7 @@
 import { Store } from "@tanstack/react-store";
+import { cachedDiffClient } from "#/lib/cache/cachedDiffClient.ts";
 import type { DiffSlug } from "#/lib/url/slug.ts";
-import { diffClient } from "#/lib/worker/diffWorkerClient.ts";
+import type { diffClient } from "#/lib/worker/diffWorkerClient.ts";
 import {
 	type Comparison,
 	comparisonKey,
@@ -179,4 +180,4 @@ export function createDiffSession(client: DiffClient) {
 }
 
 // Only effects write to it, so on the server it cannot leak between SSR renders.
-export const diffSession = createDiffSession(diffClient);
+export const diffSession = createDiffSession(cachedDiffClient);

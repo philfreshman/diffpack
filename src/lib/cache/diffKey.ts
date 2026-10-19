@@ -21,9 +21,11 @@ const THRESHOLD_DECIMALS = 4;
 
 export const CACHE_SCHEMA = 1;
 
+export const ENGINE_VERSION = enginePackage.version;
+
 export function comparisonDiffKey(
 	comparison: Comparison,
-	engine: string = enginePackage.version,
+	engine: string = ENGINE_VERSION,
 ): DiffKey {
 	return {
 		schema: CACHE_SCHEMA,

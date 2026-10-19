@@ -11,7 +11,7 @@ import {
 	diffId,
 } from "./diffKey.ts";
 
-const CACHED_REGISTRIES: readonly string[] = ["npm", "crates", "pypi"];
+export const CACHED_REGISTRIES: readonly string[] = ["npm", "crates", "pypi"];
 
 export interface CachedEntry {
 	tree: DiffFileEntry;
@@ -34,7 +34,7 @@ interface ServedEntry {
 	patches: Record<string, ServedPatch>;
 }
 
-export interface EntryLookupOptions {
+interface EntryLookupOptions {
 	fetcher: Fetcher;
 	origin: string;
 	engine?: string;
@@ -74,16 +74,6 @@ function describes(served: ServedEntry, key: DiffKey): boolean {
 	);
 }
 
-async function servedEntryIn(
-	response: Response,
-	key: DiffKey,
-): Promise<ServedEntry | null> {
-	if (!response.ok) return null;
-
-	const body: unknown = await response.json();
-	return isServedEntry(body) && describes(body, key) ? body : null;
-}
-
 function cachedEntryOf(served: ServedEntry): CachedEntry {
 	const patches = Object.fromEntries(
 		Object.entries(served.patches).map(([path, patch]) => [
@@ -94,25 +84,31 @@ function cachedEntryOf(served: ServedEntry): CachedEntry {
 	return { tree: served.tree, patches };
 }
 
+export function cachedEntryFrom(
+	body: unknown,
+	comparison: Comparison,
+	engine?: string,
+): CachedEntry | null {
+	const key = comparisonDiffKey(comparison, engine);
+	return isServedEntry(body) && describes(body, key)
+		? cachedEntryOf(body)
+		: null;
+}
+
 export function createEntryLookup({
 	fetcher,
 	origin,
 	engine,
 	timeoutMs,
 }: EntryLookupOptions) {
-	async function fetchEntry(
-		comparison: Comparison,
-	): Promise<ServedEntry | null> {
-		const key = comparisonDiffKey(comparison, engine);
-		const response = await fetcher(
-			`${origin}/diffs/v${CACHE_SCHEMA}/${await diffId(key)}`,
-			{
-				credentials: "omit",
-				referrerPolicy: "no-referrer",
-				signal: AbortSignal.timeout(timeoutMs),
-			},
-		);
-		return servedEntryIn(response, key);
+	async function fetchEntry(comparison: Comparison): Promise<unknown> {
+		const id = await diffId(comparisonDiffKey(comparison, engine));
+		const response = await fetcher(`${origin}/diffs/v${CACHE_SCHEMA}/${id}`, {
+			credentials: "omit",
+			referrerPolicy: "no-referrer",
+			signal: AbortSignal.timeout(timeoutMs),
+		});
+		return response.ok ? response.json() : null;
 	}
 
 	return async function lookUp(
@@ -121,18 +117,17 @@ export function createEntryLookup({
 		if (!CACHED_REGISTRIES.includes(comparison.registry)) return null;
 
 		try {
-			const served = await fetchEntry(comparison);
-			return served && cachedEntryOf(served);
+			return cachedEntryFrom(await fetchEntry(comparison), comparison, engine);
 		} catch {
 			return null;
 		}
 	};
 }
 
-const CACHE_ORIGIN =
+export const CACHE_ORIGIN =
 	import.meta.env.VITE_DIFFPACK_CACHE_ORIGIN ?? "https://mcp.diffpack.io";
 
-const LOOKUP_TIMEOUT_MS = 1500;
+export const LOOKUP_TIMEOUT_MS = 1500;
 
 export const lookUpEntry = createEntryLookup({
 	fetcher: fetch,
