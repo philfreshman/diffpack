@@ -15,7 +15,7 @@ export interface VersionComboboxProps {
 }
 
 const DOWNLOAD_LINK: VersionLinkCopy = {
-	action: "Download",
+	labelPrefix: "Download",
 	title: "Download package",
 };
 
@@ -41,7 +41,7 @@ export function VersionCombobox({
 					<a
 						className={styles.download}
 						href={downloadUrl}
-						aria-label={`${linkCopy.action} ${value}`}
+						aria-label={`${linkCopy.labelPrefix} ${value}`}
 						title={linkCopy.title}
 						rel="noopener noreferrer"
 					>

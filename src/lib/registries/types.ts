@@ -24,7 +24,7 @@ export interface RegistryCapabilities {
 }
 
 export interface VersionLinkCopy {
-	action: string;
+	labelPrefix: string;
 	title: string;
 }
 
