@@ -38,6 +38,11 @@ const MATRIX = [
 		file: "tree.go",
 	},
 	{
+		name: "Packagist",
+		path: "/composer/monolog/monolog/3.12.0/3.12.1",
+		file: "Logger.php",
+	},
+	{
 		name: "a scoped npm package",
 		path: "/npm/@types/node/26.3.0/26.4.0",
 		file: "package.json",
@@ -225,7 +230,9 @@ const ROUTES = [
 	"/crates",
 	"/pypi",
 	"/go",
+	"/composer",
 	"/npm/express/4.18.2/5.1.0",
+	"/composer/monolog/monolog/3.12.0/3.12.1/src/Monolog/Logger.php",
 	"/go/github.com/go-chi/chi/v5/v5.3.1/v5.3.2/tree.go",
 ];
 
