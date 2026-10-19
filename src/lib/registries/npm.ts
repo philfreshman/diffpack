@@ -8,7 +8,7 @@ export function createNpmAdapter(fetcher: Fetcher = fetch): RegistryAdapter {
 		id: "npm",
 		label: "npm",
 		tagline: "JavaScript & TypeScript packages",
-		capabilities: { discoverySearch: true, searchPlaceholder: "Search npm…" },
+		capabilities: { searchPlaceholder: "Search npm…" },
 		packagePath: {
 			parse(segments) {
 				// A scoped name spans two segments: "@types" and "node".

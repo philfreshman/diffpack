@@ -63,9 +63,16 @@ archives it asks for. Workers Logs are off for the proxy, so Cloudflare keeps no
 requests, only totals such as the number of requests a day. Packagist search does not use the
 proxy: it goes straight from your browser to `packagist.org`.
 
+Searching Go modules by keyword goes through the same proxy. pkg.go.dev's search sends no CORS
+header either, so the proxy passes the words you type to `pkg.go.dev` and its list of modules back.
+A full module path that resolves skips the proxy: it is looked up straight at `proxy.golang.org`,
+where Go archives always come from. Text that does not resolve, including a path you are still
+typing, is searched through the proxy.
+
 The proxy runs on Cloudflare's free plan, which allows 100,000 requests a day. It stops itself at
 90,000 so that it can still answer clearly, and it starts again at 00:00 UTC. Until then, a Composer
-comparison shows a notice saying when Composer comes back. The other registries keep working.
+comparison shows a notice saying when Composer comes back, and Go search finds nothing by keyword
+but still takes a full module path. The other registries keep working.
 
 Before downloading anything, the page asks
 [diffpack-server](https://github.com/philfreshman/diffpack-server) whether it has already worked
@@ -89,10 +96,11 @@ all the work as above.
 | ⬢ | **crates.io** | Rust | yes |
 | ⬢ | **PyPI** | Python | yes |
 | ⬢ | **Packagist** | PHP (Composer) | yes |
-| ⬡ | **Go** | Go modules | type a full module path |
+| ⬢ | **Go** | Go modules | yes, through the proxy |
 
-> Go has no discovery search — `proxy.golang.org` exposes no CORS-enabled search-by-name API — so
-> the field takes a complete module path (`github.com/go-chi/chi/v5`) rather than a name.
+> Go search asks [pkg.go.dev](https://pkg.go.dev) through diffpack-proxy, since pkg.go.dev's search
+> sends no CORS header. A module it does not list can still be opened by typing its full path
+> (`github.com/go-chi/chi/v5`) and pressing Enter.
 
 > Packagist names are `vendor/package` (`monolog/monolog`), so a Composer URL spends two segments
 > on the name: `/composer/monolog/monolog/3.12.0/3.12.1`. It is the one registry the browser does
@@ -164,7 +172,7 @@ path below assumes:
 | :-- | :-- |
 | **diffpack** | The web app — TanStack Start, the UI, the registry adapters, the worker that drives the engine. Deployed to [diffpack.io](https://diffpack.io). |
 | **diffpack-engine** | The Rust crate compiled to WebAssembly: fetching archives, extraction, the diff and the file tree. Published to npm as `@philfreshman/diffpack-engine` and consumed by the app as a pinned dependency; the app never builds it. |
-| **diffpack-proxy** | A Cloudflare Worker that fetches Packagist's version metadata and Composer archives for the browser and adds the CORS header they lack. It streams the bytes without storing them and serves only archives Packagist lists. The app and the engine call it for Composer only. |
+| **diffpack-proxy** | A Cloudflare Worker that fetches Packagist's version metadata and Composer archives for the browser and adds the CORS header they lack. It streams the bytes without storing them and serves only archives Packagist lists. The app calls it for Composer versions and Go keyword search, the engine for Composer archives. |
 | **diffpack-server** | An MCP server at `mcp.diffpack.io` that diffs packages for AI agents with the same engine, natively, and caches the results. The app reads that cache by `diff_id` and computes the key itself, held to the server's `fixtures/cache-key-vectors.json`. |
 
 Nothing links them at build time except that npm package (the proxy is reached over HTTP, at run
@@ -194,7 +202,7 @@ time), so a change that crosses a boundary crosses a release: see
 
 | | |
 | :-- | :-- |
-| **App** | [TanStack Start](https://tanstack.com/start) + [Router](https://tanstack.com/router) on Vite — the shell is SSR'd whole, the diff engine stays strictly client-side; only Composer's downloads pass through the proxy |
+| **App** | [TanStack Start](https://tanstack.com/start) + [Router](https://tanstack.com/router) on Vite — the shell is SSR'd whole, the diff engine stays strictly client-side; only Composer's downloads and Go keyword search pass through the proxy |
 | **State** | [Query](https://tanstack.com/query) for registry calls, [Store](https://tanstack.com/store) for the diff session |
 | **UI** | [Base UI](https://base-ui.com) primitives wrapped in `src/components/ui`, CSS Modules over a custom-property token layer — no Tailwind |
 | **Engine** | Rust → WebAssembly for extraction and diffing, in its own repo: [diffpack-engine](https://github.com/philfreshman/diffpack-engine) |

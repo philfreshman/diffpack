@@ -31,7 +31,6 @@ export function createComposerAdapter(
 		label: "Packagist",
 		tagline: "PHP packages",
 		capabilities: {
-			discoverySearch: true,
 			searchPlaceholder: "Search Packagist…",
 		},
 		versionLink: {

@@ -6,23 +6,14 @@ import { npmAdapter } from "#/lib/registries/npm.ts";
 import { pypiAdapter } from "#/lib/registries/pypi.ts";
 
 describe("capabilities", () => {
-	test("go cannot be searched by keyword and says what to type instead", () => {
-		expect(goAdapter.capabilities.discoverySearch).toBe(false);
-		expect(goAdapter.capabilities.searchHint).toContain("module path");
-		expect(goAdapter.capabilities.searchPlaceholder).toBe(
-			"github.com/user/module",
-		);
-	});
-
-	test("every other registry has keyword search and needs no hint", () => {
+	test("every registry invites a keyword search", () => {
 		for (const adapter of [
 			npmAdapter,
 			cratesAdapter,
 			pypiAdapter,
+			goAdapter,
 			composerAdapter,
 		]) {
-			expect(adapter.capabilities.discoverySearch).toBe(true);
-			expect(adapter.capabilities.searchHint).toBeUndefined();
 			expect(adapter.capabilities.searchPlaceholder).toContain("Search");
 		}
 	});

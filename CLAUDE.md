@@ -32,7 +32,7 @@ bun run badge            # regenerate .github/badges/fallow-health.svg when the 
 - One e2e spec: `bunx playwright test tests/e2e/file-tree.spec.ts`. It builds and serves the app
   itself with `--strictPort`; use `PORT=4399` to stay out of another worktree's way, or
   `BASE_URL=http://localhost:4321` to point at a server already running and skip the rebuild.
-- `VITE_DIFFPACK_PROXY_ORIGIN` points the Composer adapter and the engine at another proxy, such as
+- `VITE_DIFFPACK_PROXY_ORIGIN` points the Composer and Go adapters and the engine at another proxy, such as
   `http://localhost:8787` for `bun run dev` in `../diffpack-proxy`. Unset, both use the deployed
   `https://diffpack-proxy.philipswiezak.workers.dev`, and so does every e2e run.
 - The pre-commit hook runs typecheck, lint, format, test, then `fallow audit` against the branch's
@@ -96,8 +96,11 @@ landing-page order and exposes `getAdapter` / `requireAdapter` / `isRegistryId`.
   `` `${REGISTRY_URL}/${encodeURIComponent(name)}` ``. Never `new URL(name, BASE)`, which lets a
   name replace the host. `tests/unit/registries/outboundOrigins.test.ts` asserts it with hostile
   names, and `docs/security-candidates.md` explains why.
-- Go has no browser-reachable search, so `capabilities.discoverySearch` is `false` and the field
-  takes a full module path. Module paths are case-escaped for the proxy (`!masterminds`).
+- Go search looks a full module path up at `proxy.golang.org` (case-escaped: `!masterminds`). Any
+  other text, or a path that does not resolve, is a keyword search at
+  `${PROXY_ORIGIN}/v1/go/search`, which relays pkg.go.dev's search API (no CORS header of its
+  own). pkg.go.dev lists packages, so the adapter groups them by module. Enter still takes a typed
+  path, for modules pkg.go.dev does not list.
 - Composer search goes straight to `packagist.org`, but its version list comes through the proxy
   at `PROXY_ORIGIN` (`src/lib/proxy/origin.ts`), and the engine downloads its archives through the
   same origin. A call to the proxy passes that origin to `getJson` / `getText` as the last

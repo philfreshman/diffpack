@@ -60,6 +60,7 @@ with the name appended to its path.
 `${REGISTRY_URL}/${encodeURIComponent(name)}`     // npm, crates, pypi
 `${PROXY_URL}/${escapeModulePath(name)}/@v/list`  // go
 `${proxyOrigin}/v1/composer/p2/${encodedName(name)}.json`  // composer
+`${proxyOrigin}/v1/go/search?q=${encodeURIComponent(query)}`  // go keyword search
 ```
 
 A relative path cannot introduce a new authority, however hostile it is. `../../evil.example`
@@ -68,7 +69,8 @@ not a host; `https://evil.example/pkg` becomes a path segment that happens to co
 Three of the five adapters additionally `encodeURIComponent` the name, so it cannot even leave its
 segment. Composer encodes the vendor and the package separately, and refuses any name that is not
 `vendor/package` before building a URL. Go does not encode, because a module path legitimately
-contains slashes.
+contains slashes. Go's keyword search puts the typed text in a query parameter, encoded, on the
+constant proxy origin, so it cannot leave that parameter either.
 
 Composer has two origins, both constant. `https://packagist.org` answers search and is the link
 shown beside a version. The proxy origin, `PROXY_ORIGIN` in

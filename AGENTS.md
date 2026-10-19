@@ -79,7 +79,7 @@ relative path in the docs assumes (`DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg
 | :--- | :--- | :--- | :--- |
 | diffpack | *this checkout* | `philfreshman/diffpack` | The app: routes, components, `src/lib`, the diff worker. |
 | diffpack-engine | `../diffpack-engine` | `philfreshman/diffpack-engine` | The Rust → WebAssembly engine, consumed here as the pinned npm package `@philfreshman/diffpack-engine`. |
-| diffpack-proxy | `../diffpack-proxy` | `philfreshman/diffpack-proxy` | A Cloudflare Worker that fetches Packagist's metadata and Composer archives for the browser and adds the CORS header they lack. The Composer adapter and the engine call it at `PROXY_ORIGIN` (`src/lib/proxy/origin.ts`); its routes and error codes are in its `docs/contract.md`. |
+| diffpack-proxy | `../diffpack-proxy` | `philfreshman/diffpack-proxy` | A Cloudflare Worker that fetches Packagist's metadata, Composer archives and pkg.go.dev's module search for the browser and adds the CORS header they lack. The Composer and Go adapters and the engine call it at `PROXY_ORIGIN` (`src/lib/proxy/origin.ts`); its routes and error codes are in its `docs/contract.md`. |
 | diffpack-server | `../diffpack-server` | `philfreshman/diffpack-server` | The MCP server at `mcp.diffpack.io`, which diffs packages for AI agents with the native engine. Nothing here imports it; the app reads its diff cache by `diff_id` (`src/lib/cache/`). |
 
 The boundary is real: nothing in this checkout compiles or tests the engine, and editing
