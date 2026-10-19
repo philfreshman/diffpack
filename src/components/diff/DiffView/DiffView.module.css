@@ -4,7 +4,7 @@
 	position: relative;
 
 	display: flex;
-	flex: 1;
+	flex: 0 1 auto;
 	min-width: 0;
 	min-height: 0;
 	flex-direction: column;
@@ -21,7 +21,7 @@
 }
 
 .scroller {
-	flex: 1;
+	flex: 0 1 auto;
 	min-height: 0;
 	overflow: auto;
 	/* DiffScrollbar draws over this edge instead. */
