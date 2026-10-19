@@ -96,6 +96,10 @@ function modulesOf(items: SearchItem[]): SearchResult[] {
 	}));
 }
 
+function isAcceptedSearchText(query: string): boolean {
+	return query.length > 0 && query.length <= LONGEST_KEYWORD_SEARCH;
+}
+
 function looksLikeModulePath(query: string): boolean {
 	return query.includes("/") && startsWithDomain(query);
 }
@@ -169,7 +173,7 @@ export function createGoAdapter(
 		query: string,
 		signal?: AbortSignal,
 	): Promise<SearchResult[]> {
-		if (query.length > LONGEST_KEYWORD_SEARCH) return [];
+		if (!isAcceptedSearchText(query)) return [];
 
 		const payload = await getJson(
 			fetcher,

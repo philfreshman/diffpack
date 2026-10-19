@@ -334,6 +334,15 @@ describe("go keyword search limits", () => {
 		).toEqual([]);
 		expect(calls).toHaveLength(0);
 	});
+
+	test("does not ask the proxy when only a scheme or slashes were typed", async () => {
+		const { fetcher, calls } = stubFetch(() => goSearchAnswer([]));
+		const adapter = createGoAdapter(fetcher, PROXY);
+
+		expect(await adapter.search("https://")).toEqual([]);
+		expect(await adapter.search("//")).toEqual([]);
+		expect(calls).toHaveLength(0);
+	});
 });
 
 describe("go module path search", () => {
