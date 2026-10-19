@@ -40,16 +40,32 @@ someone.
 ### It runs in your browser
 
 ```
-   registry ──────── tarballs ───────▶ your browser
-                                            │
-                                       wasm worker
-                                            │
-                                          diff ──▶ you
+   npm · crates.io · PyPI · Go ───────────── archives ─────────────┐
+                                                                   ├──▶ your browser
+   Packagist · GitHub ── metadata, archives ──▶ diffpack-proxy ────┘          │
+                                                                         wasm worker
+                                                                              │
+                                                                            diff ──▶ you
 ```
 
-Both archives travel straight from the registry to your machine, where a Rust/WebAssembly module
-unpacks and diffs them inside a Web Worker. diffpack's server renders the page shell and nothing
-else — package contents never reach it.
+For npm, crates.io, PyPI and Go, both archives travel straight from the registry to your machine,
+where a Rust/WebAssembly module unpacks and diffs them inside a Web Worker. diffpack's server
+renders the page shell and nothing else — package contents never reach it.
+
+Composer is the exception. Packagist's version metadata and the archives it lists (mostly from
+GitHub) send no CORS header, the rule that lets a page read a response from another site, so the
+browser cannot read them directly. For Composer only, the page and the engine fetch them through
+[diffpack-proxy](https://github.com/philfreshman/diffpack-proxy), a small Cloudflare Worker at
+`diffpack-proxy.philipswiezak.workers.dev`. It passes the bytes through unchanged, without
+unpacking, storing or logging them, and it never sees the diff, which is still worked out in your
+browser. Like any web host, Cloudflare sees each request: your IP address, and the package and
+archives it asks for. Workers Logs are off for the proxy, so Cloudflare keeps no record of single
+requests, only totals such as the number of requests a day. Packagist search does not use the
+proxy: it goes straight from your browser to `packagist.org`.
+
+The proxy runs on Cloudflare's free plan, which allows 100,000 requests a day. It stops itself at
+90,000 so that it can still answer clearly, and it starts again at 00:00 UTC. Until then, a Composer
+comparison shows a notice saying when Composer comes back. The other registries keep working.
 
 Before downloading anything, the page asks
 [diffpack-server](https://github.com/philfreshman/diffpack-server) whether it has already worked
@@ -176,7 +192,7 @@ reaches the app.
 
 | | |
 | :-- | :-- |
-| **App** | [TanStack Start](https://tanstack.com/start) + [Router](https://tanstack.com/router) on Vite — the shell is SSR'd whole, the diff engine stays strictly client-side |
+| **App** | [TanStack Start](https://tanstack.com/start) + [Router](https://tanstack.com/router) on Vite — the shell is SSR'd whole, the diff engine stays strictly client-side; only Composer's downloads pass through the proxy |
 | **State** | [Query](https://tanstack.com/query) for registry calls, [Store](https://tanstack.com/store) for the diff session |
 | **UI** | [Base UI](https://base-ui.com) primitives wrapped in `src/components/ui`, CSS Modules over a custom-property token layer — no Tailwind |
 | **Engine** | Rust → WebAssembly for extraction and diffing, in its own repo: [diffpack-engine](https://github.com/philfreshman/diffpack-engine) |
