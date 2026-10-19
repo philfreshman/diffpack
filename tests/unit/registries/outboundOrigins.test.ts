@@ -62,24 +62,42 @@ function answerAnything(url: string): Response {
 	return json({ objects: [], versions: { "1.0.0": {} } });
 }
 
+async function requestedUrls(
+	create: (fetcher: Fetcher) => RegistryAdapter,
+): Promise<string[]> {
+	const { fetcher, calls } = stubFetch(answerAnything);
+	const adapter = create(fetcher);
+
+	for (const name of HOSTILE_NAMES) {
+		// A hostile name is an ordinary miss; what matters is where the request went first.
+		await adapter.search(name).catch(() => []);
+		await adapter.versions(name).catch(() => []);
+	}
+
+	return calls.map(({ url }) => url);
+}
+
 for (const { id, create } of ADAPTERS) {
 	const allowed = ALLOWED_ORIGINS[id] ?? [];
 
 	describe(`${id} outbound origins`, () => {
 		test("keeps every request on the registry's own origin", async () => {
-			const { fetcher, calls } = stubFetch(answerAnything);
-			const adapter = create(fetcher);
+			const urls = await requestedUrls(create);
 
-			for (const name of HOSTILE_NAMES) {
-				// A hostile name is an ordinary miss; what matters is where the request went first.
-				await adapter.search(name).catch(() => []);
-				await adapter.versions(name).catch(() => []);
-			}
-
-			expect(calls.length).toBeGreaterThan(0);
-			for (const { url } of calls) {
+			expect(urls.length).toBeGreaterThan(0);
+			for (const url of urls) {
 				expect(allowed).toContain(new URL(url).origin);
 			}
+		});
+
+		test("reaches every origin it allows with a hostile name", async () => {
+			const urls = [
+				...(await requestedUrls(create)),
+				...HOSTILE_NAMES.map((name) => adapterDownloadUrl(create, name)),
+			];
+			const reached = new Set(urls.map((url) => new URL(url).origin));
+
+			expect([...reached].sort()).toEqual([...allowed].sort());
 		});
 
 		test("keeps the download URL on the registry's own origin", () => {
