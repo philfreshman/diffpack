@@ -126,6 +126,11 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								onIgnoreWhitespaceChange={whitespace.set}
 								highlight={highlight}
 							/>
+							{showsIntro(session.status) && (
+								<p className={styles.empty} data-testid="workspace-intro">
+									{workspaceIntro(adapter, slug)}
+								</p>
+							)}
 							{progress ? (
 								<DiffProgress
 									packageName={slug.package}
@@ -138,8 +143,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 									file={session.file}
 									highlight={highlight}
 									onClose={closeFile}
-									intro={workspaceIntro(adapter, slug)}
-									sessionStatus={session.status}
 									shown={shown}
 								/>
 							)}
@@ -155,6 +158,10 @@ type Pane = "progress" | "versions-failure" | "file";
 
 function namesComparison(slug: DiffSlug): boolean {
 	return Boolean(slug.package && slug.from && slug.to);
+}
+
+function showsIntro(status: DiffSessionState["status"]): boolean {
+	return status === "idle" || status === "loading";
 }
 
 function shownProgress(
@@ -195,29 +202,15 @@ function TreeStatus({ status, fileCount, changedCount }: TreeStatusProps) {
 }
 
 interface FilePaneProps {
-	intro: string;
-	sessionStatus: DiffSessionState["status"];
 	file: OpenFile | null;
 	shown: FileModelControls | null;
 	onClose(): void;
 	highlight: HighlightThemeControls;
 }
 
-function FilePane({
-	intro,
-	sessionStatus,
-	file,
-	shown,
-	onClose,
-	highlight,
-}: FilePaneProps) {
+function FilePane({ file, shown, onClose, highlight }: FilePaneProps) {
 	return (
 		<>
-			{(sessionStatus === "idle" || sessionStatus === "loading") && (
-				<p className={styles.empty} data-testid="workspace-intro">
-					{intro}
-				</p>
-			)}
 			{/* Only the first file: later ones keep the previous file blurred instead. */}
 			{file?.status === "loading" && !shown && (
 				<Spinner label={`Loading ${file.path}…`} />
