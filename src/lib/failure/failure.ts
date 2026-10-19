@@ -38,9 +38,12 @@ function isFailureCode(value: unknown): value is FailureCode {
 	return FAILURE_CODES.includes(value as FailureCode);
 }
 
-function detailsOf(error: Error): Omit<Failure, "message"> {
-	const { code, resetsAt, status } = error as Error & Record<string, unknown>;
+export function failureFrom(
+	message: string,
+	{ code, resetsAt, status }: Record<string, unknown>,
+): Failure {
 	return {
+		message,
 		...(isFailureCode(code) && { code }),
 		...(typeof resetsAt === "string" && { resetsAt }),
 		...(typeof status === "number" && { status }),
@@ -49,5 +52,5 @@ function detailsOf(error: Error): Omit<Failure, "message"> {
 
 export function failureOf(error: unknown): Failure {
 	if (!(error instanceof Error)) return { message: String(error) };
-	return { message: error.message, ...detailsOf(error) };
+	return failureFrom(error.message, { ...error });
 }
