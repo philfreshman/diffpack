@@ -10,6 +10,7 @@ export interface VersionComboboxProps {
 	value: string;
 	onChange(version: string): void;
 	loading?: boolean;
+	unavailable?: boolean;
 	downloadUrl?: string;
 	linkCopy?: VersionLinkCopy;
 }
@@ -22,6 +23,12 @@ const DOWNLOAD_LINK: VersionLinkCopy = {
 
 const LINK_ICONS = { download: DownloadIcon, page: ExternalLinkIcon };
 
+function placeholderFor(loading: boolean, unavailable: boolean): string {
+	if (loading) return "Loading…";
+	if (unavailable) return "Versions unavailable";
+	return "Select version";
+}
+
 // No `onSubmitText`: unlike package search, only listed versions are valid.
 export function VersionCombobox({
 	label,
@@ -29,6 +36,7 @@ export function VersionCombobox({
 	value,
 	onChange,
 	loading = false,
+	unavailable = false,
 	downloadUrl,
 	linkCopy = DOWNLOAD_LINK,
 }: VersionComboboxProps) {
@@ -73,7 +81,7 @@ export function VersionCombobox({
 				loading={loading}
 				loadingMessage="Loading versions…"
 				emptyMessage={versions.length ? "No matching versions" : "No versions"}
-				placeholder={loading ? "Loading…" : "Select version"}
+				placeholder={placeholderFor(loading, unavailable)}
 				disabled={!loading && versions.length === 0}
 			/>
 		</div>

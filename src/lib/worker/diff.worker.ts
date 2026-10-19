@@ -5,6 +5,7 @@ import init, {
 } from "@philfreshman/diffpack-engine";
 import wasmUrl from "@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url";
 import {
+	failedReply,
 	SIMILARITY_THRESHOLD,
 	type WorkerRequest,
 	type WorkerResponse,
@@ -54,10 +55,6 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
 		await ensureWasm();
 		reply({ id: request.id, ok: true, data: await handle(request) });
 	} catch (error) {
-		reply({
-			id: request.id,
-			ok: false,
-			error: error instanceof Error ? error.message : String(error),
-		});
+		reply(failedReply(request.id, error));
 	}
 };
