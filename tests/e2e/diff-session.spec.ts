@@ -86,7 +86,45 @@ test("says so when the comparison cannot be built", async ({ page }) => {
 	await page.goto("/npm/diffpack-package-that-does-not-exist/1.0.0/1.0.1");
 
 	await expect(status(page)).toHaveAttribute("data-state", "error", ENGINE);
-	await expect(page.getByTestId("diff-error")).not.toBeEmpty();
+	await expect(page.getByTestId("progress-from")).toHaveAttribute(
+		"data-state",
+		"failed",
+	);
+	await expect(page.getByTestId("progress-to")).toHaveAttribute(
+		"data-state",
+		"failed",
+	);
+	await expect(page.getByTestId("progress-diff")).toHaveAttribute(
+		"data-state",
+		"waiting",
+	);
+	await expect(page.getByTestId("diff-error")).toHaveCount(2);
+});
+
+test("marks only the version that cannot be downloaded", async ({ page }) => {
+	await page.goto("/npm/node/26.6.0/99.0.0");
+
+	await expect(status(page)).toHaveAttribute("data-state", "error", ENGINE);
+	await expect(page.getByTestId("progress-from")).toHaveAttribute(
+		"data-state",
+		"done",
+	);
+	await expect(page.getByTestId("progress-to")).toHaveAttribute(
+		"data-state",
+		"failed",
+	);
+	await expect(page.getByTestId("diff-error")).toContainText("99.0.0");
+});
+
+test("the progress box gives way to the comparison once it is built", async ({
+	page,
+}) => {
+	await page.goto(NODE);
+
+	await expect(page.getByTestId("diff-progress")).toBeVisible();
+	await ready(page);
+	await expect(page.getByTestId("diff-progress")).toHaveCount(0);
+	await expect(page.getByTestId("diff-file")).toBeVisible();
 });
 
 test("a file the comparison does not contain is an error, not a spinner", async ({
