@@ -1,7 +1,3 @@
-.row {
-	composes: row from "../DiffRow/DiffRow.module.css";
-}
-
 .half {
 	display: flex;
 	flex: 1 1 50%;
@@ -26,10 +22,6 @@
 	background: var(--color-removed-surface);
 }
 
-.gutter {
-	composes: gutter from "../DiffRow/DiffRow.module.css";
-}
-
 .half[data-type="added"] .gutter {
 	background: var(--color-added-gutter);
 	border-right-color: var(--color-added-gutter-border);
@@ -38,8 +30,4 @@
 .half[data-type="removed"] .gutter {
 	background: var(--color-removed-gutter);
 	border-right-color: var(--color-removed-gutter-border);
-}
-
-.content {
-	composes: content from "../DiffRow/DiffRow.module.css";
 }

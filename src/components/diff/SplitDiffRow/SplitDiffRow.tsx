@@ -1,3 +1,4 @@
+import rowStyles from "#/components/diff/DiffRow/DiffRow.module.css";
 import type { VirtualRowProps } from "#/components/diff/virtualRow.ts";
 import { highlightLine } from "#/lib/diff/highlight.ts";
 import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
@@ -17,7 +18,7 @@ export function SplitDiffRow({
 }) {
 	return (
 		<tr
-			className={styles.row}
+			className={rowStyles.row}
 			data-index={index}
 			data-left-type={left?.line.type ?? "none"}
 			data-right-type={right?.line.type ?? "none"}
@@ -48,9 +49,9 @@ function Half({
 			data-side={side}
 			data-type={line?.type ?? "none"}
 		>
-			<span className={styles.gutter}>{number}</span>
+			<span className={`${rowStyles.gutter} ${styles.gutter}`}>{number}</span>
 			<span
-				className={styles.content}
+				className={rowStyles.content}
 				data-testid={`${side}-content`}
 				// Escaped by the highlighter either way; see `DiffRow`.
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: the highlighter's output is markup by definition
