@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { CodedError } from "#/lib/failure/failure.ts";
 import { createGoAdapter, goAdapter } from "#/lib/registries/go.ts";
 import { json, stubFetch, text } from "./fetchStub.ts";
+
+const PROXY = "https://proxy.test";
 
 describe("go packagePath.parse", () => {
 	test("treats a major-version path suffix as part of the module path", () => {
@@ -163,18 +166,17 @@ describe("go search", () => {
 		]);
 	});
 
-	test("does not call the proxy for a query that is not a module path", async () => {
-		const { fetcher, calls } = stubFetch(() => text("v1.0.0\n"));
-
-		expect(await createGoAdapter(fetcher).search("chi")).toEqual([]);
-		expect(calls).toHaveLength(0);
-	});
-
-	test("treats an unresolvable path as an ordinary miss", async () => {
-		const { fetcher } = stubFetch(() => text("not found", 404));
+	test("treats a path that neither resolves nor matches as an ordinary miss", async () => {
+		const { fetcher } = stubFetch((url) =>
+			url.startsWith(PROXY)
+				? json({ items: null, total: 0 })
+				: text("not found", 404),
+		);
 
 		expect(
-			await createGoAdapter(fetcher).search("example.com/does/not/exist"),
+			await createGoAdapter(fetcher, PROXY).search(
+				"example.com/does/not/exist",
+			),
 		).toEqual([]);
 	});
 
@@ -188,6 +190,155 @@ describe("go search", () => {
 		expect(results[0]?.name).toBe("github.com/spf13/cobra");
 		expect(calls[0]?.url).toBe(
 			"https://proxy.golang.org/github.com/spf13/cobra/@v/list",
+		);
+	});
+});
+
+function goSearchAnswer(
+	items: {
+		packagePath: string;
+		modulePath: string;
+		version: string;
+		synopsis?: string;
+	}[],
+): Response {
+	return json({ items, total: items.length });
+}
+
+describe("go keyword search", () => {
+	test("asks the diffpack proxy and lists each module once, in pkg.go.dev's order", async () => {
+		const { fetcher, calls } = stubFetch(() =>
+			goSearchAnswer([
+				{
+					packagePath: "github.com/go-chi/chi/v5",
+					modulePath: "github.com/go-chi/chi/v5",
+					version: "v5.5.0",
+					synopsis: "Package chi is a small router.",
+				},
+				{
+					packagePath: "github.com/go-chi/chi/v5/middleware",
+					modulePath: "github.com/go-chi/chi/v5",
+					version: "v5.5.0",
+					synopsis: "",
+				},
+				{
+					packagePath: "github.com/go-chi/cors",
+					modulePath: "github.com/go-chi/cors",
+					version: "v1.2.2",
+					synopsis: "cors package is net/http handler to handle CORS.",
+				},
+			]),
+		);
+
+		const results = await createGoAdapter(fetcher, PROXY).search("chi");
+
+		expect(calls.map((call) => call.url)).toEqual([
+			"https://proxy.test/v1/go/search?q=chi",
+		]);
+		expect(results).toEqual([
+			{
+				name: "github.com/go-chi/chi/v5",
+				version: "v5.5.0",
+				description: "Package chi is a small router.",
+			},
+			{
+				name: "github.com/go-chi/cors",
+				version: "v1.2.2",
+				description: "cors package is net/http handler to handle CORS.",
+			},
+		]);
+	});
+});
+
+describe("go keyword search outcomes", () => {
+	test("finds nothing when pkg.go.dev matches nothing", async () => {
+		const { fetcher } = stubFetch(() => json({ items: null, total: 0 }));
+
+		expect(await createGoAdapter(fetcher, PROXY).search("zzzz")).toEqual([]);
+	});
+
+	test("carries the proxy's code when it refuses the search", async () => {
+		const { fetcher } = stubFetch(() => {
+			const response = json(
+				{
+					error: "quota_exhausted",
+					message: "diffpack's Composer proxy has used today's free allowance.",
+					resetsAt: "2026-10-20T00:00:00Z",
+				},
+				503,
+			);
+			response.headers.set("Diffpack-Proxy-Error", "quota_exhausted");
+			return response;
+		});
+
+		const failure = await createGoAdapter(fetcher, PROXY)
+			.search("chi")
+			.catch((error: unknown) => error);
+
+		expect(failure).toBeInstanceOf(CodedError);
+		expect(failure).toMatchObject({ code: "quota_exhausted" });
+	});
+});
+
+describe("go keyword search limits", () => {
+	test("lists at most ten modules", async () => {
+		const items = Array.from({ length: 12 }, (_, index) => ({
+			packagePath: `example.com/m${index}`,
+			modulePath: `example.com/m${index}`,
+			version: "v1.0.0",
+		}));
+		const { fetcher } = stubFetch(() => goSearchAnswer(items));
+
+		const results = await createGoAdapter(fetcher, PROXY).search("m");
+
+		expect(results.map((result) => result.name)).toEqual(
+			items.slice(0, 10).map((item) => item.modulePath),
+		);
+	});
+
+	test("does not ask the proxy for text longer than it accepts", async () => {
+		const { fetcher, calls } = stubFetch(() => goSearchAnswer([]));
+
+		expect(
+			await createGoAdapter(fetcher, PROXY).search("a".repeat(101)),
+		).toEqual([]);
+		expect(calls).toHaveLength(0);
+	});
+});
+
+describe("go module path search", () => {
+	test("answers a resolvable path from the Go module proxy alone", async () => {
+		const { fetcher, calls } = stubFetch(() => text("v5.3.2\n"));
+
+		await createGoAdapter(fetcher, PROXY).search("github.com/go-chi/chi/v5");
+
+		expect(calls.map((call) => call.url)).toEqual([
+			"https://proxy.golang.org/github.com/go-chi/chi/v5/@v/list",
+		]);
+	});
+
+	test("searches by keyword when the path does not resolve, such as a partial one", async () => {
+		const { fetcher, calls } = stubFetch((url) =>
+			url.startsWith(PROXY)
+				? goSearchAnswer([
+						{
+							packagePath: "github.com/go-chi/chi/v5",
+							modulePath: "github.com/go-chi/chi/v5",
+							version: "v5.5.0",
+						},
+					])
+				: text("not found", 404),
+		);
+
+		const results = await createGoAdapter(fetcher, PROXY).search(
+			"https://github.com/go-chi/",
+		);
+
+		expect(results.map((result) => result.name)).toEqual([
+			"github.com/go-chi/chi/v5",
+		]);
+		expect(calls.at(-1)?.url).toBe(
+			"https://proxy.test/v1/go/search?q=github.com%2Fgo-chi",
 		);
 	});
 });

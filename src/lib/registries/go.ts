@@ -1,7 +1,29 @@
-import { getText } from "./http.ts";
-import type { Fetcher, RegistryAdapter } from "./types.ts";
+import { z } from "zod";
+import { PROXY_ORIGIN } from "#/lib/proxy/origin.ts";
+import { getJson, getText } from "./http.ts";
+import type { Fetcher, RegistryAdapter, SearchResult } from "./types.ts";
 
 const PROXY_URL = "https://proxy.golang.org";
+
+const MAX_SEARCH_RESULTS = 10;
+// The diffpack proxy refuses longer search text (its docs/contract.md).
+const LONGEST_KEYWORD_SEARCH = 100;
+
+// pkg.go.dev lists packages, so one module can come back once per package.
+const SearchResponse = z.object({
+	items: z
+		.array(
+			z.object({
+				modulePath: z.string(),
+				packagePath: z.string(),
+				version: z.string(),
+				synopsis: z.string().optional(),
+			}),
+		)
+		.nullable(),
+});
+
+type SearchItem = NonNullable<z.infer<typeof SearchResponse>["items"]>[number];
 
 // Tells a path's "/v5" major-version suffix (no dots) apart from `v5.3.1`.
 export const MODULE_VERSION = /^v\d+\.\d+\.\d+/;
@@ -38,12 +60,41 @@ function compareVersionsDesc(a: string, b: string): number {
 	return right.suffix.localeCompare(left.suffix);
 }
 
+function moduleDescription(packages: SearchItem[]): string | undefined {
+	const root = packages.find((item) => item.packagePath === item.modulePath);
+	return (
+		root?.synopsis ||
+		packages.find((item) => item.synopsis)?.synopsis ||
+		undefined
+	);
+}
+
+function groupByModule(items: SearchItem[]): Map<string, SearchItem[]> {
+	const packagesByModule = new Map<string, SearchItem[]>();
+	for (const item of items) {
+		const packages = packagesByModule.get(item.modulePath) ?? [];
+		packagesByModule.set(item.modulePath, [...packages, item]);
+	}
+	return packagesByModule;
+}
+
+function modulesOf(items: SearchItem[]): SearchResult[] {
+	return [...groupByModule(items)].map(([name, packages]) => ({
+		name,
+		version: packages[0]?.version,
+		description: moduleDescription(packages),
+	}));
+}
+
 function looksLikeModulePath(query: string): boolean {
 	const [host = ""] = query.split("/");
 	return query.includes("/") && host.includes(".");
 }
 
-export function createGoAdapter(fetcher: Fetcher = fetch): RegistryAdapter {
+export function createGoAdapter(
+	fetcher: Fetcher = fetch,
+	proxyOrigin = PROXY_ORIGIN,
+): RegistryAdapter {
 	async function listVersions(
 		name: string,
 		signal?: AbortSignal,
@@ -84,14 +135,54 @@ export function createGoAdapter(fetcher: Fetcher = fetch): RegistryAdapter {
 		return typeof data.Version === "string" ? data.Version : null;
 	}
 
+	async function resolvedModule(
+		name: string,
+		signal?: AbortSignal,
+	): Promise<SearchResult | undefined> {
+		try {
+			const versions = await listVersions(name, signal);
+			if (versions.length === 0) return undefined;
+
+			return {
+				name,
+				version: versions[0],
+				description: `Go module — ${versions.length} version${versions.length === 1 ? "" : "s"}`,
+			};
+		} catch (error) {
+			// A cancelled keystroke is not a miss — only the caller can tell those apart.
+			if (signal?.aborted) throw error;
+			// An unresolvable path may be a partial one, which keyword search can still find.
+			return undefined;
+		}
+	}
+
+	async function searchByKeyword(
+		query: string,
+		signal?: AbortSignal,
+	): Promise<SearchResult[]> {
+		if (query.length > LONGEST_KEYWORD_SEARCH) return [];
+
+		const payload = await getJson(
+			fetcher,
+			`${proxyOrigin}/v1/go/search?q=${encodeURIComponent(query)}`,
+			signal,
+			`go: search for ${query} failed`,
+			proxyOrigin,
+		);
+
+		return modulesOf(SearchResponse.parse(payload).items ?? []).slice(
+			0,
+			MAX_SEARCH_RESULTS,
+		);
+	}
+
 	return {
 		id: "go",
 		label: "Go",
 		tagline: "Go modules & standard ecosystem",
 		capabilities: {
-			discoverySearch: false,
-			searchPlaceholder: "github.com/user/module",
-			searchHint: "Type a full module path, e.g. github.com/go-chi/chi/v5",
+			discoverySearch: true,
+			searchPlaceholder: "Search Go modules…",
 		},
 		packagePath: {
 			parse(segments) {
@@ -117,25 +208,12 @@ export function createGoAdapter(fetcher: Fetcher = fetch): RegistryAdapter {
 				.replace(/^https?:\/\//, "")
 				.replace(/\/+$/, "");
 
-			if (!looksLikeModulePath(name)) return [];
+			const module = looksLikeModulePath(name)
+				? await resolvedModule(name, signal)
+				: undefined;
+			if (module) return [module];
 
-			try {
-				const versions = await listVersions(name, signal);
-				if (versions.length === 0) return [];
-
-				return [
-					{
-						name,
-						version: versions[0],
-						description: `Go module — ${versions.length} version${versions.length === 1 ? "" : "s"}`,
-					},
-				];
-			} catch (error) {
-				// A cancelled keystroke is not a miss — only the caller can tell those apart.
-				if (signal?.aborted) throw error;
-				// An unresolvable path is an ordinary miss while the user is still typing.
-				return [];
-			}
+			return searchByKeyword(name, signal);
 		},
 
 		async versions(name, signal) {

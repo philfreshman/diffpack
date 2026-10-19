@@ -17,7 +17,7 @@ const ALLOWED_ORIGINS: Record<string, string[]> = {
 		"https://api.deps.dev",
 		"https://files.pythonhosted.org",
 	],
-	go: ["https://proxy.golang.org"],
+	go: ["https://proxy.golang.org", PROXY_ORIGIN],
 	composer: ["https://packagist.org", PROXY_ORIGIN],
 };
 
@@ -50,7 +50,7 @@ function answerAnything(url: string): Response {
 	if (url.includes("proxy.golang.org")) return text("v1.0.0\n");
 	if (url.includes("packagist.org")) return json({ results: [] });
 	if (url.startsWith(PROXY_ORIGIN)) {
-		return json({ packages: { "x/x": [{ version: "1.0.0" }] } });
+		return json({ packages: { "x/x": [{ version: "1.0.0" }] }, items: null });
 	}
 	if (url.includes("api.diffpack.io")) return json([]);
 	if (url.includes("deps.dev")) {
