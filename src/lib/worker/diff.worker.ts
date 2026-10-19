@@ -6,6 +6,7 @@ import init, {
 } from "@philfreshman/diffpack-engine";
 import wasmUrl from "@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url";
 import { PROXY_ORIGIN } from "#/lib/proxy/origin.ts";
+import { createEngineReady } from "./engineReady.ts";
 import {
 	failedReply,
 	SIMILARITY_THRESHOLD,
@@ -13,14 +14,10 @@ import {
 	type WorkerResponse,
 } from "./protocol.ts";
 
-let wasmReady: Promise<unknown> | null = null;
-
-function ensureWasm() {
-	wasmReady ??= init({ module_or_path: wasmUrl }).then(() =>
-		set_proxy_origin(PROXY_ORIGIN),
-	);
-	return wasmReady;
-}
+const engineReady = createEngineReady(
+	() => init({ module_or_path: wasmUrl }),
+	() => set_proxy_origin(PROXY_ORIGIN),
+);
 
 function reply(response: WorkerResponse) {
 	self.postMessage(response);
@@ -56,7 +53,7 @@ async function handle(request: WorkerRequest): Promise<unknown> {
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
 	const request = event.data;
 	try {
-		await ensureWasm();
+		await engineReady();
 		reply({ id: request.id, ok: true, data: await handle(request) });
 	} catch (error) {
 		reply(failedReply(request.id, error));
