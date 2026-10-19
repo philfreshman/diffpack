@@ -79,6 +79,8 @@ jobs:
       # When it fails: `bun run badge`, and commit the result.
       - run: bun run check:badge
 
+      - run: bun run check:vectors
+
   e2e:
     name: end-to-end
     needs: changes

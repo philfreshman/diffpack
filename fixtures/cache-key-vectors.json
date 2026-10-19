@@ -1,0 +1,326 @@
+{
+  "$comment": "Golden vectors for the diff cache key. See docs/cache-key.md, which is normative. Generated from that document by a throwaway script, not by either implementation these vectors check.",
+  "schema": 1,
+  "vectors": [
+    {
+      "name": "npm/zod",
+      "why": "The worked example in docs/cache-key.md. Every other vector is a departure from this one.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
+      "diff_id": "282467a6bd7b210db4077e71bcf3901550b219852386085452f5739c6b6c436c"
+    },
+    {
+      "name": "npm/@types/node scoped name",
+      "why": "A scoped npm name keeps its `@` and `/`: no rewriting.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "@types/node",
+        "from": "20.11.0",
+        "to": "22.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"20.11.0\",\"ignore_whitespace\":false,\"package\":\"@types/node\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"22.0.0\"}",
+      "diff_id": "4cd94d033fa83b9f14526c29c6f47f1e3b9e263e836d73ee5973a543b5a0777c"
+    },
+    {
+      "name": "pypi/typing_extensions underscore",
+      "why": "PyPI name with an underscore, verbatim.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "pypi",
+        "package": "typing_extensions",
+        "from": "4.9.0",
+        "to": "4.12.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"4.9.0\",\"ignore_whitespace\":false,\"package\":\"typing_extensions\",\"registry\":\"pypi\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.12.0\"}",
+      "diff_id": "1709f204c704c790dbbe9935ca5958f43de96045c360843020513501a595c499"
+    },
+    {
+      "name": "pypi/typing-extensions hyphen",
+      "why": "The same PyPI project spelled with a hyphen. PEP 503 says these are one project; v1 says they are two keys. Its diff_id must differ from the vector above.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "pypi",
+        "package": "typing-extensions",
+        "from": "4.9.0",
+        "to": "4.12.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"4.9.0\",\"ignore_whitespace\":false,\"package\":\"typing-extensions\",\"registry\":\"pypi\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.12.0\"}",
+      "diff_id": "c816d97f2c7950c4799d3044b2e77dc9d341fe312a0480d44f048bc4551f38f5"
+    },
+    {
+      "name": "pypi/Typing.Extensions mixed separators and case",
+      "why": "Dot separator and capitals, still verbatim. A third distinct key for the same PyPI project.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "pypi",
+        "package": "Typing.Extensions",
+        "from": "4.9.0",
+        "to": "4.12.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"4.9.0\",\"ignore_whitespace\":false,\"package\":\"Typing.Extensions\",\"registry\":\"pypi\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.12.0\"}",
+      "diff_id": "eaf7c82e26665474c5d1b8db1ed889cff0625de10891273f9e8d1f1bd9eec84f"
+    },
+    {
+      "name": "crates/serde",
+      "why": "The third registry value.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "crates",
+        "package": "serde",
+        "from": "1.0.200",
+        "to": "1.0.229",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"1.0.200\",\"ignore_whitespace\":false,\"package\":\"serde\",\"registry\":\"crates\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"1.0.229\"}",
+      "diff_id": "3a24b2b2e76139154324f0e82327c9f8cf493e65efd29be82b04649b75345774"
+    },
+    {
+      "name": "threshold 0.75 formats as 0.7500",
+      "why": "The headline formatting case: a two-decimal float becomes a four-decimal string.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
+      "diff_id": "282467a6bd7b210db4077e71bcf3901550b219852386085452f5739c6b6c436c"
+    },
+    {
+      "name": "threshold 0.8 formats as 0.8000",
+      "why": "One decimal in, four out. A naive `to_string` would emit `0.8`.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.8,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.8000\",\"to\":\"4.0.0\"}",
+      "diff_id": "1555395b52647f2457a6a4d6cde2c490bea28941e85b1ad1afaef934308a0156"
+    },
+    {
+      "name": "threshold 1 formats as 1.0000",
+      "why": "An integral value still carries four decimals.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 1.0,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"1.0000\",\"to\":\"4.0.0\"}",
+      "diff_id": "b1b4fc8b5e74d524c76cb5b5885613b00531236ea6d3a07ffa449e011839f395"
+    },
+    {
+      "name": "threshold 0.12345 rounds to 0.1235",
+      "why": "Rounds half away from zero at the fifth decimal place.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.12345,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.1235\",\"to\":\"4.0.0\"}",
+      "diff_id": "a722c4634db6c4a531d07729396608bd816c6cd9443233c890c97ee499583dd7"
+    },
+    {
+      "name": "threshold 0.750000001 collapses onto 0.7500",
+      "why": "Agrees with the 0.75 vector to four decimal places, so it is the same key. Its diff_id must equal the npm/zod vector's.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.750000001,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
+      "diff_id": "282467a6bd7b210db4077e71bcf3901550b219852386085452f5739c6b6c436c"
+    },
+    {
+      "name": "threshold 0.7501 is a different key",
+      "why": "One step outside four-decimal agreement, so the key changes. The boundary the vector above sits on.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.7501,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7501\",\"to\":\"4.0.0\"}",
+      "diff_id": "7d38f5e49d2b71d7f7cec4a18f1dc14900645617eda246436f82dee3c8368015"
+    },
+    {
+      "name": "ignore_whitespace true",
+      "why": "The other whitespace setting. Must differ from npm/zod.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": true
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":true,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
+      "diff_id": "96bc6c0acb4943f469abb170545e4ca7da50f7ad3fd98b8cd768d01094b6c83f"
+    },
+    {
+      "name": "order A to B",
+      "why": "Forward direction.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "lodash",
+        "from": "4.17.20",
+        "to": "4.17.21",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"4.17.20\",\"ignore_whitespace\":false,\"package\":\"lodash\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.17.21\"}",
+      "diff_id": "81a9d57f254857f2aad460232edd6c952098f05be48c08449e314725fc970b88"
+    },
+    {
+      "name": "order B to A",
+      "why": "The same pair reversed. Its diff_id must differ from the vector above.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "lodash",
+        "from": "4.17.21",
+        "to": "4.17.20",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"4.17.21\",\"ignore_whitespace\":false,\"package\":\"lodash\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.17.20\"}",
+      "diff_id": "d28130c88a4dc0b7c35c844c2878bc5a452d93ca7f7e41ab8d462b7e84723618"
+    },
+    {
+      "name": "engine version participates",
+      "why": "Same inputs as npm/zod but a different engine. Must differ.",
+      "input": {
+        "schema": 1,
+        "engine": "0.4.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.4.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
+      "diff_id": "46b37358d4386ec20c326958ec3d7540a1dfb7ddde6b9616267c5cd172d5e219"
+    },
+    {
+      "name": "schema participates",
+      "why": "Same inputs as npm/zod but a different schema. Must differ.",
+      "input": {
+        "schema": 2,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":2,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
+      "diff_id": "f685ea6d03cb668f7d289ae1ada4b2c48576b7bcd0136ff16de774d3e5fd483f"
+    },
+    {
+      "name": "version keeps its v prefix",
+      "why": "No `v`-stripping: this is not the npm/zod key.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "zod",
+        "from": "v3.25.76",
+        "to": "v4.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"v3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"v4.0.0\"}",
+      "diff_id": "15b76bf254474b6b81822228099aea0e5b8bb574403d323bbae282d1a26ec9d3"
+    },
+    {
+      "name": "package name keeps its case",
+      "why": "No case folding: this is not the npm/zod key.",
+      "input": {
+        "schema": 1,
+        "engine": "0.3.0",
+        "registry": "npm",
+        "package": "Zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.3.0\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"Zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
+      "diff_id": "cf75711dc26e0fe58e1a9f0f4caf920df3703223fc882d9602a2376d51acc168"
+    },
+    {
+      "name": "npm/zod at engine 0.4.1",
+      "why": "The worked example at the engine diffpack-server pins, 0.4.1. The server's own tests mint a real handle and make a real call, which can only carry the pinned engine, so they read their expected diff_id from this vector. Its diff_id must differ from npm/zod's.",
+      "input": {
+        "schema": 1,
+        "engine": "0.4.1",
+        "registry": "npm",
+        "package": "zod",
+        "from": "3.25.76",
+        "to": "4.0.0",
+        "similarity_threshold": 0.75,
+        "ignore_whitespace": false
+      },
+      "canonical": "{\"engine\":\"0.4.1\",\"from\":\"3.25.76\",\"ignore_whitespace\":false,\"package\":\"zod\",\"registry\":\"npm\",\"schema\":1,\"similarity_threshold\":\"0.7500\",\"to\":\"4.0.0\"}",
+      "diff_id": "cce25cb7060fe37ce7f13d6a8ea04d92238f71dd61788c4423c8bbdfdff5fae4"
+    }
+  ]
+}
