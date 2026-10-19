@@ -72,14 +72,16 @@ all the work as above.
 | ⬢ | **npm** | JavaScript & TypeScript | yes |
 | ⬢ | **crates.io** | Rust | yes |
 | ⬢ | **PyPI** | Python | yes |
-| ⬢ | **Packagist** | PHP (Composer), named `vendor/package` | yes |
+| ⬢ | **Packagist** | PHP (Composer) | yes |
 | ⬡ | **Go** | Go modules | type a full module path |
 
 > Go has no discovery search — `proxy.golang.org` exposes no CORS-enabled search-by-name API — so
 > the field takes a complete module path (`github.com/go-chi/chi/v5`) rather than a name.
 
-> Packagist is the one registry the browser does not reach on its own: its version metadata and
-> archives come through a small proxy, described under [It runs in your browser](#it-runs-in-your-browser).
+> Packagist names are `vendor/package` (`monolog/monolog`), so a Composer URL spends two segments
+> on the name: `/composer/monolog/monolog/3.12.0/3.12.1`. It is the one registry the browser does
+> not reach on its own: its version metadata and archives come through a small proxy, described
+> under [It runs in your browser](#it-runs-in-your-browser).
 
 More registries are on the way.
 
