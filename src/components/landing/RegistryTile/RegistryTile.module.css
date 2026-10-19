@@ -30,6 +30,10 @@
 	--tile-accent: var(--registry-pypi-rgb);
 }
 
+.tile[data-registry="composer"] {
+	--tile-accent: var(--registry-composer-rgb);
+}
+
 .tile:hover,
 .tile:focus-visible {
 	transform: scale(1.02);

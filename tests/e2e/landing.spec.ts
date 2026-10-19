@@ -39,6 +39,21 @@ test("opens a registry from its tile", async ({ page }) => {
 	await expect(page).toHaveTitle("diffpack | crates.io");
 });
 
+test("gives the Packagist tile PHP's purple, not the default accent", async ({
+	page,
+}) => {
+	await page.goto("/");
+
+	const accent = await page
+		.getByTestId("registry-tile")
+		.filter({ hasText: "Packagist" })
+		.evaluate((node) =>
+			getComputedStyle(node).getPropertyValue("--tile-accent").trim(),
+		);
+
+	expect(accent).toBe("119 123 180");
+});
+
 test("glows on hover without a single inline handler", async ({ page }) => {
 	await page.goto("/");
 
