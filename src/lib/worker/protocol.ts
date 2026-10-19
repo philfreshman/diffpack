@@ -72,6 +72,26 @@ export type WorkerResponse =
 	| { id: number; ok: true; data: unknown }
 	| FailedResponse;
 
+export type ArchiveSide = "from" | "to";
+
+export interface ArchiveFetched {
+	side: ArchiveSide;
+	failure: Failure | null;
+}
+
+export interface WorkerProgress {
+	id: number;
+	fetched: ArchiveFetched;
+}
+
+export type WorkerMessage = WorkerResponse | WorkerProgress;
+
+export function isProgress(message: WorkerMessage): message is WorkerProgress {
+	return "fetched" in message;
+}
+
+export type OnArchiveFetched = (fetched: ArchiveFetched) => void;
+
 export function failedReply(id: number, thrown: unknown): FailedResponse {
 	const { message, ...details } = failureOf(thrown);
 	return { id, ok: false, error: message, ...details };

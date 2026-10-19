@@ -6,6 +6,7 @@ import {
 	type DiffFileEntry,
 	type DiffRequest,
 	type FileDiff,
+	type OnArchiveFetched,
 } from "#/lib/worker/protocol.ts";
 import {
 	type CachedEntry,
@@ -80,11 +81,14 @@ export function createCachedDiffClient(
 	}
 
 	return {
-		async buildTree(comparison: Comparison): Promise<DiffFileEntry> {
+		async buildTree(
+			comparison: Comparison,
+			onProgress?: OnArchiveFetched,
+		): Promise<DiffFileEntry> {
 			const entry = await findEntry(comparison).catch(() => null);
 			if (!entry) {
 				held = null;
-				return local.buildTree(comparison);
+				return local.buildTree(comparison, onProgress);
 			}
 
 			held = { key: comparisonKey(comparison), entry, builtHere: null };

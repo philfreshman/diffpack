@@ -11,18 +11,16 @@ import { useSetting } from "#/components/storage/useSetting.ts";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
-import {
-	type FailureCode,
-	failureOf,
-	isProxyLimit,
-} from "#/lib/failure/failure.ts";
+import { failureOf } from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
+import { type BuildProgress, FETCHING } from "#/lib/session/buildProgress.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
 import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
-import { ProxyLimitNotice } from "../ProxyLimitNotice/ProxyLimitNotice.tsx";
+import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
+import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
 import { useVersions } from "../useVersions.ts";
@@ -58,11 +56,9 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	// Unlike `session.key`, this holds still when whitespace is toggled.
 	const comparisonPath = buildPath(adapter, { ...slug, file: "" });
 
-	const failure = workspaceFailure(session, versions.error);
-	// With no diff to show, the failure takes the pane; beside one it sits above it.
-	const failed =
-		failure !== null &&
-		(session.status === "error" || session.status === "idle");
+	const versionsFailure = versions.error && failureOf(versions.error);
+	const progress = shownProgress(session, slug);
+	const pane = paneOf(session.status, progress, versionsFailure !== null);
 
 	function openFile(file: string) {
 		navigate({ to: buildPath(adapter, { ...slug, file }) });
@@ -98,7 +94,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 						<TreeStatus
 							changedCount={changed.length}
 							fileCount={files.length}
-							packageName={slug.package}
 							status={session.status}
 						/>
 						<ThemeToggle />
@@ -108,14 +103,24 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />
 				<main className={styles.body}>
-					{failure && (
+					{versionsFailure && pane !== "progress" && (
 						<FailureNotice
-							{...failure}
-							className={failed ? styles.centered : undefined}
+							{...versionsFailure}
+							testId="versions-error"
+							centered={pane === "versions-failure"}
 						/>
 					)}
 
-					{!failed && (
+					{progress && (
+						<DiffProgress
+							packageName={slug.package}
+							from={slug.from}
+							to={slug.to}
+							progress={progress}
+						/>
+					)}
+
+					{pane === "file" && (
 						<section className={styles.file} data-testid="diff-file">
 							<DiffToolbar
 								path={session.file?.path ?? ""}
@@ -146,69 +151,43 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	);
 }
 
-interface ShownFailure {
-	message: string | null;
-	code: FailureCode | null | undefined;
-	resetsAt: string | null | undefined;
-	testId: string;
+type Pane = "progress" | "versions-failure" | "file";
+
+function namesComparison(slug: DiffSlug): boolean {
+	return Boolean(slug.package && slug.from && slug.to);
 }
 
-// A failed build says more than the version list it was started from.
-function workspaceFailure(
+function shownProgress(
 	session: DiffSessionState,
-	versionsError: Error | null,
-): ShownFailure | null {
-	if (session.status === "error")
-		return {
-			message: session.error,
-			code: session.errorCode,
-			resetsAt: session.resetsAt,
-			testId: "diff-error",
-		};
-	if (!versionsError) return null;
-
-	const { message, code, resetsAt } = failureOf(versionsError);
-	return { message, code, resetsAt, testId: "versions-error" };
+	slug: DiffSlug,
+): BuildProgress | null {
+	if (session.status === "loading" || session.status === "error")
+		return session.progress;
+	if (session.status === "idle" && namesComparison(slug)) return FETCHING;
+	return null;
 }
 
-/** `className` places the notice; the box itself always looks the same. */
-function FailureNotice({
-	message,
-	code,
-	resetsAt,
-	testId,
-	className,
-}: ShownFailure & { className?: string }) {
-	return (
-		<div className={className}>
-			{isProxyLimit(code) ? (
-				<ProxyLimitNotice code={code} resetsAt={resetsAt} />
-			) : (
-				<p className={styles.error} role="alert" data-testid={testId}>
-					{message}
-				</p>
-			)}
-		</div>
-	);
+// A comparison in progress, or one that failed, says more than its version list.
+function paneOf(
+	status: DiffSessionState["status"],
+	progress: BuildProgress | null,
+	versionsFailed: boolean,
+): Pane {
+	if (progress) return "progress";
+	if (status === "idle" && versionsFailed) return "versions-failure";
+	return "file";
 }
 
 interface TreeStatusProps {
 	status: DiffSessionState["status"];
-	packageName: string;
 	fileCount: number;
 	changedCount: number;
 }
 
 // Rendered even when empty: tests read the state off `data-state`.
-function TreeStatus({
-	status,
-	packageName,
-	fileCount,
-	changedCount,
-}: TreeStatusProps) {
+function TreeStatus({ status, fileCount, changedCount }: TreeStatusProps) {
 	return (
 		<p className={styles.status} data-testid="diff-status" data-state={status}>
-			{status === "loading" && <Spinner label={`Comparing ${packageName}…`} />}
 			{status === "ready" &&
 				`${fileCount} ${fileCount === 1 ? "file" : "files"}, ${changedCount} changed`}
 		</p>
@@ -249,7 +228,7 @@ function FilePane({
 					code={file.errorCode}
 					resetsAt={file.resetsAt}
 					testId="file-error"
-					className={styles.centered}
+					centered
 				/>
 			)}
 			{shown && (
