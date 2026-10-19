@@ -9,7 +9,7 @@ const REGISTRY_URL = "https://repo.packagist.org/packages/list.json";
 
 const QUOTA_BODY = {
 	error: "quota_exhausted",
-	message: "diffpack's Composer proxy has used today's free allowance.",
+	message: "diffpack's package proxy has used today's free allowance.",
 	resetsAt: "2026-10-20T00:00:00Z",
 };
 

@@ -89,7 +89,7 @@ describe("composer versions when the proxy cannot answer", () => {
 			const response = json(
 				{
 					error: "quota_exhausted",
-					message: "diffpack's Composer proxy has used today's free allowance.",
+					message: "diffpack's package proxy has used today's free allowance.",
 					resetsAt: "2026-10-20T00:00:00Z",
 				},
 				503,
