@@ -1,18 +1,3 @@
-/*
- * Global stylesheet: design tokens, the reset, and document-level styling.
- * Everything else is colocated in `*.module.css` next to its component.
- *
- * Themes switch on `data-theme`, set on <html> by the pre-paint script in
- * `__root.tsx`, so the tokens are redefined per theme rather than duplicated at
- * every use site. A component reads `var(--color-foreground)`; it never branches
- * on the theme itself.
- *
- * The diff viewer switches on a second attribute, `data-syntax`, for the
- * surfaces it paints: the highlight.js theme it shows brings its own ground
- * and its own token colours, and inside the viewer those win over the page's.
- * See "The diff itself", after the dark theme.
- */
-
 @font-face {
 	font-family: "Miriam Libre";
 	src:
@@ -36,12 +21,8 @@
 :root {
 	color-scheme: light;
 
-	/* --- Gray ramps -----------------------------------------------------
-	   Vercel's Geist grays, read off the dashboard's computed `--ds-*` tokens
-	   and resolved to sRGB. Geist does not invert one ramp for dark: each theme
-	   has its own steps, so both are kept and the semantic tokens pick a step.
-	   100–400 are grounds and borders, 500–800 are strokes, 900 is secondary
-	   text and 1000 is primary text. */
+	/* Geist grays. Each theme has its own ramp rather than an inverted one.
+	   100–400 grounds and borders, 500–800 strokes, 900 and 1000 text. */
 	--gray-light-bg-100: #ffffff;
 	--gray-light-bg-200: #fafafa;
 	--gray-light-100: #f2f2f2;
@@ -68,13 +49,8 @@
 	--gray-dark-900: #a1a1a1;
 	--gray-dark-1000: #ededed;
 
-	/* --- Semantic colour ------------------------------------------------
-	   The only colours components should name. Redefined under
-	   :root[data-theme="dark"] below. */
-	/* Two grounds, the way Vercel's dashboard is built: the canvas is the page
-	   and the chrome standing on it (sidebar, top bar); the background is the
-	   brighter one under what sits in front of that — fields, the toolbar, the
-	   diff. In dark the canvas is the darker of the two, pure black. */
+	/* Canvas is the page and its chrome (sidebar, top bar); background is under
+	   fields, the toolbar and the diff. In dark the canvas is the darker one. */
 	--color-canvas: var(--gray-light-bg-200);
 	--color-background: var(--gray-light-bg-100);
 	--color-foreground: var(--gray-light-1000);
@@ -82,40 +58,23 @@
 	--color-border: var(--gray-light-200);
 	--color-surface: var(--gray-light-bg-200);
 	--color-surface-hover: rgb(0 0 0 / 0.05);
-	/* A text field's ground. Light keeps it white; dark lifts it one step off the
-	   background, the way Vercel's fields sit on its page. */
 	--color-input: #ffffff;
-	/* A translucent pane over the background — the landing tiles sit on the star
-	   field and need to dim it without hiding it. */
 	--color-surface-veil: rgb(255 255 255 / 0.65);
 	--color-focus-ring: var(--gray-light-1000);
-	/* The one action a screen asks for — today only the Compare button. Geist's
-	   primary button: the text colour as a ground, the page colour on it. */
 	--color-accent: var(--gray-light-1000);
 	--color-accent-hover: #383838;
 	--color-accent-foreground: var(--gray-light-bg-100);
-	/* Something the user asked for did not happen — a comparison the engine
-	   could not build, a file it could not read. */
 	--color-danger: #b91c1c;
-	/* What happened to a file, in the tree and (from task 12) in the diff. */
 	--color-added: #16a34a;
 	--color-removed: #dc2626;
 	--color-renamed: #d97706;
 	--color-renamed-surface: #fef3c7;
-	/* The row the URL names, in the tree. */
 	--color-selected-surface: rgb(0 0 0 / 0.08);
 
-	/* The diff's own surfaces are further down, with the second half of their
-	   set: they follow the syntax theme rather than this one. */
-
-	/* The night sky behind the landing page. Light theme has none — a component
-	   reads this token rather than branching on the theme itself. */
+	/* Ported to GLSL in `src/lib/starfield/cosmos.ts`; keep the two identical. */
 	--cosmic-backdrop: none;
 
-	/* --- Registry accents ----------------------------------------------
-	   Kept as raw channels too, because the tile glow composes them into
-	   rgb(… / alpha) at several opacities. A registry with no accent of its
-	   own falls back to the neutral one. */
+	/* Raw channels too, so the tile glow can compose rgb(… / alpha). */
 	--registry-default-rgb: 143 143 143;
 	--registry-npm-rgb: 203 56 55;
 	--registry-crates-rgb: 222 132 44;
@@ -126,7 +85,6 @@
 	--registry-go: rgb(var(--registry-go-rgb));
 	--registry-pypi: rgb(var(--registry-pypi-rgb));
 
-	/* --- Type ----------------------------------------------------------- */
 	--font-display: "Miriam Libre", sans-serif;
 	--font-sans:
 		ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -141,7 +99,6 @@
 	--text-2xl: 2.25rem;
 	--text-3xl: 3rem;
 
-	/* --- Space ---------------------------------------------------------- */
 	--space-1: 0.25rem;
 	--space-2: 0.5rem;
 	--space-3: 0.75rem;
@@ -151,38 +108,28 @@
 	--space-12: 3rem;
 	--space-16: 4rem;
 
-	/* --- Radii ---------------------------------------------------------- */
 	--radius-sm: 0.125rem;
 	--radius-md: 0.2rem;
 	--radius-lg: 0.5rem;
 	--radius-xl: 1rem;
 	--radius-full: 9999px;
 
-	/* --- Motion --------------------------------------------------------- */
 	--duration-fast: 150ms;
 	--duration-slow: 400ms;
 
-	/* --- Layers --------------------------------------------------------- */
 	--z-backdrop: -2;
 	--z-background: -1;
 	--z-toolbar: 10;
 	--z-overlay: 100;
 
-	/* --- Layout --------------------------------------------------------- */
 	--header-height-sm: 5rem;
 	--header-height-md: 8rem;
 	--header-height-lg: calc(var(--header-height-md) + 2.25rem);
-	/* The workspace's top bar, and the sidebar's head level with it. Fixed
-	   rather than grown from its labels, because the sidebar sits in another
-	   box and can only line up with a height it can read. */
+	/* Fixed, so the sidebar's head, in another box, can line up with the top bar. */
 	--workspace-header-height: 4.5rem;
-	/* One height for every single-line control — inputs, the registry switcher,
-	   the diff toolbar — so controls side by side share a centre line. */
 	--control-height: 2.25rem;
 
-	/* --- Breakpoints ----------------------------------------------------
-	   `@media` cannot read custom properties, so these are the single written
-	   record of the three widths; media queries repeat the literals. */
+	/* `@media` cannot read custom properties: media queries repeat these literals. */
 	--breakpoint-sm: 53rem;
 	--breakpoint-md: 63rem;
 	--breakpoint-lg: 75rem;
@@ -225,25 +172,9 @@
 		radial-gradient(ellipse at 50% 50%, rgb(5 5 5) 0%, rgb(0 0 0) 100%);
 }
 
-/*
- * --- The diff itself ---------------------------------------------------
- *
- * GitHub's diff palette, carried over unchanged: a wash across the row and a
- * stronger one in its gutter, so a line reads as added or removed at a glance
- * and its number does too. `--color-added` is a foreground; these are
- * surfaces, and the two are not interchangeable.
- *
- * Which set a viewer uses is the *syntax* theme's decision, not the page
- * theme's. A highlight.js stylesheet is a whole palette: it paints `.hljs` —
- * the scroller — and picks token colours to be read on that ground. Keying
- * these to `data-theme` meant a light theme under a dark page gave a file of
- * alternating light and dark lines, with the syntax colours legible on only
- * half of them (#139).
- *
- * `data-syntax` is written on the viewer itself, so it wins over anything
- * <html> set however specific that was. The `:root` halves are what stands
- * before the stored choice has been read, and for everything outside a viewer.
- */
+/* Diff surfaces follow the syntax theme (`data-syntax` on the viewer), not the
+   page theme, or token colours clash with the highlight theme's ground (#139).
+   The `:root` halves apply outside a viewer and before the choice is read. */
 :root,
 [data-syntax="light"] {
 	--color-added-surface: #e6ffec;
@@ -252,8 +183,6 @@
 	--color-removed-surface: #ffeef0;
 	--color-removed-gutter: #ffdce0;
 	--color-removed-gutter-border: #fdaeb7;
-	/* A fold: the lines nothing happened to, stood down out of the way. Grey
-	   rather than GitHub's blue, so the only hues in a diff are the changes. */
 	--color-fold-surface: var(--gray-light-bg-200);
 	--color-fold-gutter: var(--gray-light-100);
 	--color-fold-gutter-border: var(--gray-light-200);
@@ -272,16 +201,8 @@
 	--color-fold-gutter-border: var(--gray-dark-400);
 }
 
-/*
- * And the frame around the code comes with it: the gutters and their rules,
- * the empty half of a split row, the viewer's border, and the minimap down its
- * edge. Gutter numbers in the page theme's grey over a syntax theme of the
- * other ground are the same mismatch one step in from the lines.
- *
- * The three status foregrounds are here because the minimap's markers are
- * drawn in them. Outside a viewer — in the tree — they keep following the page
- * theme, which is the only theme there is out there.
- */
+/* The viewer's frame follows the syntax theme too. The status colours are here
+   for the minimap; outside a viewer they follow the page theme. */
 [data-syntax="light"] {
 	--color-background: var(--gray-light-bg-100);
 	--color-muted: var(--gray-light-900);
@@ -302,7 +223,6 @@
 	--color-renamed: #fbbf24;
 }
 
-/* Minimal reset — there is no Tailwind preflight to inherit from. */
 *,
 *::before,
 *::after {
@@ -315,38 +235,24 @@ html {
 
 body {
 	margin: 0;
-	/* Deliberately transparent: `html`'s background paints the canvas, below the
-	   fixed star field and nebula. An opaque body would cover both — they sit at
-	   a negative z-index, which is *under* body's own background. */
+	/* Transparent: the star field and nebula sit at a negative z-index, under
+	   body's own background. `html` paints the canvas instead. */
 	background-color: transparent;
 	color: var(--color-foreground);
 	font-family: var(--font-sans);
 	-webkit-font-smoothing: antialiased;
 }
 
-/*
- * Reduced motion is honoured per component rather than by a blanket override,
- * because the largest animation on the page is a canvas loop that no CSS rule
- * can reach (see StarField).
- */
+/* Reduced motion is handled per component; no CSS rule reaches the StarField loop. */
 @media (prefers-reduced-motion: reduce) {
 	html {
 		scroll-behavior: auto;
 	}
 }
 
-/*
- * Page transitions. The router runs a view transition, typed `page`, only
- * between the landing page and a workspace (see router.tsx). A browser that
- * cannot match view transition types gets an untyped transition on every
- * navigation instead, file clicks included — so the document is not captured
- * at all unless the `page` type is active, and those browsers simply swap
- * instantly.
- *
- * The animations are written as longhands: fallow does not follow the
- * `animation` shorthand into view-transition pseudo-elements, and reports the
- * keyframes as unreferenced.
- */
+/* Captured only for the `page` type: browsers that cannot match types would
+   otherwise animate every navigation, file clicks included. Longhands, because
+   fallow does not follow the `animation` shorthand here and flags the keyframes. */
 html {
 	view-transition-name: none;
 }

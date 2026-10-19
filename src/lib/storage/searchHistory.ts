@@ -1,11 +1,6 @@
 import type { SearchResult } from "#/lib/registries/types.ts";
 
-/**
- * Per-registry recent picks, shown when the search field is focused and empty.
- * The cap is a contract with existing users: the old app kept ten entries, and
- * their history should survive the rebuild. Where each registry's list is
- * stored is declared with every other setting, in `settings.ts`.
- */
+/** A contract with returning visitors: the old app kept ten entries. */
 export const HISTORY_LIMIT = 10;
 
 function isResult(value: unknown): value is SearchResult {
@@ -16,10 +11,6 @@ function isResult(value: unknown): value is SearchResult {
 	);
 }
 
-/**
- * What is in storage is whatever a previous version of the app — or the user
- * with devtools open — put there, so nothing about its shape is assumed.
- */
 export function parseHistory(raw: string | null): SearchResult[] {
 	if (!raw) return [];
 
@@ -32,7 +23,6 @@ export function parseHistory(raw: string | null): SearchResult[] {
 	}
 }
 
-/** Most recent first, one entry per package, capped. */
 export function addToHistory(
 	history: readonly SearchResult[],
 	result: SearchResult,

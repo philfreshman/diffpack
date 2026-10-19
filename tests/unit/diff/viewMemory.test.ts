@@ -9,7 +9,6 @@ import {
 	withScrollTop,
 } from "#/lib/diff/viewMemory.ts";
 
-/** A change at the top, then a long run of untouched lines to fold. */
 const LINES: DiffLine[] = Array.from({ length: 60 }, (_, i) =>
 	i === 0
 		? { type: "removed", content: "gone", oldNumber: 1, newNumber: null }
@@ -31,8 +30,6 @@ describe("viewMemory", () => {
 
 describe("opening a fold", () => {
 	test("reveals exactly the range the expander offered", () => {
-		// The expander states the lines it would show; opening it shows those and
-		// nothing else, so the count on the button is the count on the screen.
 		const memory = withRevealed(emptyMemory(), "index.js", {
 			direction: "down",
 			start: 4,
@@ -86,8 +83,6 @@ describe("expanding and folding a whole file", () => {
 	});
 
 	test("folding takes back what was opened by hand too", () => {
-		// Fold-all means the file as it first arrived, not the file minus one
-		// toggle — otherwise a fold the user opened would survive folding it.
 		const opened = withRevealed(emptyMemory(), "index.js", {
 			direction: "all",
 			start: 4,

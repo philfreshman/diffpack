@@ -17,7 +17,6 @@
 	font-size: var(--text-sm);
 }
 
-/* Room for the icon, the way the sidebar's Find leaves it. */
 .field[data-leading="true"] .input {
 	padding-left: var(--space-8);
 }

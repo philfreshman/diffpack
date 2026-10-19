@@ -51,6 +51,18 @@ Both archives travel straight from the registry to your machine, where a Rust/We
 unpacks and diffs them inside a Web Worker. diffpack's server renders the page shell and nothing
 else — package contents never reach it.
 
+Before downloading anything, the page asks
+[diffpack-server](https://github.com/philfreshman/diffpack-server) whether it has already worked
+out this comparison for an AI agent. That request carries one thing: a `diff_id`, a SHA-256 of the
+registry, the package, both versions, the engine version and the diff settings. It goes without
+cookies and without a referrer, so it does not name the package. Like any request, it shows the
+server your IP address and browser, and the server logs the `diff_id` it was asked for. A hash
+names a comparison without spelling it out; it does not stop someone who guesses the comparison
+from checking the guess. On a hit, the file tree and the changed files arrive from the server
+without either archive being downloaded; an unchanged file, or one the server left out for size,
+is still worked out in your browser when you open it. On a miss or any failure, the browser does
+all the work as above.
+
 <br>
 
 ### Registries
@@ -129,7 +141,7 @@ path below assumes:
 | :-- | :-- |
 | **diffpack** | The web app — TanStack Start, the UI, the registry adapters, the worker that drives the engine. Deployed to [diffpack.io](https://diffpack.io). |
 | **diffpack-engine** | The Rust crate compiled to WebAssembly: fetching archives, extraction, the diff and the file tree. Published to npm as `@philfreshman/diffpack-engine` and consumed by the app as a pinned dependency; the app never builds it. |
-| **diffpack-server** | Initialised and still empty — one commit, a one-line README, nothing depending on it yet. |
+| **diffpack-server** | An MCP server at `mcp.diffpack.io` that diffs packages for AI agents with the same engine, natively, and caches the results. The app reads that cache by `diff_id` and computes the key itself, held to the server's `fixtures/cache-key-vectors.json`. |
 
 Nothing links the three at build time except that npm package, so a change that crosses a boundary
 crosses a release: see [the engine section](#the-engine-is-a-separate-repo) for how an engine change
@@ -146,6 +158,8 @@ reaches the app.
 | `bun run preview` | serve the production build |
 | `bun run test` | unit tests (`bun test tests/unit`) |
 | `bun run test:e2e` | Playwright — hits the real registries, so slow and online |
+| `bun run test:networked` | the cache key checked against the live diffpack-server's own `diff_id`s |
+| `bun run check:vectors` | `fixtures/cache-key-vectors.json` is byte-identical to the server's at a pinned commit (`:development` compares with the server's tip) |
 | `bun run screenshots` | recapture the reference set (`scripts/capture-screenshots.mjs`) |
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun run lint` · `format` | Biome |

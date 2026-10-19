@@ -79,6 +79,11 @@ jobs:
       # When it fails: `bun run badge`, and commit the result.
       - run: bun run check:badge
 
+      - run: bun run check:vectors
+
+      - run: bun run check:vectors:development
+        continue-on-error: true
+
   e2e:
     name: end-to-end
     needs: changes
@@ -114,6 +119,8 @@ jobs:
       # `test:e2e` builds and serves the app itself — see the `webServer` block
       # in playwright.config.ts. It is a production build, not `vite dev`.
       - run: bun run test:e2e
+
+      - run: bun run test:networked
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}

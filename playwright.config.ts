@@ -1,48 +1,32 @@
 import { defineConfig } from "@playwright/test";
 
-/**
- * The repo is worked on in several git worktrees at once, each able to run its
- * own server, so the port is not a constant.
- */
+// Configurable so several worktrees can each run their own server.
 const port = Number(process.env.PORT ?? 4321);
 const baseURL = process.env.BASE_URL ?? `http://localhost:${port}`;
 
+const ALWAYS_MISSING_CACHE = "http://127.0.0.1:9";
+
 export default defineConfig({
 	testDir: "./tests/e2e",
-	// The WASM engine downloads real archives from the registries, so these are
-	// slow and network-dependent by nature.
+	// Real registry downloads: slow and network-dependent.
 	timeout: 120_000,
-	// Slow work happens inside `page.evaluate`, which the test timeout covers;
-	// assertions themselves are about the UI and should fail fast.
 	expect: { timeout: 10_000 },
 	fullyParallel: false,
 	workers: 1,
-	// `github` annotates the diff; `html` is what the CI job uploads on failure.
 	reporter: process.env.CI
 		? [["github"], ["html", { open: "never" }]]
 		: [["list"]],
 	use: { baseURL, trace: "retain-on-failure" },
-	// Set BASE_URL to test an already-running server (e.g. a production preview),
-	// which is also how to iterate without paying for a rebuild each run.
 	webServer: process.env.BASE_URL
 		? undefined
 		: {
-				// A production build, never `vite dev`: three defects reached
-				// `development` past a green dev-only run (7bd9d90). The build is part
-				// of the command rather than a prerequisite you might forget, so a
-				// stale `.output/` cannot be tested by accident.
-				//
-				// `--strictPort` is not a detail. Without it `vite preview` shrugs at
-				// a busy port and moves to the next one, while Playwright goes on
-				// polling this one — so the suite silently runs against whatever else
-				// answers there, which in this repo is another worktree's server. It
-				// has to die instead.
+				// Always a fresh production build: dev-only runs have let defects through.
+				// `--strictPort`, or preview moves to another port while Playwright keeps
+				// polling this one and tests another worktree's server.
 				command: `bun run build && bunx vite preview --port ${port} --strictPort`,
+				env: { VITE_DIFFPACK_CACHE_ORIGIN: ALWAYS_MISSING_CACHE },
 				url: baseURL,
 				reuseExistingServer: false,
-				// The engine arrives prebuilt from npm, so this is a Vite build and
-				// nothing more — but the ceiling stays generous: a cold CI runner is
-				// installing dependencies behind it.
 				timeout: 600_000,
 			},
 });

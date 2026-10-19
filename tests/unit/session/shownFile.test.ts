@@ -24,8 +24,6 @@ describe("shownFile", () => {
 	});
 
 	test("keeps the file being read while the next one is fetched", () => {
-		// The reader is still looking at `package.json`; it is what stays on
-		// screen, blurred, rather than the pane emptying out.
 		expect(shownFile(MANIFEST, opening("lib/view.js"))).toEqual(MANIFEST);
 	});
 

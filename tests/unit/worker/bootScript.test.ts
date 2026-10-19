@@ -1,22 +1,45 @@
 import { describe, expect, test } from "bun:test";
-import { buildDiffBootScript, type DiffBoot } from "#/lib/worker/bootScript.ts";
+import {
+	buildDiffBootScript,
+	type DiffBoot,
+	type EntryBoot,
+} from "#/lib/worker/bootScript.ts";
 import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
+import vectorFile from "../../../fixtures/cache-key-vectors.json" with {
+	type: "json",
+};
+import { bodyArrivingAfter } from "../cache/slowBody.ts";
 
-/** Stands in for the hashed URL Vite interpolates at build time. */
 const WORKER_URL = "/assets/diff.worker-test.js";
+const CACHE_ORIGIN = "https://cache.example";
 
-/**
- * The script ships as a string in the document head, so the only honest way to
- * test it is to run it — against a document that is entirely stubbed. What it
- * spawns and what it posts is its whole observable behaviour.
- */
-function boot(
+type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
+
+const missing: Fetch = async () => new Response("", { status: 404 });
+
+interface BootOptions {
+	crypto?: unknown;
+	meanwhile?: (window: Record<string, unknown>) => void;
+	stored?: Record<string, string>;
+	store?: unknown;
+	fetch?: Fetch;
+	engine?: string;
+}
+
+async function boot(
 	pathname: string,
-	stored: Record<string, string> = {},
-	store: unknown = { getItem: (key: string) => stored[key] ?? null },
+	{
+		stored = {},
+		store = { getItem: (key: string) => stored[key] ?? null },
+		fetch = missing,
+		engine = "0.4.1",
+		meanwhile = () => {},
+		crypto = globalThis.crypto,
+	}: BootOptions = {},
 ) {
 	const posted: unknown[] = [];
 	const spawned: Array<{ url: string; options: unknown }> = [];
+	const fetched: Array<{ url: string; init?: RequestInit }> = [];
 
 	class FakeWorker {
 		onmessage: ((event: { data: unknown }) => void) | null = null;
@@ -31,21 +54,36 @@ function boot(
 	}
 
 	const window: Record<string, unknown> = {};
+	const recordingFetch: Fetch = (url, init) => {
+		fetched.push({ url, init });
+		return fetch(url, init);
+	};
 
 	new Function(
 		"window",
 		"location",
 		"localStorage",
 		"Worker",
-		buildDiffBootScript(WORKER_URL),
-	)(window, { pathname }, store, FakeWorker);
+		"fetch",
+		"crypto",
+		buildDiffBootScript(WORKER_URL, {
+			origin: CACHE_ORIGIN,
+			engine,
+			timeoutMs: 50,
+		}),
+	)(window, { pathname }, store, FakeWorker, recordingFetch, crypto);
 
-	return { posted, spawned, window };
+	meanwhile(window);
+	await (window.__diffpackEntryBoot as EntryBoot | undefined)?.served;
+
+	return { posted, spawned, fetched, window };
 }
 
 describe("the diff boot script", () => {
-	test("posts the build-tree request a crates deep link names", () => {
-		const { posted } = boot("/crates/linux-raw-sys/0.6.5/0.12.1/Cargo.toml");
+	test("posts the build-tree request a crates deep link names", async () => {
+		const { posted } = await boot(
+			"/crates/linux-raw-sys/0.6.5/0.12.1/Cargo.toml",
+		);
 
 		expect(posted).toEqual([
 			{
@@ -60,14 +98,14 @@ describe("the diff boot script", () => {
 		]);
 	});
 
-	test("starts nothing where the URL names no comparison", () => {
+	test("starts nothing where the URL names no comparison", async () => {
 		for (const pathname of [
 			"/",
 			"/crates",
 			"/crates/linux-raw-sys",
 			"/crates/linux-raw-sys/0.6.5",
 		]) {
-			const { spawned, posted, window } = boot(pathname);
+			const { spawned, posted, window } = await boot(pathname);
 
 			expect(spawned).toEqual([]);
 			expect(posted).toEqual([]);
@@ -75,8 +113,8 @@ describe("the diff boot script", () => {
 		}
 	});
 
-	test("reads a scoped npm name as the two segments it spans", () => {
-		const { posted } = boot("/npm/@types/node/26.0.0/26.7.0/index.d.ts");
+	test("reads a scoped npm name as the two segments it spans", async () => {
+		const { posted } = await boot("/npm/@types/node/26.0.0/26.7.0/index.d.ts");
 
 		expect(posted).toEqual([
 			{
@@ -91,8 +129,8 @@ describe("the diff boot script", () => {
 		]);
 	});
 
-	test("reads a go module name as everything up to the first version", () => {
-		const { posted } = boot("/go/github.com/go-chi/chi/v5/v5.0.0/v5.3.1");
+	test("reads a go module name as everything up to the first version", async () => {
+		const { posted } = await boot("/go/github.com/go-chi/chi/v5/v5.0.0/v5.3.1");
 
 		expect(posted).toEqual([
 			{
@@ -107,11 +145,8 @@ describe("the diff boot script", () => {
 		]);
 	});
 
-	test("leaves behind a request the client adopts as the same comparison", () => {
-		// The script spells its comparison out by hand, so this is what holds that
-		// spelling to the one the client compares by: a field named differently
-		// would not be adopted, and the page would build the tree twice.
-		const { posted, window } = boot("/npm/@types/node/26.0.0/26.7.0");
+	test("leaves behind a request the client adopts as the same comparison", async () => {
+		const { posted, window } = await boot("/npm/@types/node/26.0.0/26.7.0");
 		const booted = window.__diffpackDiffBoot as DiffBoot;
 		const client = createDiffClient(
 			() => {
@@ -133,46 +168,165 @@ describe("the diff boot script", () => {
 		]);
 	});
 
-	test("starts nothing where the first segment names no registry", () => {
-		const { spawned, window } = boot("/about/express/4.18.2/5.1.0");
+	test("starts nothing where the first segment names no registry", async () => {
+		const { spawned, window } = await boot("/about/express/4.18.2/5.1.0");
 
 		expect(spawned).toEqual([]);
 		expect(window).toEqual({});
 	});
 
-	test("builds the tree with the stored whitespace answer", () => {
-		const { posted } = boot("/crates/serde/1.0.0/1.0.1", {
-			"ignore-whitespace-preference": "true",
+	test("builds the tree with the stored whitespace answer", async () => {
+		const { posted } = await boot("/crates/serde/1.0.0/1.0.1", {
+			stored: { "ignore-whitespace-preference": "true" },
 		});
 
 		expect(posted).toMatchObject([{ ignoreWhitespace: true }]);
 	});
 
-	test("is whitespace-exact unless the stored answer says otherwise", () => {
+	test("is whitespace-exact unless the stored answer says otherwise", async () => {
 		const stores: Record<string, string>[] = [
 			{},
 			{ "ignore-whitespace-preference": "false" },
 		];
 
 		for (const stored of stores) {
-			const { posted } = boot("/crates/serde/1.0.0/1.0.1", stored);
+			const { posted } = await boot("/crates/serde/1.0.0/1.0.1", { stored });
 
 			expect(posted).toMatchObject([{ ignoreWhitespace: false }]);
 		}
 	});
 
-	test("still boots, whitespace-exact, when the store refuses to be read", () => {
-		// A private-mode store that throws is no answer, which is the setting's
-		// fallback: the same thing the session reads once mounted, so it adopts
-		// this request rather than issuing its own.
+	test("still boots, whitespace-exact, when the store refuses to be read", async () => {
+		// A private-mode store can throw on read.
 		const refusing = {
 			getItem() {
 				throw new Error("SecurityError");
 			},
 		};
 
-		const { posted } = boot("/crates/serde/1.0.0/1.0.1", {}, refusing);
+		const { posted } = await boot("/crates/serde/1.0.0/1.0.1", {
+			store: refusing,
+		});
 
 		expect(posted).toMatchObject([{ ignoreWhitespace: false }]);
+	});
+});
+
+const servedEntry = {
+	tree: { path: "", type: "directory", status: "modified" },
+};
+
+const answering: Fetch = async () => Response.json(servedEntry);
+
+function pathOf(input: (typeof vectorFile.vectors)[number]["input"]): string {
+	return `/${input.registry}/${input.package}/${input.from}/${input.to}`;
+}
+
+describe("the diff boot script, in front of the server's cache", () => {
+	test("asks the cache before it starts a worker, and starts none on a hit", async () => {
+		const { spawned, posted, window } = await boot(
+			"/npm/@types/node/20.11.0/22.0.0",
+			{ fetch: answering, engine: "0.3.0" },
+		);
+
+		expect(spawned).toEqual([]);
+		expect(posted).toEqual([]);
+		expect(await (window.__diffpackEntryBoot as EntryBoot).served).toEqual(
+			servedEntry,
+		);
+	});
+
+	test("starts the worker when the cache misses, fails or stalls", async () => {
+		const stalling: Fetch = (_url, init) =>
+			new Promise((_resolve, reject) =>
+				init?.signal?.addEventListener("abort", () =>
+					reject(init.signal?.reason),
+				),
+			);
+		const failing: Fetch = () => Promise.reject(new TypeError("offline"));
+
+		for (const fetch of [missing, failing, stalling]) {
+			const { posted } = await boot("/crates/serde/1.0.0/1.0.1", { fetch });
+
+			expect(posted).toMatchObject([{ type: "build-tree", pkg: "serde" }]);
+		}
+	});
+
+	test("lets an answer that has begun to arrive finish, and starts no worker", async () => {
+		const slowBody: Fetch = async (_url, init) =>
+			new Response(
+				bodyArrivingAfter(120, JSON.stringify(servedEntry), init?.signal),
+			);
+
+		const { spawned } = await boot("/crates/serde/1.0.0/1.0.1", {
+			fetch: slowBody,
+		});
+
+		expect(spawned).toEqual([]);
+	});
+
+	test("starts no worker for a comparison the page has moved on from", async () => {
+		let release: () => void = () => {};
+		const answerLater = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const missingLater: Fetch = async (url, init) => {
+			await answerLater;
+			return missing(url, init);
+		};
+
+		const { spawned } = await boot("/crates/serde/1.0.0/1.0.1", {
+			fetch: missingLater,
+			meanwhile: (window) => {
+				(window.__diffpackEntryBoot as EntryBoot).abandoned = true;
+				release();
+			},
+		});
+
+		expect(spawned).toEqual([]);
+	});
+
+	test("starts the worker where the page cannot hash, outside a secure context", async () => {
+		const { posted, fetched } = await boot("/crates/serde/1.0.0/1.0.1", {
+			crypto: {},
+		});
+
+		expect(fetched).toEqual([]);
+		expect(posted).toMatchObject([{ type: "build-tree", pkg: "serde" }]);
+	});
+
+	test("sends only the diff_id, with no cookies and no referrer", async () => {
+		const { fetched } = await boot("/npm/@types/node/20.11.0/22.0.0", {
+			engine: "0.3.0",
+		});
+
+		expect(fetched.map((each) => each.url)).toEqual([
+			`${CACHE_ORIGIN}/diffs/v1/4cd94d033fa83b9f14526c29c6f47f1e3b9e263e836d73ee5973a543b5a0777c`,
+		]);
+		expect(fetched[0]?.init).toMatchObject({
+			credentials: "omit",
+			referrerPolicy: "no-referrer",
+		});
+	});
+
+	test("keys a deep link the way the server does, for every vector a URL can name", async () => {
+		const expressible = vectorFile.vectors.filter(
+			(vector) =>
+				vector.input.schema === 1 && vector.input.similarity_threshold === 0.75,
+		);
+		expect(expressible.length).toBeGreaterThan(10);
+
+		for (const { input, diff_id } of expressible) {
+			const { fetched } = await boot(pathOf(input), {
+				engine: input.engine,
+				stored: {
+					"ignore-whitespace-preference": String(input.ignore_whitespace),
+				},
+			});
+
+			expect(fetched.map((each) => each.url)).toEqual([
+				`${CACHE_ORIGIN}/diffs/v1/${diff_id}`,
+			]);
+		}
 	});
 });

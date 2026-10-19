@@ -44,8 +44,7 @@ test("the display font is loaded and used for the wordmark", async ({
 	const heading = page.getByRole("heading", { name: "diffpack" });
 	await expect(heading).toHaveCSS("font-family", /Miriam Libre/);
 
-	// The wordmark is the bold face; a font-family that resolves but never loads
-	// would silently render the fallback.
+	// A font-family that resolves but never loads would silently render the fallback.
 	const loaded = await page.evaluate(async () => {
 		await document.fonts.ready;
 		return document.fonts.check('700 1rem "Miriam Libre"');

@@ -1,15 +1,18 @@
-/** Records what an adapter asked for, and answers with canned responses. */
 export function stubFetch(
 	handler: (url: string) => Response | Promise<Response>,
 ) {
-	const calls: { url: string; signal?: AbortSignal | null }[] = [];
+	const calls: {
+		url: string;
+		signal?: AbortSignal | null;
+		init?: RequestInit;
+	}[] = [];
 
 	const fetcher = async (
 		input: string | URL | Request,
 		init?: RequestInit,
 	): Promise<Response> => {
 		const url = String(input);
-		calls.push({ url, signal: init?.signal });
+		calls.push({ url, signal: init?.signal, init });
 		return handler(url);
 	};
 

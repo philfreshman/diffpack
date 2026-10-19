@@ -9,14 +9,6 @@ import {
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
 
-/**
- * Task 15's parity gate. The other specs each prove one feature; this one walks
- * the §7 acceptance checklist end to end — every registry through the real
- * engine, the storage contract with returning visitors, and the head the old
- * site served.
- */
-
-/** Downloading and extracting two archives is not a 10 s assertion. */
 const ENGINE = { timeout: 90_000 };
 
 const status = (page: Page) => page.getByTestId("diff-status");
@@ -28,12 +20,7 @@ async function ready(page: Page, path: string) {
 	await expect(status(page)).toHaveAttribute("data-state", "ready", ENGINE);
 }
 
-/**
- * The §8 smoke matrix, minus the npm entries the other specs already drive.
- * Each is a real comparison against the real registry, which is the only way
- * the WASM runs — so this is where a registry-specific extraction bug (Go's
- * versioned root, PyPI's sdist, crates' tarball) surfaces.
- */
+// Each registry's archive extracts differently (Go's versioned root, PyPI's sdist, crates' tarball).
 const MATRIX = [
 	{
 		name: "crates.io",
@@ -72,9 +59,7 @@ for (const { name, path, file } of MATRIX) {
 test("counts the whole comparison, and how much of it changed", async ({
 	page,
 }) => {
-	// node 26.6.0 → 26.7.0 is three files, two of them changed — and the tree
-	// below this line shows only the two, so a bare "3 files" reads as a
-	// miscount.
+	// Three files, two changed: the tree shows only the two, so "3 files" alone reads as a miscount.
 	await ready(page, "/npm/node/26.6.0/26.7.0");
 
 	await expect(status(page)).toHaveText("3 files, 2 changed");
@@ -84,8 +69,6 @@ test("counts the whole comparison, and how much of it changed", async ({
 test("no file in a Go module reads as its versioned root", async ({ page }) => {
 	await ready(page, "/go/github.com/go-chi/chi/v5/v5.3.1/v5.3.2");
 
-	// `chi@v5.3.2/` prefixing every path would make each file a removal plus an
-	// addition — the whole comparison would be "everything changed".
 	const paths = await files(page).evaluateAll((rows) =>
 		rows.map((row) => row.getAttribute("data-path") ?? ""),
 	);
@@ -96,11 +79,6 @@ test("no file in a Go module reads as its versioned root", async ({ page }) => {
 	expect(paths).toContain("middleware/compress.go");
 });
 
-/**
- * The six keys, seeded through the app's own constants and asserted against the
- * old site's literals below. Every other spec addresses storage through these
- * same constants, so this object is the only place the literal names appear.
- */
 const STORED = {
 	[THEME_SELECTION.key]: "light",
 	[SPLIT_VIEW.key]: "true",
@@ -110,17 +88,11 @@ const STORED = {
 	[searchHistory("npm").key]: JSON.stringify([{ name: "express" }]),
 };
 
-/**
- * The six keys are a contract with people who already used the site: a rename
- * or a reshaped value silently drops their theme, their panel width and their
- * history on the floor. Names *and* value formats, therefore, not just names.
- */
+// The old site's key names and value formats: changing either drops returning visitors' settings.
 test("writes the same six localStorage keys as the old site", async ({
 	page,
 }) => {
-	// The names are pinned here rather than in each spec that seeds one: this is
-	// the contract, so a renamed constant has to fail *this* test rather than
-	// quietly carrying every other spec along with it.
+	// Literal names, so a renamed constant fails here instead of carrying every other spec along.
 	expect(Object.keys(STORED).sort()).toEqual([
 		"highlight_theme",
 		"search_history_npm",
@@ -137,15 +109,11 @@ test("writes the same six localStorage keys as the old site", async ({
 
 	const stored = await page.evaluate(() => ({ ...localStorage }));
 
-	// Nothing added, nothing dropped, and each one still read as what it was
-	// written as rather than overwritten with a differently-shaped value on
-	// first render.
 	expect(Object.keys(stored).sort()).toEqual(Object.keys(STORED).sort());
 	for (const [key, value] of Object.entries(STORED)) {
 		expect(stored[key]).toBe(value);
 	}
 
-	// And the page honoured them rather than merely leaving them alone.
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 	await expect(page.getByTestId("tree-panel")).toHaveCSS("width", "320px");
 });
@@ -194,15 +162,13 @@ test("serves every icon and card image it points at", async ({
 });
 
 test("counts a visit, and each comparison after it", async ({ page }) => {
-	// The measurement calls are what is asserted; the library itself is not
-	// loaded, so no traffic from a test run reaches the property.
+	// Stubbed so no traffic from a test run reaches the analytics property.
 	await page.route("https://www.googletagmanager.com/**", (route) =>
 		route.fulfill({ status: 204, body: "" }),
 	);
 	await page.goto("/npm");
 	await expect(page.getByTestId("workspace")).toBeVisible();
-	// Visible is not hydrated. Until React attaches, the registry switcher
-	// opens nothing, and a link reached before then is a full page load. `data-ready` is the handshake the comboboxes already publish.
+	// Visible is not hydrated: before `data-ready`, a link click is a full page load.
 	await expect(page.locator("[data-ready]").first()).toBeAttached();
 
 	const dataLayer = () =>
@@ -215,23 +181,14 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 		["config", "G-JH9PM7WWGG"],
 	]);
 
-	// A client-side navigation is a page in its own right here, the way every
-	// URL was its own document on the Astro site.
-	//
-	// The hover is not decoration: the router's `defaultPreload: "intent"` is
-	// what fetches the route's chunk, and a click that arrives before it lands
-	// hard-navigates instead. Waiting for the fetch to settle beats guessing at
-	// a delay — a cold CI runner is nothing like a warm laptop.
-	// Home is in the sidebar's registry switcher now that the workspace has no
-	// wordmark.
+	// Each client-side navigation counts as a page view, as each URL did on the old Astro site.
+	// The hover preloads the route chunk (`defaultPreload: "intent"`); a click before it lands hard-navigates.
 	await page.getByRole("button", { name: /Switch registry/ }).click();
 	const home = page.getByRole("menuitem", { name: "All registries" });
 	await home.hover();
 	await page.waitForLoadState("networkidle");
 
-	// A hard navigation starts a new document with a fresh `dataLayer`, so
-	// `[js, config]` alone reads exactly like "the view was never counted".
-	// Stamping the document tells the two apart, and says which one happened.
+	// A hard navigation resets `dataLayer`, which looks like an uncounted view; the stamp tells them apart.
 	await page.evaluate(() => {
 		(window as Window & { __document?: true }).__document = true;
 	});
@@ -246,8 +203,7 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 		"the click should have been a client-side navigation, not a page load",
 	).toBe(true);
 
-	// The head is reconciled about a second after the click in a production
-	// build, and the view is reported once it is.
+	// The view is reported once the head reconciles, about a second after the click.
 	await expect
 		.poll(async () => (await dataLayer()).length, { timeout: 15_000 })
 		.toBeGreaterThan(2);
@@ -258,16 +214,11 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 	];
 	expect([type, name]).toEqual(["event", "page_view"]);
 	expect(params.page_path).toBe("/");
-	// The title of the page arrived at, not of the one just left.
+	// The title of the page arrived at, not the one just left.
 	expect(params.page_title).toBe("diffpack");
 });
 
-/**
- * A hydration mismatch is a console error rather than a failed assertion, so
- * nothing else in the suite would notice one. Pre-paint scripts write
- * `data-theme` and the panel width before React runs, which is precisely the
- * shape of thing that produces them.
- */
+// A hydration mismatch only shows as a console error; the pre-paint `<head>` scripts are the usual cause.
 const ROUTES = [
 	"/",
 	"/npm",
@@ -286,15 +237,8 @@ for (const route of ROUTES) {
 		page.on("console", (message) => {
 			if (message.type() !== "error" && message.type() !== "warning") return;
 			const text = message.text();
-			// The registries themselves are not under test: a 404 from a version
-			// list is the adapter's business, not a rendering fault. The GL
-			// messages are headless Chromium's software renderer narrating the
-			// star field to itself, and say nothing about the page.
-			//
-			// The wasm MIME warning is `vite preview`'s static server, which does
-			// not read the deploy's header rules; the `content-type` for the
-			// module is set in `nitro({ routeRules })` and lands in
-			// `.vercel/output/config.json`, which is where it is checked.
+			// Ignored: registry 404s, headless Chromium's GL chatter, and the wasm MIME warning from
+			// `vite preview`, which skips the `nitro({ routeRules })` headers the deploy serves.
 			if (
 				/Failed to load resource|googletagmanager|WebGL-0x|GL Driver Message|instantiateStreaming/.test(
 					text,
@@ -308,7 +252,7 @@ for (const route of ROUTES) {
 
 		await page.goto(route);
 		await expect(page.locator("html")).toHaveAttribute("data-theme", /.+/);
-		// Long enough for hydration to have happened and had its say.
+		// Long enough for hydration to report a mismatch.
 		await page.waitForTimeout(2_000);
 
 		expect(complaints).toEqual([]);

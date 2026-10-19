@@ -10,14 +10,6 @@ import styles from "./CollapsedRow.module.css";
 
 type Fold = Extract<DiffRow, { kind: "collapsed" }>;
 
-/**
- * A run of untouched lines, and the ways of opening it.
- *
- * A fold in the body of the file can be walked inward from either end, so it
- * offers twenty lines down, twenty up, and the whole of it. One against the
- * top or bottom of the file offers only the whole — there is nothing beyond it
- * to walk toward — and its single arrow points the way it would open.
- */
 export function CollapsedRow({
 	fold,
 	onReveal,

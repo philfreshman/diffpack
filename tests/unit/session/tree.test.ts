@@ -59,8 +59,6 @@ describe("findFile", () => {
 	});
 
 	test("carries the old path of a renamed file", () => {
-		// The URL only ever holds the new path; the engine needs both to diff it
-		// against its former self.
 		expect(findFile(TREE, "lib/router.js")?.oldPath).toBe("lib/routes.js");
 	});
 

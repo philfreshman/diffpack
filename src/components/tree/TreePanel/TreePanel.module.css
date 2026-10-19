@@ -1,8 +1,3 @@
-/*
- * The sidebar runs the full height of the window, ruled off from the page on
- * its right. Collapsed is read off `<html>`, which the pre-paint script has
- * already marked, so a shut panel never flashes open on load.
- */
 .panel {
 	position: relative;
 	flex: 0 0 auto;
@@ -11,10 +6,7 @@
 	border-right: 1px solid var(--color-border);
 }
 
-/* Never narrower than the panel's minimum, and pinned to its right edge: when a
-   drag takes the panel below that, or it snaps shut, the content keeps its
-   width and slides out past the window's left edge, where nothing can scroll
-   to it. */
+/* Right-pinned at a minimum width: below it the content slides out of the window instead of crushing. */
 .content {
 	position: absolute;
 	inset: 0 0 0 auto;
@@ -32,11 +24,7 @@
 	display: none;
 }
 
-/* Snapping shut: let go below its minimum, the panel finishes closing on its
-   own — the box runs down to nothing while the content slides the rest of the
-   way out, fading and blurring on from wherever the drag left it.
-   The sidebar waits `--duration-fast` before marking the panel collapsed. Only
-   the snap is animated: a drag or a keyboard nudge sets the width outright. */
+/* The sidebar waits `--duration-fast` before marking the panel collapsed. Only the snap animates. */
 :global(html[data-tree-snapping]) .panel {
 	width: 0;
 	transition: width var(--duration-fast) ease;
@@ -57,10 +45,7 @@
 	}
 }
 
-/* Level with the top bar beside it: as tall as the bar less the panel's own
-   top padding, with the switcher standing on the same footing as the package
-   field — the bar's bottom padding and its 1px rule. The space under it is the
-   body's padding, so the filter lines up with the diff toolbar. */
+/* Lines up with the workspace top bar, and the filter below it with the diff toolbar. */
 .head {
 	display: flex;
 	flex-shrink: 0;
@@ -70,14 +55,11 @@
 	padding-bottom: calc(var(--space-2) + 1px);
 }
 
-/* Spaced off the tree as the diff toolbar is off the viewer, so the first row
-   starts level with the diff's top edge. */
+/* Puts the first tree row level with the diff's top edge. */
 .filter {
 	margin-bottom: calc(var(--space-3) - var(--space-2));
 }
 
-/* The panel's footing, ruled off the way a dashboard sets off its account row:
-   pushed to the bottom rather than trailing a short tree. */
 .foot {
 	display: flex;
 	align-items: center;
@@ -88,8 +70,7 @@
 	font-size: var(--text-sm);
 }
 
-/* The panel's right edge doubles as the grip. It is centred on the border so
-   the collapse button can sit across the rule. */
+/* Centred on the border so the collapse button sits across the rule. */
 .edge {
 	position: absolute;
 	top: 0;
@@ -114,8 +95,7 @@
 	outline: none;
 }
 
-/* Out of the way until the edge is reached for, and given a moment before it
-   appears so a pointer passing over the rule does not flicker it. */
+/* Delayed so a pointer crossing the rule does not flicker it. */
 .collapse {
 	position: absolute;
 	top: 50%;
@@ -140,8 +120,6 @@
 	opacity: 1;
 }
 
-/* Mid-drag the button would only be in the way of the edge being dragged, and
-   the pointer, wherever it wanders, is still resizing. */
 :global(html[data-tree-dragging]) .collapse {
 	opacity: 0;
 	pointer-events: none;

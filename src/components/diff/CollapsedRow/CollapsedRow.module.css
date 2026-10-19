@@ -1,8 +1,3 @@
-/*
- * A fold: the lines nothing happened to, stood down out of the way, with the
- * ways of opening it attached. Its expanders sit in the gutters — two columns
- * wide, since a fold has no line number to put there.
- */
 .row {
 	composes: row from "../DiffRow/DiffRow.module.css";
 	background: var(--color-fold-surface);

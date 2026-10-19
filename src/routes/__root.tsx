@@ -16,7 +16,6 @@ import { buildDiffBootScript } from "#/lib/worker/bootScript.ts";
 import diffWorkerUrl from "#/lib/worker/diff.worker.ts?worker&url";
 import globalsCss from "#/styles/globals.css?url";
 
-/** The site as it describes itself where a route has nothing more specific. */
 const DESCRIPTION =
 	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io and PyPI.";
 
@@ -25,14 +24,8 @@ const KEYWORDS =
 
 const SITE = "https://diffpack.io";
 
-/** The 512px app icon, which is what the old app put in every card. */
 const SHARE_IMAGE = "/web-app-manifest-512x512.png";
 
-/**
- * The engine, started from the head. The worker's own URL is the one thing the
- * script cannot work out for itself, so the bundler's answer is handed to it
- * here — the same file the client would otherwise have spawned for itself.
- */
 const DIFF_BOOT_SCRIPT = buildDiffBootScript(diffWorkerUrl);
 
 export const Route = createRootRoute({
@@ -43,8 +36,6 @@ export const Route = createRootRoute({
 			{ title: "diffpack" },
 			{ name: "description", content: DESCRIPTION },
 			{ name: "keywords", content: KEYWORDS },
-			// What a pasted link becomes: the picture and the kind are the
-			// site's, while each route's own head names the comparison.
 			{ property: "og:type", content: "website" },
 			{ property: "og:url", content: SITE },
 			{ property: "og:title", content: "diffpack" },
@@ -59,9 +50,6 @@ export const Route = createRootRoute({
 		],
 		links: [
 			{ rel: "stylesheet", href: globalsCss },
-			// Each of these is looked for by name — a browser tab, a pinned
-			// shortcut, an iOS home screen, an installed app — so one standing in
-			// for another is not an option.
 			{
 				rel: "icon",
 				type: "image/png",
@@ -88,14 +76,10 @@ export const Route = createRootRoute({
 });
 
 function RootDocument() {
-	// Created once per document, in state rather than at module scope: a module
-	// singleton would be shared between requests on the server.
+	// Not a module singleton, which the server would share between requests.
 	const [queryClient] = useState(createQueryClient);
 
 	return (
-		// `data-theme` is deliberately absent here: the pre-paint script below owns
-		// it and has already written it by the time React hydrates, which is exactly
-		// the mismatch `suppressHydrationWarning` exists for.
 		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />

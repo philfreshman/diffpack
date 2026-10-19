@@ -26,12 +26,10 @@ const reset = (comparison: string): FolderAction => ({
 
 const EXPRESS = "/npm/express/4.18.2/5.1.0";
 
-/** The folders once each of `actions` has happened, in order. */
 function after(...actions: FolderAction[]): FolderState {
 	return actions.reduce(folderReducer, foldersFor(EXPRESS));
 }
 
-/** Both sets, spelled out, so an assertion reads as the state it expects. */
 function chosen(folders: FolderState) {
 	return {
 		opened: [...folders.expandedKeys],
@@ -63,8 +61,6 @@ describe("folderReducer", () => {
 	});
 
 	test("narrowing forgets the folders shut by hand, and keeps the ones opened", () => {
-		// They were shut against a fuller tree: held shut, they would hide the
-		// very rows the filter was typed to find.
 		expect(chosen(after(open("lib"), shut("test"), NARROW))).toEqual({
 			opened: ["lib"],
 			shut: [],
@@ -173,8 +169,6 @@ describe("the folders chosen, as a tree that is one folder deep shows them", () 
 	});
 
 	test("a new comparison opens its only folder, whatever the last one chose", () => {
-		// The last comparison had `lib` to open and its own `src` to shut; this
-		// one is `src` alone, and what was chosen there says nothing about it.
 		const folders = after(
 			open("lib"),
 			shut("src"),

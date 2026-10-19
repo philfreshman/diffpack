@@ -4,10 +4,11 @@ import init, {
 	prefetch_package,
 } from "@philfreshman/diffpack-engine";
 import wasmUrl from "@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url";
-import type { WorkerRequest, WorkerResponse } from "./protocol.ts";
-
-/** Rename detection threshold, as a content-similarity ratio. */
-const SIMILARITY_THRESHOLD = 0.75;
+import {
+	SIMILARITY_THRESHOLD,
+	type WorkerRequest,
+	type WorkerResponse,
+} from "./protocol.ts";
 
 let wasmReady: Promise<unknown> | null = null;
 
@@ -46,12 +47,7 @@ async function handle(request: WorkerRequest): Promise<unknown> {
 	}
 }
 
-/**
- * Each message is handled as it arrives, so several can be in flight at once.
- * The engine holds one active diff, which a build replaces when it finishes;
- * keeping builds and reads from overlapping is the client's job, since it is
- * the side that knows which comparison each read is for.
- */
+// Messages run concurrently; the client's lane keeps builds and reads apart.
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
 	const request = event.data;
 	try {

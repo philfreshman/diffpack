@@ -3,11 +3,6 @@ import { highlightLine } from "#/lib/diff/highlight.ts";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 import styles from "./DiffRow.module.css";
 
-/**
- * One line of the file in unified view: where it sits in the old file, where
- * it sits in the new one, and what it says. A missing number is the statement
- * that the line is not in that file at all.
- */
 export function DiffRow({
 	line,
 	language,
@@ -39,8 +34,7 @@ export function DiffRow({
 			</td>
 			<td
 				className={styles.content}
-				// highlight.js escapes what it is given, and `highlightLine` escapes
-				// what it does not highlight — nothing reaches the DOM as markup.
+				// highlightLine escapes everything it does not highlight.
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: the highlighter's output is markup by definition
 				dangerouslySetInnerHTML={{
 					__html: highlightLine(line.content, language) || " ",

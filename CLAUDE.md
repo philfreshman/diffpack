@@ -36,6 +36,7 @@ bun run badge            # regenerate .github/badges/fallow-health.svg when the 
 ## Layout and boundaries
 
 ```
+fixtures/        diffpack-server's cache-key vectors, byte for byte (see "The server's cache")
 src/routes/      TanStack Start file routes: parse the URL, hand it to a component
 src/components/  React. One folder per component that has a stylesheet: Foo/{Foo.tsx,Foo.module.css}
 src/lib/         Pure TypeScript: no React, no DOM rendering, unit-tested
@@ -134,17 +135,45 @@ Rules in `diffWorkerClient.ts` that look optional and are not:
   rather than sent. `prefetch` is outside the lane.
 - **A read is refused unless its comparison is the active one** (`active`, cleared when a build
   fails). The engine would otherwise answer from whatever diff it holds.
-- **The boot script gets there first.** `buildDiffBootScript` runs inline in `<head>`, parses the
-  URL, spawns the worker and posts `build-tree` before hydration, and leaves everything on
-  `window.__diffpackDiffBoot`. The client adopts that worker and that tree only when the
-  `comparisonKey` matches. Since the script cannot import anything, it restates the registry path
-  rules and the `Comparison` fields inline. `tests/unit/worker/bootScript.test.ts` runs its output
-  against the real client, so update it together with any change to either.
+- **The boot script gets there first.** `buildDiffBootScript` runs inline in `<head>` and parses
+  the URL before hydration. It first asks the server's cache (below) and leaves the answer on
+  `window.__diffpackEntryBoot`; on a miss, a failure or a timeout it spawns the worker, posts
+  `build-tree` and leaves that on `window.__diffpackDiffBoot`, unless the client has marked the
+  lookup `abandoned` by asking for another comparison. The clients adopt either only when the
+  `comparisonKey` matches, and nothing reaches the worker client before the boot lookup settles. Since the script cannot import
+  anything, it restates the registry path rules, the `Comparison` fields and the cache key inline.
+  `tests/unit/worker/bootScript.test.ts` runs its output against the real client and against the
+  cache-key vectors, so update it together with any change to any of them.
 
 `src/lib/session/diffSession.ts` is the store above the client (TanStack Store). It is told two
 things, in either order: what the URL says (`follow`) and the whitespace answer
 (`answerWhitespace`). It builds nothing until it has both, drops replies whose `comparisonKey` is no
 longer current, and opens the URL's file once the tree is ready.
+
+## The server's cache
+
+`src/lib/cache/`. diffpack-server caches the diffs it computes for AI agents under a `diff_id`,
+and the app reuses them. `diffKey.ts` is the key from the server's `docs/cache-key.md`;
+`entryLookup.ts` asks `GET https://mcp.diffpack.io/diffs/v1/{diff_id}` (the store is private, so
+the server reads it); `cachedDiffClient.ts` sits in front of the worker client with the same
+interface and is what the session talks to.
+
+- **A miss must be invisible.** Every way a lookup can go wrong (404, network error, a body that is
+  not an entry, an entry for another comparison, 1.5 s without response headers) is a miss, and a miss is
+  the worker, which stays the source of truth. A file a cached entry has no patch for is worked out
+  by the worker too.
+- **Only the `diff_id` leaves the page.** No cookies, no referrer: the page URL names the package.
+- **The key only matches when the engines do.** The engine version is part of the key, read from the
+  installed `@philfreshman/diffpack-engine`. The app and the server pin it independently, so while
+  their pins differ every lookup misses, harmlessly, and an engine bump here moves every key.
+- **`fixtures/cache-key-vectors.json` is the server's file, not a copy to edit.** It is byte-identical
+  to diffpack-server's at the commit pinned in `scripts/check-cache-key-vectors.ts`, which
+  `bun run check:vectors` enforces in CI. To take new vectors, move the pin and re-download.
+  `check:vectors:development` compares with the server's development tip as a non-blocking CI step,
+  so new vectors there show up as a warning.
+  `bun run test:networked` compares keys with the live server's directly.
+- The e2e build points the cache at a closed port, so specs other than `cached-diff.spec.ts` always
+  miss and keep testing the worker.
 
 ## The diff pipeline
 
@@ -192,6 +221,18 @@ its default width). The theme lands as `data-theme` on `<html>`, which is why `<
 `suppressHydrationWarning`. The sidebar width is the `--tree-panel-width` custom property and shut
 is `data-tree-collapsed`, both on `<html>` and moved without a render (`src/lib/tree/sidebar.ts`).
 
+## Code style
+
+- Write self-explaining code in Clean Code style: intention-revealing names, small functions that
+  do one thing, named constants and types instead of magic values, and a well-named helper instead
+  of a block that needs explaining.
+- Add no new comments, doc comments included. If code seems to need one, rename or restructure it
+  until it does not. The why behind a change goes in the commit message or the PR description.
+- Existing comments, the doc comments in `src/lib/` among them: keep them true when you change the
+  code they describe, and delete them once the code makes them redundant.
+- The one exception is a reason a tool requires: the explanation after a `biome-ignore` or
+  `fallow-ignore`, and the comment beside an entry in `.fallowrc.jsonc` (see `AGENTS.md`).
+
 ## CSS conventions
 
 - CSS Modules and custom properties. No Tailwind, no CSS-in-JS.
@@ -225,11 +266,18 @@ server function).
 
 ## Working here
 
-- Branch from `development` and open PRs against it. Conventional Commits, with a scope where one
-  fits: `fix(tree): …`, `test(worker): …`, `chore(deps): …`.
-- Match the codebase's comment style: a comment says *why*, in full sentences, and names the
-  constraint it protects. The doc comments in `src/lib/` are the design notes for their modules.
-  Read them before changing one, and update them when the reason changes.
+- Picking up a GitHub issue: set it to In Progress.
+- Pull the latest `development`, branch from it, and open PRs against it. Keep branch names short
+  and named for the change: `feat/…`, `fix/…`.
+- Split work into small, independent commits. Conventional Commits, with a scope where one fits:
+  `fix(tree): …`, `test(worker): …`, `chore(deps): …`. A commit message is a short imperative
+  header, a blank line, and a brief body saying why; the longer explanation goes in the PR
+  description.
+- Commits and PRs carry no AI attribution: no `Co-Authored-By` trailer, no "Generated with" line.
+- After a PR merges: switch to `development`, pull, then delete the merged local branch and its
+  worktree.
+- Write commit messages, PR descriptions and docs in plain, direct language. When a technical term
+  is needed, explain it briefly.
 - A behavior fix comes with a test that fails without it: a unit test for anything in `lib`, and
   Playwright for anything that needs the DOM, the worker or the wasm.
 - E2e tests use real registries. Only a tree shape no real package has may be stubbed with

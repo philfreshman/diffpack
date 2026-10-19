@@ -1,10 +1,5 @@
 import styles from "./Spinner.module.css";
 
-/**
- * A busy indicator for work the user is waiting on inside a control — the
- * search field's middle state. It announces itself, because the reason the
- * list is empty is not visible to a screen reader otherwise.
- */
 export function Spinner({ label = "Loading" }: { label?: string }) {
 	return (
 		<span className={styles.spinner} role="status" aria-label={label}>

@@ -1,11 +1,5 @@
-/*
- * The workspace fills the window and nothing else scrolls: the tree and the
- * diff each scroll inside their own pane, which is what lets the viewer
- * virtualise — a scroller as tall as its content has no rows off screen.
- *
- * The sidebar runs the full height on the left; the header and the file share
- * the column beside it.
- */
+/* Only the panes scroll, never the page: the viewer's virtualisation needs a
+   scroller shorter than its content. */
 .workspace {
 	display: flex;
 	height: 100dvh;
@@ -42,8 +36,6 @@
 	font-family: var(--font-mono);
 }
 
-/* The column beside the sidebar, and the file within it: each takes what is
-   left and lets its own scroller do the scrolling. */
 .column,
 .file {
 	display: flex;

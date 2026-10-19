@@ -21,86 +21,47 @@ import { useDiffSession } from "../useDiffSession.ts";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
 
-/**
- * The workspace shell: the sidebar navigates a comparison down the left of the
- * window, and beside it the header assembles one and the body shows the one
- * the URL already names.
- *
- * The tree and the toolbar are the body's frame, not the comparison's — they
- * stand from the first paint, empty and stood down, so that choosing a package
- * fills a layout the reader is already looking at rather than replacing one.
- *
- * Opening a file is a URL write like any other navigation. The file on screen
- * is one model, held here rather than in the viewer: the toolbar reads it too,
- * and the viewer is mounted per file while how much of each file is open has
- * to survive clicking through the tree and back.
- *
- * What each of the two panels shows while the comparison is still arriving is
- * that panel's own business, and is answered below rather than here: this
- * function assembles the frame and leaves the states to `TreeStatus` and
- * `FilePane`.
- */
 export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const adapter = requireAdapter(slug.registry);
 	const navigate = useNavigate();
-	// Whether whitespace counts as a change is a reading habit, like split view
-	// and the highlight theme, so it is remembered rather than asked per file.
 	const whitespace = useSetting(IGNORE_WHITESPACE);
-	// Held here rather than in the gear that changes it: the viewer takes its
-	// own surfaces from the same choice, and a second copy of the hook would be
-	// a second answer to one question.
+	// One instance for the toolbar and the viewer; a second would be a second answer.
 	const highlight = useHighlightTheme();
-	// No answer rather than the fallback until the stored one is read: a deep
-	// link opened with the setting on would otherwise build the whole tree
-	// whitespace-exact first and immediately throw it away.
+	// null until the stored value is read, or a deep link would build a
+	// whitespace-exact tree first and then throw it away.
 	const session = useDiffSession(
 		slug,
 		whitespace.known ? whitespace.value : null,
 	);
 	const files = flattenFiles(session.tree);
-	// The files the toolbar's arrows walk: the unchanged ones are what the tree
-	// hides by default, and stepping into one would look like a broken button.
+	// The arrows skip unchanged files, which the tree hides by default.
 	const changed = changedFiles(session.tree);
-	// Where the open file sits among them, as the session has it rather than as
-	// the URL names it: a file is only open once its tree is there to hold it.
+	// From the session, not the URL: a file is open only once its tree is ready.
 	const fileIndex = changed.findIndex(
 		(entry) => entry.path === session.file?.path,
 	);
 
-	// Which layout a diff is read in is a habit, not a decision to make again
-	// per file: the toolbar stores it as it flips it, and the model lays the
-	// file's rows out by it.
 	const split = useSetting(SPLIT_VIEW);
-	// The file on screen, as the one model the toolbar and the viewer both
-	// read. It is what is on screen rather than what was last asked for, so
-	// the count changes when the blur clears rather than a moment before it.
+	// What is on screen, not what was last asked for: it lags while the blur shows.
 	const shown = useFileModel(session.key, session.file, split.value);
-	// The comparison the URL names, as its address without a file: registry,
-	// package and both versions. Unlike the session's key it holds still while
-	// whitespace is toggled, which rebuilds the same comparison.
+	// Unlike `session.key`, this holds still when whitespace is toggled.
 	const comparisonPath = buildPath(adapter, { ...slug, file: "" });
 
-	// Opening a file is a URL write like any other navigation; the session
-	// follows the address, never the click.
 	function openFile(file: string) {
 		navigate({ to: buildPath(adapter, { ...slug, file }) });
 	}
 
-	/** Closing a file is the same write with nothing in the file segment. */
 	function closeFile() {
 		navigate({ to: comparisonPath });
 	}
 
-	/** The file before or after this one, in the order the tree lists them. */
 	function stepFile(direction: 1 | -1) {
 		const next = changed[fileIndex + direction];
 		if (next) openFile(next.path);
 	}
 
 	return (
-		// The parsed URL, stated on the shell: it is what the route hands down,
-		// server-rendered, and the routing suite reads it here rather than from
-		// controls whose values also depend on what a registry answered.
+		// The routing e2e suite reads the parsed URL from these attributes.
 		<div
 			className={styles.workspace}
 			data-testid="workspace"
@@ -171,11 +132,7 @@ interface TreeStatusProps {
 	changedCount: number;
 }
 
-/**
- * What state the comparison is in, said under the tree it describes. Empty
- * while there is nothing to say — the element stays, because what state the
- * comparison is in is read off it.
- */
+// Rendered even when empty: tests read the state off `data-state`.
 function TreeStatus({
 	status,
 	packageName,
@@ -192,21 +149,13 @@ function TreeStatus({
 }
 
 interface FilePaneProps {
-	/** Where the comparison as a whole has got to. */
 	sessionStatus: DiffSessionState["status"];
-	/** The file the URL names, or `null` when it names none. */
 	file: OpenFile | null;
-	/** The file actually on screen, which the blur keeps a step behind. */
 	shown: FileModelControls | null;
 	onClose(): void;
-	/** Which theme the code is coloured with, and on what ground. */
 	highlight: HighlightThemeControls;
 }
 
-/**
- * Under the toolbar: nothing asked for yet, a file on its way, a file that
- * failed, or the file itself.
- */
 function FilePane({
 	sessionStatus,
 	file,
@@ -219,8 +168,7 @@ function FilePane({
 			{sessionStatus === "idle" && (
 				<p className={styles.empty}>Choose a package and two versions.</p>
 			)}
-			{/* Only with nothing to blur: the first file of a comparison has no
-			    predecessor to keep on screen. */}
+			{/* Only the first file: later ones keep the previous file blurred instead. */}
 			{file?.status === "loading" && !shown && (
 				<Spinner label={`Loading ${file.path}…`} />
 			)}
@@ -230,8 +178,7 @@ function FilePane({
 				</p>
 			)}
 			{shown && (
-				// Keyed by path: a new file is a new view, which is what makes
-				// restoring its scroll a plain mount effect.
+				// Keyed by path, so restoring scroll is a plain mount effect.
 				<DiffView
 					file={shown}
 					key={shown.path}

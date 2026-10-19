@@ -15,7 +15,6 @@ const COMPARISON: Comparison = {
 	ignoreWhitespace: false,
 };
 
-/** Another pair of versions of the same crate. */
 const ANOTHER: Comparison = { ...COMPARISON, to: "0.9.0" };
 
 const TREE: DiffFileEntry = {
@@ -25,7 +24,6 @@ const TREE: DiffFileEntry = {
 	children: [{ path: "Cargo.toml", type: "file", status: "modified" }],
 };
 
-/** A worker the test speaks for: it records what it was sent and replies by hand. */
 class FakeWorker {
 	onmessage: ((event: { data: unknown }) => void) | null = null;
 	readonly posted: unknown[] = [];
@@ -39,12 +37,7 @@ class FakeWorker {
 	}
 }
 
-/**
- * A worker that answers the way the engine does: a build replaces the one
- * active diff when it *finishes*, and a file is read out of whichever diff is
- * active when the read arrives. A version in `slow` is still downloading until
- * the test says it has landed; every other one is already in the cache.
- */
+// Answers like the engine: a build replaces the active diff when it finishes. Versions in `slow` wait for `download`.
 class FakeEngine {
 	onmessage: ((event: { data: unknown }) => void) | null = null;
 	private active: string | null = null;
@@ -68,7 +61,6 @@ class FakeEngine {
 		}
 	}
 
-	/** `version`'s download lands, and the build waiting on it finishes. */
 	download(version: string) {
 		this.downloading.get(version)?.();
 	}
@@ -78,7 +70,6 @@ class FakeEngine {
 	}
 }
 
-/** Lets pending timers and the microtasks behind them run. */
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function bootOf(worker: FakeWorker, replies: unknown[] = []): DiffBoot {
@@ -90,7 +81,6 @@ function bootOf(worker: FakeWorker, replies: unknown[] = []): DiffBoot {
 	};
 }
 
-/** The client, plus the workers it would have had to spawn for itself. */
 function clientWith(boot: DiffBoot | null) {
 	const spawned: FakeWorker[] = [];
 
@@ -106,7 +96,6 @@ function clientWith(boot: DiffBoot | null) {
 	return { client, spawned };
 }
 
-/** The client, over a worker that behaves like the engine. */
 function clientOver(engine: FakeEngine) {
 	return createDiffClient(
 		() => engine as unknown as Worker,
@@ -143,7 +132,6 @@ describe("createDiffClient", () => {
 
 		client.buildTree({ ...COMPARISON, ignoreWhitespace: true });
 		await settled();
-		// Not beside the boot's build: whichever finished last would hold the engine.
 		expect(booted.posted).toEqual([]);
 
 		booted.reply({ id: 0, ok: true, data: TREE });
@@ -166,8 +154,6 @@ describe("createDiffClient", () => {
 		booted.reply({ id: 1, ok: true, data: TREE });
 		await settled();
 
-		// The engine holds one active diff, so the second ask has to be a real
-		// request: the boot's tree would describe a comparison no longer loaded.
 		expect(booted.posted).toEqual([
 			{ id: 1, type: "build-tree", ...ANOTHER },
 			{ id: 2, type: "build-tree", ...COMPARISON },
@@ -192,7 +178,6 @@ describe("createDiffClient", () => {
 
 describe("the engine's one active diff", () => {
 	test("a file is read out of the comparison it was asked of, not the build that finished last", async () => {
-		// `ANOTHER`'s newer version is not in the cache yet.
 		const engine = new FakeEngine(new Set([ANOTHER.to]));
 		const client = clientOver(engine);
 		await client.buildTree(COMPARISON);
@@ -220,9 +205,6 @@ describe("the engine's one active diff", () => {
 	});
 
 	test("a read queued behind another comparison's build is refused when its turn comes", async () => {
-		// Asked while its own comparison is still the one loaded: whether it may
-		// be answered depends on what the engine holds when it is sent, and by
-		// then the build ahead of it has replaced its comparison.
 		const client = clientOver(new FakeEngine());
 		await client.buildTree(COMPARISON);
 		void client.buildTree(ANOTHER);
@@ -233,8 +215,6 @@ describe("the engine's one active diff", () => {
 	});
 
 	test("a failed build leaves no comparison to read from", async () => {
-		// What a failed build left in the engine is not the client's to guess,
-		// so not even the comparison built before it is read.
 		const { client, spawned } = clientWith(null);
 		const built = client.buildTree(COMPARISON);
 		await settled();
@@ -248,8 +228,7 @@ describe("the engine's one active diff", () => {
 		const read = client.getFile(COMPARISON, "Cargo.toml", undefined);
 		await settled();
 
-		// Checked before the read is awaited: a read the client did send would
-		// wait forever on a reply this worker never gives.
+		// Checked before awaiting: a read the client did send would wait forever on this worker.
 		expect(spawned[0]?.posted).toHaveLength(2);
 		await expect(read).rejects.toThrow("no longer loaded");
 	});
@@ -269,8 +248,6 @@ describe("the engine's one active diff", () => {
 	});
 
 	test("a build overtaken while it waited is never sent", async () => {
-		// Toggling whitespace back and forth while a download is in flight: only
-		// the last answer can end up in the engine, so only it is worth building.
 		const { client, spawned } = clientWith(null);
 		void client.buildTree(ANOTHER);
 		await settled();
@@ -283,8 +260,7 @@ describe("the engine's one active diff", () => {
 		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
 		await settled();
 
-		// Checked before `overtaken` is awaited: a build the client did send
-		// would wait forever on a reply this worker never gives.
+		// Checked before awaiting: a build the client did send would wait forever on this worker.
 		expect(spawned[0]?.posted).toEqual([
 			{ id: 0, type: "build-tree", ...ANOTHER },
 			{ id: 1, type: "build-tree", ...COMPARISON },

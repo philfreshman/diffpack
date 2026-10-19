@@ -1,7 +1,3 @@
-/*
- * The bar above the viewer. It is the viewer's frame, so it borrows the same
- * border and radius rather than floating free of it.
- */
 .toolbar {
 	display: flex;
 	align-items: center;
@@ -15,8 +11,6 @@
 	color: var(--color-muted);
 }
 
-/* Controls that belong together, kept together: the groups are what the eye
-   reads the bar by, so they are ruled off from one another. */
 .group {
 	display: flex;
 	align-items: center;

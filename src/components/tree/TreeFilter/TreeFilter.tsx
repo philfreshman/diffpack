@@ -13,13 +13,8 @@ export interface TreeFilterProps {
 	onOnlyModifiedChange(onlyModified: boolean): void;
 }
 
-/** The key that jumps to the field, shown in it the way a dashboard's Find is. */
 const SHORTCUT = "f";
 
-/**
- * The two controls above the tree. Both narrow it, and neither is a search:
- * the tree is already here, so typing hides rows rather than fetching any.
- */
 export function TreeFilter({
 	filter,
 	onFilterChange,

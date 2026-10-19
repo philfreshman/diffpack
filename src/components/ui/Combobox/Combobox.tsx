@@ -3,49 +3,26 @@ import { type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 import styles from "./Combobox.module.css";
 
 export interface ComboboxProps<T> {
-	/** Accessible name for the input. */
 	label: string;
-	/** Everything the list may show, before filtering. */
 	items: readonly T[];
-	/** The text in the input, owned by the caller. */
 	inputValue: string;
 	onInputValueChange(value: string): void;
-	/** A row was chosen — by click, by Enter, or by touch. */
 	onSelect(item: T): void;
-	/** How an item reads as text: what a selection writes into the input. */
 	itemToText(item: T): string;
-	/** How a row is drawn. Defaults to the item's text. */
 	renderItem?(item: T): ReactNode;
-	/**
-	 * Enter with nothing highlighted. Package search accepts whatever was typed;
-	 * a version selector, whose list is the only truth, leaves this out.
-	 */
+	/** Enter with nothing highlighted; omit when only listed items are valid. */
 	onSubmitText?(text: string): void;
-	/**
-	 * Substring match by default. Pass `null` when the items already answer the
-	 * query — a search API has filtered them for us.
-	 */
+	/** Substring match by default; `null` when the items arrive already filtered. */
 	filter?: null | ((item: T, query: string) => boolean);
-	/** The caller owns the fetching; this only says the list is on its way. */
 	loading?: boolean;
 	loadingMessage?: string;
 	emptyMessage?: string;
 	placeholder?: string;
 	disabled?: boolean;
-	/** Rendered inside the input's box, ahead of the text: an icon saying what
-	    the field is for. */
 	leading?: ReactNode;
-	/** Rendered inside the input's box: the search/spinner/reset slot. */
 	trailing?: ReactNode;
-	/** The input itself, for a caller that moves focus into it. */
 	inputRef?: Ref<HTMLInputElement>;
-	/** The key that focuses the input, announced as `aria-keyshortcuts`. */
 	keyShortcut?: string;
-	/**
-	 * The list opened or closed. A version selector types into the input to
-	 * filter, so it needs the close in order to put the selected version back;
-	 * package search keeps whatever was typed and ignores this.
-	 */
 	onOpenChange?(open: boolean): void;
 }
 
@@ -53,11 +30,6 @@ function substringFilter(text: string, query: string): boolean {
 	return text.toLowerCase().includes(query.toLowerCase());
 }
 
-/**
- * How the list is narrowed, as the one predicate Base UI is given: the
- * caller's own, a substring match over the item's text, or nothing at all
- * when the items arrive already filtered.
- */
 function resolveFilter<T>(
 	filter: ComboboxProps<T>["filter"],
 	itemToText: (item: T) => string,
@@ -69,11 +41,6 @@ function resolveFilter<T>(
 		substringFilter(itemToText(item as T), query);
 }
 
-/**
- * The one combobox: package search and both version selectors are the same
- * interaction — a text input over a filtered list, driven by ↑↓/Enter/Escape.
- * The old app had three hand-rolled copies and three sets of bugs.
- */
 export function Combobox<T>({
 	label,
 	items,
@@ -95,18 +62,11 @@ export function Combobox<T>({
 	keyShortcut,
 	onOpenChange,
 }: ComboboxProps<T>) {
-	// Enter is ambiguous: with a row highlighted it selects that row, with none
-	// it accepts the raw text. Base UI owns the first case, so this only has to
-	// know whether a highlight exists.
+	// Base UI handles Enter on a highlighted row; with none, Enter submits the raw text.
 	const highlighted = useRef<T | undefined>(undefined);
-	// Open is controlled so focus can open the list. Base UI ignores the click
-	// that focuses an input — deliberate on its part, but the old app showed
-	// search history the moment the field was focused, and that is the
-	// affordance the design asks for.
+	// Controlled so focus opens the list: Base UI ignores the click that focuses an input.
 	const [open, setOpen] = useState(false);
-	// Nothing here works until React has hydrated: a click or a keystroke before
-	// that hits a dead input. `data-ready` is the handshake — for tests, and for
-	// anything that wants to style the field until then.
+	// `data-ready` marks hydration; input before it hits a dead field, so tests wait on it.
 	const [ready, setReady] = useState(false);
 	useEffect(() => setReady(true), []);
 
@@ -120,8 +80,7 @@ export function Combobox<T>({
 			items={items as T[]}
 			inputValue={inputValue}
 			onInputValueChange={(value, details) => {
-				// Escape reverts the input to the selected value; the design says it
-				// only closes the list and leaves what was typed alone.
+				// Base UI's Escape reverts the input; here it only closes the list.
 				if (details.reason === "input-clear") return;
 				onInputValueChange(value);
 			}}

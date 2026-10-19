@@ -3,18 +3,10 @@ import type { Fetcher, RegistryAdapter } from "./types.ts";
 
 const PROXY_URL = "https://proxy.golang.org";
 
-/**
- * Go module versions are always semver with a "v" prefix. The "/v2" major
- * version suffix a module path may end with is not one — it has no dotted
- * components — so this tells `github.com/go-chi/chi/v5` apart from `v5.3.1`.
- */
+// Tells a path's "/v5" major-version suffix (no dots) apart from `v5.3.1`.
 export const MODULE_VERSION = /^v\d+\.\d+\.\d+/;
 
-/**
- * The module proxy serves lower-cased paths, escaping every uppercase letter as
- * "!" followed by its lowercase form, so `Masterminds` becomes `!masterminds`.
- * Requesting the unescaped path is a 404.
- */
+// The proxy 404s unless uppercase is escaped: `Masterminds` → `!masterminds`.
 function escapeModulePath(name: string): string {
 	return name.replace(/[A-Z]/g, (char) => `!${char.toLowerCase()}`);
 }
@@ -30,7 +22,6 @@ function parseVersion(version: string): { numbers: number[]; suffix: string } {
 	};
 }
 
-/** Newest first, matching the order the other registries hand back. */
 function compareVersionsDesc(a: string, b: string): number {
 	const left = parseVersion(a);
 	const right = parseVersion(b);
@@ -47,11 +38,6 @@ function compareVersionsDesc(a: string, b: string): number {
 	return right.suffix.localeCompare(left.suffix);
 }
 
-/**
- * Go has no search API reachable from the browser: the proxy exposes none, and
- * pkg.go.dev sends no CORS headers. The one thing resolvable client-side is a
- * module path the user typed out in full, so that is what search accepts.
- */
 function looksLikeModulePath(query: string): boolean {
 	const [host = ""] = query.split("/");
 	return query.includes("/") && host.includes(".");

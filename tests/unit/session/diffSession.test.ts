@@ -8,7 +8,6 @@ import type {
 	FileDiff,
 } from "#/lib/worker/protocol.ts";
 
-/** What the URL says for a comparison, with no file in it. */
 const SLUG: DiffSlug = {
 	registry: "npm",
 	package: "express",
@@ -17,7 +16,6 @@ const SLUG: DiffSlug = {
 	file: "",
 };
 
-/** What the engine is asked to build for `SLUG`, whitespace-exact. */
 const COMPARISON: Comparison = {
 	registry: "npm",
 	pkg: "express",
@@ -41,7 +39,6 @@ const TREE: DiffFileEntry = {
 	],
 };
 
-/** A promise plus the handles to settle it from the test. */
 function deferred<T>() {
 	let resolve!: (value: T) => void;
 	let reject!: (reason: Error) => void;
@@ -53,11 +50,7 @@ function deferred<T>() {
 	return { promise, resolve, reject };
 }
 
-/**
- * Stands in for the worker client. It records what it was asked for and hands
- * back promises the test settles by hand, which is the only way to be inside
- * an in-flight request when the next one arrives.
- */
+// Hands back promises the test settles by hand, to be inside an in-flight request when the next arrives.
 function stubClient() {
 	const built: Comparison[] = [];
 	const trees: Array<ReturnType<typeof deferred<DiffFileEntry>>> = [];
@@ -102,7 +95,6 @@ function stubClient() {
 	};
 }
 
-/** The nth request the stub is holding open, or a clear failure if there is none. */
 function take<T>(list: T[], index: number): T {
 	const pending = list[index];
 	if (!pending) throw new Error(`no request in flight at ${index}`);
@@ -110,10 +102,8 @@ function take<T>(list: T[], index: number): T {
 	return pending;
 }
 
-/** Lets the microtask queue drain, so a settled promise has been observed. */
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-/** A session told what the URL says, then the whitespace answer. */
 function toldOf(slug: DiffSlug, ignoreWhitespace = false) {
 	const stub = stubClient();
 	const session = createDiffSession(stub.client);
@@ -123,7 +113,6 @@ function toldOf(slug: DiffSlug, ignoreWhitespace = false) {
 	return { stub, session };
 }
 
-/** A session whose tree for `SLUG` has arrived. */
 async function readySession() {
 	const told = toldOf(SLUG);
 	take(told.stub.trees, 0).resolve(TREE);
@@ -147,8 +136,6 @@ describe("a comparison", () => {
 	});
 
 	test("asking again for the comparison on screen costs nothing", async () => {
-		// The workspace re-renders on every keystroke in the header; being told
-		// the same pair again must not re-download two archives.
 		const { stub, session } = await readySession();
 
 		session.follow({ ...SLUG });
@@ -171,7 +158,6 @@ describe("a comparison", () => {
 		const { stub, session } = toldOf(SLUG);
 		session.follow({ ...SLUG, to: "5.2.0" });
 
-		// The first archive finishes downloading after the user has moved on.
 		take(stub.trees, 0).resolve(TREE);
 		take(stub.trees, 1).resolve({ ...TREE, path: "second" });
 		await settled();
@@ -194,11 +180,6 @@ describe("a comparison", () => {
 
 type Session = ReturnType<typeof createDiffSession>;
 
-/**
- * The two things a session is told, in each order they can come in. The
- * stored whitespace answer is read once the page has mounted, and nothing
- * says whether that lands before or after the URL is first passed on.
- */
 const ORDERS: Array<[string, (session: Session, slug: DiffSlug) => void]> = [
 	[
 		"the URL first",
@@ -228,7 +209,6 @@ describe.each(ORDERS)("told %s", (_, tell) => {
 	test("a file named before the tree is ready opens once it is ready", async () => {
 		const { stub, session } = told({ ...SLUG, file: "index.js" });
 
-		// Nothing to read it out of yet, and nothing for the page to show.
 		expect(stub.filesAsked).toEqual([]);
 		expect(session.store.state.file).toBeNull();
 
@@ -244,16 +224,13 @@ describe.each(ORDERS)("told %s", (_, tell) => {
 
 	test("a file from a replaced comparison never opens", async () => {
 		const { stub, session } = told({ ...SLUG, file: "index.js" });
-		// Another pair, naming no file, before the first tree has arrived.
 		session.follow({ ...SLUG, to: "5.2.0" });
 
-		// The replaced tree lands while the new one is still on its way.
 		take(stub.trees, 0).resolve(TREE);
 		await settled();
 		expect(session.store.state.status).toBe("loading");
 
-		// The new tree holds a file of the same name, so only the URL can say
-		// that it was not asked for.
+		// The new tree holds a file of the same name, so only the URL can say it was not asked for.
 		take(stub.trees, 1).resolve(TREE);
 		await settled();
 
@@ -263,7 +240,6 @@ describe.each(ORDERS)("told %s", (_, tell) => {
 
 	test("changing only the file does not rebuild the tree", async () => {
 		const { stub, session } = told(SLUG);
-		// Once while the tree is on its way, once after it has arrived.
 		session.follow({ ...SLUG, file: "index.js" });
 		take(stub.trees, 0).resolve(TREE);
 		await settled();
@@ -278,8 +254,6 @@ describe.each(ORDERS)("told %s", (_, tell) => {
 });
 
 test("a whitespace answer arriving late starts exactly one build", () => {
-	// A deep link, then a click into a file, all before the stored answer has
-	// been read: not one build on a guess and another on the answer.
 	const stub = stubClient();
 	const session = createDiffSession(stub.client);
 	session.follow(SLUG);
@@ -296,8 +270,6 @@ test("a whitespace answer arriving late starts exactly one build", () => {
 
 describe("ignoring whitespace", () => {
 	test("is a different comparison, so the tree is built again", async () => {
-		// Not a repaint of the tree on screen: which lines differ is the
-		// engine's answer, and the engine has to be asked the other question.
 		const { stub, session } = await readySession();
 
 		session.answerWhitespace(true);
@@ -310,8 +282,6 @@ describe("ignoring whitespace", () => {
 	});
 
 	test("is not part of a prefetch, which only warms the downloads", () => {
-		// One prefetch per pair of archives, whatever the setting says — the
-		// flag has no bearing on what is downloaded or extracted.
 		const stub = stubClient();
 		const session = createDiffSession(stub.client);
 
@@ -338,7 +308,6 @@ describe("ignoring whitespace", () => {
 
 	test("changed mid-read, the old answer's reply never lands", async () => {
 		// The rebuilt tree has the same paths, so the same file is read again.
-		// The first reply, arriving last, answers the question no longer asked.
 		const { stub, session } = await readySession();
 		session.follow({ ...SLUG, file: "index.js" });
 		session.answerWhitespace(true);
@@ -388,8 +357,6 @@ describe("the file the URL names", () => {
 	});
 
 	test("is not read again when the URL is told again", async () => {
-		// A remount or a repeated effect tells the session what it already
-		// knows; the file on screen must not drop back to loading for it.
 		const { stub, session } = await readySession();
 		session.follow({ ...SLUG, file: "index.js" });
 		take(stub.fileReplies, 0).resolve({ data: "@@", isDiff: true });
@@ -417,8 +384,6 @@ describe("the file the URL names", () => {
 	});
 
 	test("is an error when this comparison does not contain it", async () => {
-		// A deep link into a pair where the file no longer exists: it has to say
-		// so, not spin forever waiting for the engine.
 		const { stub, session } = await readySession();
 
 		session.follow({ ...SLUG, file: "gone.js" });
@@ -435,7 +400,6 @@ describe("the file the URL names", () => {
 
 		session.follow({ ...SLUG, file: "index.js" });
 		session.follow({ ...SLUG, file: "lib/router.js" });
-		// Clicking through the tree quickly: the first reply arrives last.
 		take(stub.fileReplies, 1).resolve({ data: "second", isDiff: true });
 		take(stub.fileReplies, 0).resolve({ data: "first", isDiff: true });
 		await settled();

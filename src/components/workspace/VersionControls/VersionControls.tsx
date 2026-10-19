@@ -9,15 +9,8 @@ import { useVersions } from "../useVersions.ts";
 import { VersionCombobox } from "../VersionCombobox/VersionCombobox.tsx";
 import styles from "./VersionControls.module.css";
 
-/**
- * The two version fields and the Compare button.
- *
- * Choosing a version does **not** write the URL. The URL is the request for a
- * comparison — task 9 starts the engine from it — and a comparison costs two
- * archive downloads, so it is made when the user asks for one. Compare is that
- * ask, and the address it writes is exactly what a deep link into the same
- * comparison would be.
- */
+// Choosing a version does not write the URL; only Compare does, because the
+// URL starts the engine and two archive downloads.
 export function VersionControls({
 	adapter,
 	slug,
@@ -31,17 +24,14 @@ export function VersionControls({
 		resolveSelection(list, slug),
 	);
 
-	// The fields follow the URL and the list: a deep link's versions, a new
-	// package's defaults, back/forward. Only a selection made here overrides
-	// them, and it lasts until one of those changes underneath it.
+	// A selection made here lasts until the URL or the list changes.
 	useEffect(() => {
 		setSelection(resolveSelection(list, { from: slug.from, to: slug.to }));
 	}, [list, slug.from, slug.to]);
 
 	const { from, to } = selection;
 	const ready = Boolean(slug.package && from && to);
-	// A version pair changing does not invalidate the open file: it is the same
-	// package, and a path that is gone from the new pair reads as removed.
+	// Keeps the open file: a path missing from the new pair reads as removed.
 	const target = buildPath(adapter, {
 		package: slug.package,
 		from,
@@ -49,9 +39,7 @@ export function VersionControls({
 		file: slug.file,
 	});
 
-	// Hovering Compare is a good guess, not a promise. The session owns the
-	// once-per-comparison rule and the silence on failure, because it is the
-	// same comparison the click would then start.
+	// The session dedupes prefetches and swallows their failures.
 	function prefetch() {
 		if (!ready) return;
 		diffSession.prefetch({ registry: adapter.id, pkg: slug.package, from, to });

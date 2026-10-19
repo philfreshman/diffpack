@@ -3,19 +3,11 @@ import type { ReactElement, ReactNode } from "react";
 import styles from "./Menu.module.css";
 
 export interface MenuProps {
-	/** Accessible name for the trigger, which may show only a label and an icon. */
 	label: string;
-	/** What the trigger shows. */
 	trigger: ReactNode;
-	/** Placement of the trigger in its container; the look is the caller's. */
 	triggerClassName?: string;
 	children: ReactNode;
 }
-
-/**
- * A button that opens a list of links — the sidebar's registry switcher. Base
- * UI owns the keyboard, focus and dismissal; this owns the popup's look.
- */
 export function Menu({
 	label,
 	trigger,
@@ -40,10 +32,7 @@ export function Menu({
 	);
 }
 
-/**
- * One destination. `render` is the router's `<Link/>`, so the item keeps the
- * router's preloading and client-side navigation rather than a bare `<a>`.
- */
+/** Pass the router's `<Link/>` as `render` to keep preloading and client navigation. */
 export function MenuLinkItem({
 	render,
 	children,

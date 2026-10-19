@@ -1,7 +1,4 @@
-/*
- * The track sits over the right edge of the scroller rather than beside it, so
- * showing and hiding it never reflows the file.
- */
+/* Overlays the scroller rather than sitting beside it, so showing it never reflows the file. */
 .track {
 	position: absolute;
 	top: 0;
@@ -19,14 +16,12 @@
 	opacity: 1;
 }
 
-/* The minimap: where the file's changes are, whether or not they are rendered.
-   The markers use the foreground colours a file's status is written in, not the
-   diff's row washes — a few pixels of a wash reads as nothing. */
+/* Foreground colours, not row washes: a few pixels of a wash is invisible. */
 .marker {
 	position: absolute;
 	left: 0;
 	width: 100%;
-	/* A single changed line in a long file is a sliver; this keeps it visible. */
+	/* Keeps a single changed line in a long file visible. */
 	min-height: 2px;
 }
 

@@ -15,14 +15,6 @@ type Pending = {
 	reject: (reason: Error) => void;
 };
 
-/**
- * The page's one link to the engine.
- *
- * A factory over how the worker is come by, because there are two ways: the
- * page spawns one, or it adopts the one the `<head>` boot script already
- * spawned and posted to. Which of those happened is not something the store
- * above should have to know, and it is exactly what a test needs to say.
- */
 export function createDiffClient(
 	spawn: () => Worker,
 	boot: () => DiffBoot | null = readDiffBoot,
@@ -30,44 +22,15 @@ export function createDiffClient(
 	const pending = new Map<number, Pending>();
 	let nextId = 0;
 	let worker: Worker | null = null;
-	/**
-	 * The boot script's `build-tree`, waiting for whoever asked for it. Cleared
-	 * the moment it is claimed *or* another comparison is asked for: the engine
-	 * holds one active diff, so handing this tree back after a second
-	 * `build-tree` has replaced it would describe a comparison no longer loaded.
-	 */
+	// Cleared once claimed *or* once another comparison is asked for: after a
+	// second `build-tree` this tree would describe a diff no longer loaded.
 	let adopted: { comparison: Comparison; tree: Promise<DiffFileEntry> } | null =
 		null;
-	/**
-	 * The last of the requests that set or read the engine's active diff, which
-	 * go one at a time, in the order they were asked for.
-	 *
-	 * The worker starts each message as it arrives, and a build replaces the
-	 * active diff only when it *finishes*. Two builds in flight at once would
-	 * leave the one that downloaded faster in the engine, not the one asked for
-	 * last, and every read after that would come out of the wrong comparison.
-	 *
-	 * The price is that a slow build holds up everything behind it: going back
-	 * to a comparison already in the cache waits for the downloads of the one
-	 * in flight, and a download that never finishes stalls every later build
-	 * and read until the page is reloaded. The engine can neither cancel a
-	 * build nor read from a diff other than the active one, so the client has
-	 * no way to put a correct answer ahead of it.
-	 */
+	// Builds and reads run one at a time. A download that never finishes stalls
+	// everything behind it: the engine cannot cancel a build.
 	let lane: Promise<unknown> = Promise.resolve();
-	/**
-	 * The comparison the engine holds, by `comparisonKey`: the last build to
-	 * succeed. `null` before one has, and after one fails, rather than guess
-	 * what a failed build left behind.
-	 */
+	// `null` after a failed build, rather than guess what it left behind.
 	let active: string | null = null;
-	/**
-	 * How many builds have been asked for. One still waiting in the lane when
-	 * a newer one is asked for is not worth sending: whatever it left in the
-	 * engine, the newer one would replace before the session reads from it. A
-	 * read asked of it in between is refused, as for any comparison no longer
-	 * loaded.
-	 */
 	let buildsAsked = 0;
 
 	function receive(message: WorkerResponse) {
@@ -84,12 +47,8 @@ export function createDiffClient(
 		});
 	}
 
-	/**
-	 * The WASM module keeps its extraction cache and its active-diff pointer in
-	 * module-local state, so a second worker would silently start from an empty
-	 * cache and fail every `getFile` with "No active diff context". One worker
-	 * per document, and where the boot script made one, that is the one.
-	 */
+	// One worker per document: a second would start with an empty wasm cache and
+	// fail every `getFile` with "No active diff context".
 	function getWorker(): Worker {
 		if (worker) return worker;
 
@@ -105,14 +64,12 @@ export function createDiffClient(
 		nextId = booted.id + 1;
 
 		const tree = built(booted.comparison, awaitReply(booted.id));
-		// First in the lane, since it is already in flight. It may never be
-		// claimed — a link opened and abandoned mid-flight — and an unclaimed
-		// failure is not the page's to report.
+		// Already in flight, so first in the lane. It may never be claimed, so
+		// its failure is swallowed here.
 		lane = tree.catch(() => {});
 		adopted = { comparison: booted.comparison, tree };
 
 		worker.onmessage = (event) => receive(event.data);
-		// Everything the script's own handler caught while no client existed.
 		for (const reply of booted.replies) {
 			receive(reply as WorkerResponse);
 		}
@@ -120,11 +77,6 @@ export function createDiffClient(
 		return worker;
 	}
 
-	/**
-	 * Requests carry an id because several may be in flight at once — a
-	 * prefetch beside a build is the common case — and replies must resolve the
-	 * call that asked for them rather than whichever is newest.
-	 */
 	function send<T>(request: WorkerRequestInput): Promise<T> {
 		const target = getWorker();
 		const id = nextId++;
@@ -133,10 +85,6 @@ export function createDiffClient(
 		return reply;
 	}
 
-	/**
-	 * Runs `request` once everything ahead of it in the lane has replied. A
-	 * failure is its caller's to hear; whatever is behind it goes ahead anyway.
-	 */
 	function enqueue<T>(request: () => Promise<T>): Promise<T> {
 		// Adopting the boot's build is what puts it at the head of the lane.
 		getWorker();
@@ -145,7 +93,6 @@ export function createDiffClient(
 		return reply;
 	}
 
-	/** A build's tree, with `active` kept in step with what it did to the engine. */
 	function built(
 		comparison: Comparison,
 		tree: Promise<DiffFileEntry>,
@@ -163,13 +110,11 @@ export function createDiffClient(
 	}
 
 	return {
-		/** Downloads both versions, extracts them, and returns the diff tree. */
 		buildTree(comparison: Comparison): Promise<DiffFileEntry> {
 			getWorker();
 
 			const claim = adopted;
-			// Either way the boot's request stops being adoptable here: claimed,
-			// or overtaken by the comparison about to replace it in the engine.
+			// Claimed or overtaken, the boot's build stops being adoptable here.
 			adopted = null;
 			if (
 				claim &&
@@ -187,15 +132,6 @@ export function createDiffClient(
 			});
 		},
 
-		/**
-		 * Reads one file's diff out of `comparison`, which `buildTree` must have
-		 * built. The whitespace answer is the comparison's own, so the file and
-		 * its tree cannot disagree about it.
-		 *
-		 * Refused once another comparison has replaced it in the engine: the
-		 * engine would answer out of whichever diff it holds, and a diff of
-		 * another pair of versions is not this file's.
-		 */
 		getFile(
 			comparison: Comparison,
 			path: string,
@@ -216,21 +152,18 @@ export function createDiffClient(
 			});
 		},
 
-		/**
-		 * Warms the extraction cache so a later `buildTree` skips the downloads.
-		 * Not in the lane: it leaves the active diff alone, so a build has no
-		 * reason to wait for it, nor it for a build.
-		 */
+		// Not in the lane: it never touches the active diff.
 		prefetch(request: DiffRequest): Promise<void> {
 			return send<void>({ type: "prefetch", ...request });
 		},
 	};
 }
 
-/**
- * One client per document, over the worker the boot script spawned where there
- * was a comparison to spawn it for.
- */
+export type DiffClient = Pick<
+	ReturnType<typeof createDiffClient>,
+	"buildTree" | "getFile" | "prefetch"
+>;
+
 export const diffClient = createDiffClient(
 	() =>
 		new Worker(new URL("./diff.worker.ts", import.meta.url), {

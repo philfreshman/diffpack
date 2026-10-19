@@ -19,15 +19,8 @@ const LABELS: Record<ThemeSelection, string> = {
 	system: "Switch to light theme",
 };
 
-/**
- * `floating` pins it to the top corner of a page with no chrome of its own to
- * hold it — the landing page and the 404. The workspace keeps it in the
- * sidebar's footing instead.
- */
 export function ThemeToggle({ floating = false }: { floating?: boolean }) {
-	// Renders the default first and corrects on mount: the real selection is
-	// stored, and the server cannot see it. Until then the button is disabled —
-	// pre-hydration it would show a possibly-wrong icon and swallow the click.
+	// Disabled until known: before then it shows a guessed icon and would swallow the click.
 	const {
 		value: selection,
 		known,
@@ -35,7 +28,6 @@ export function ThemeToggle({ floating = false }: { floating?: boolean }) {
 	} = useSetting(THEME_SELECTION);
 
 	useEffect(() => {
-		// Only "system" tracks the OS, and only until the visitor picks a theme.
 		if (selection !== "system") return;
 		const query = window.matchMedia("(prefers-color-scheme: dark)");
 		const onChange = () => applyTheme(document, "system");
