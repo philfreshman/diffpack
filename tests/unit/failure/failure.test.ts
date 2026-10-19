@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { failureOf } from "#/lib/failure/failure.ts";
+import { failureOf, isProxyLimit } from "#/lib/failure/failure.ts";
 
 function engineError(
 	message: string,
@@ -48,5 +48,14 @@ describe("failureOf", () => {
 		});
 
 		expect(failureOf(thrown)).toEqual({ message: "Refused" });
+	});
+});
+
+describe("isProxyLimit", () => {
+	test("is true only for the proxy being paused or out of reach", () => {
+		expect(isProxyLimit("quota_exhausted")).toBe(true);
+		expect(isProxyLimit("proxy_unreachable")).toBe(true);
+		expect(isProxyLimit("not_found")).toBe(false);
+		expect(isProxyLimit(null)).toBe(false);
 	});
 });

@@ -11,11 +11,13 @@ import { useSetting } from "#/components/storage/useSetting.ts";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
+import { type FailureCode, isProxyLimit } from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
 import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
+import { ProxyLimitNotice } from "../ProxyLimitNotice/ProxyLimitNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
@@ -92,9 +94,12 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 				<WorkspaceHeader slug={slug} />
 				<main className={styles.body}>
 					{session.status === "error" && (
-						<p className={styles.error} role="alert" data-testid="diff-error">
-							{session.error}
-						</p>
+						<FailureNotice
+							message={session.error}
+							code={session.errorCode}
+							resetsAt={session.resetsAt}
+							testId="diff-error"
+						/>
 					)}
 
 					<section className={styles.file} data-testid="diff-file">
@@ -122,6 +127,29 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 				</main>
 			</div>
 		</div>
+	);
+}
+
+interface FailureNoticeProps {
+	message: string | null;
+	code: FailureCode | null | undefined;
+	resetsAt: string | null | undefined;
+	testId: string;
+}
+
+function FailureNotice({
+	message,
+	code,
+	resetsAt,
+	testId,
+}: FailureNoticeProps) {
+	if (isProxyLimit(code))
+		return <ProxyLimitNotice code={code} resetsAt={resetsAt} />;
+
+	return (
+		<p className={styles.error} role="alert" data-testid={testId}>
+			{message}
+		</p>
 	);
 }
 

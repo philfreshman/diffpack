@@ -14,6 +14,16 @@ const FAILURE_CODES = [
 
 export type FailureCode = (typeof FAILURE_CODES)[number];
 
+const PROXY_LIMIT_CODES = ["quota_exhausted", "proxy_unreachable"] as const;
+
+export type ProxyLimitCode = (typeof PROXY_LIMIT_CODES)[number];
+
+export function isProxyLimit(
+	code: FailureCode | null | undefined,
+): code is ProxyLimitCode {
+	return PROXY_LIMIT_CODES.includes(code as ProxyLimitCode);
+}
+
 export interface Failure {
 	message: string;
 	code?: FailureCode;
