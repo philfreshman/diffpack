@@ -36,6 +36,7 @@ bun run badge            # regenerate .github/badges/fallow-health.svg when the 
 ## Layout and boundaries
 
 ```
+fixtures/        diffpack-server's cache-key vectors, byte for byte (see "The server's cache")
 src/routes/      TanStack Start file routes: parse the URL, hand it to a component
 src/components/  React. One folder per component that has a stylesheet: Foo/{Foo.tsx,Foo.module.css}
 src/lib/         Pure TypeScript: no React, no DOM rendering, unit-tested
@@ -134,17 +135,45 @@ Rules in `diffWorkerClient.ts` that look optional and are not:
   rather than sent. `prefetch` is outside the lane.
 - **A read is refused unless its comparison is the active one** (`active`, cleared when a build
   fails). The engine would otherwise answer from whatever diff it holds.
-- **The boot script gets there first.** `buildDiffBootScript` runs inline in `<head>`, parses the
-  URL, spawns the worker and posts `build-tree` before hydration, and leaves everything on
-  `window.__diffpackDiffBoot`. The client adopts that worker and that tree only when the
-  `comparisonKey` matches. Since the script cannot import anything, it restates the registry path
-  rules and the `Comparison` fields inline. `tests/unit/worker/bootScript.test.ts` runs its output
-  against the real client, so update it together with any change to either.
+- **The boot script gets there first.** `buildDiffBootScript` runs inline in `<head>` and parses
+  the URL before hydration. It first asks the server's cache (below) and leaves the answer on
+  `window.__diffpackEntryBoot`; on a miss, a failure or a timeout it spawns the worker, posts
+  `build-tree` and leaves that on `window.__diffpackDiffBoot`, unless the client has marked the
+  lookup `abandoned` by asking for another comparison. The clients adopt either only when the
+  `comparisonKey` matches, and nothing reaches the worker client before the boot lookup settles. Since the script cannot import
+  anything, it restates the registry path rules, the `Comparison` fields and the cache key inline.
+  `tests/unit/worker/bootScript.test.ts` runs its output against the real client and against the
+  cache-key vectors, so update it together with any change to any of them.
 
 `src/lib/session/diffSession.ts` is the store above the client (TanStack Store). It is told two
 things, in either order: what the URL says (`follow`) and the whitespace answer
 (`answerWhitespace`). It builds nothing until it has both, drops replies whose `comparisonKey` is no
 longer current, and opens the URL's file once the tree is ready.
+
+## The server's cache
+
+`src/lib/cache/`. diffpack-server caches the diffs it computes for AI agents under a `diff_id`,
+and the app reuses them. `diffKey.ts` is the key from the server's `docs/cache-key.md`;
+`entryLookup.ts` asks `GET https://mcp.diffpack.io/diffs/v1/{diff_id}` (the store is private, so
+the server reads it); `cachedDiffClient.ts` sits in front of the worker client with the same
+interface and is what the session talks to.
+
+- **A miss must be invisible.** Every way a lookup can go wrong (404, network error, a body that is
+  not an entry, an entry for another comparison, 1.5 s without response headers) is a miss, and a miss is
+  the worker, which stays the source of truth. A file a cached entry has no patch for is worked out
+  by the worker too.
+- **Only the `diff_id` leaves the page.** No cookies, no referrer: the page URL names the package.
+- **The key only matches when the engines do.** The engine version is part of the key, read from the
+  installed `@philfreshman/diffpack-engine`. The app and the server pin it independently, so while
+  their pins differ every lookup misses, harmlessly, and an engine bump here moves every key.
+- **`fixtures/cache-key-vectors.json` is the server's file, not a copy to edit.** It is byte-identical
+  to diffpack-server's at the commit pinned in `scripts/check-cache-key-vectors.ts`, which
+  `bun run check:vectors` enforces in CI. To take new vectors, move the pin and re-download.
+  `check:vectors:development` compares with the server's development tip as a non-blocking CI step,
+  so new vectors there show up as a warning.
+  `bun run test:networked` compares keys with the live server's directly.
+- The e2e build points the cache at a closed port, so specs other than `cached-diff.spec.ts` always
+  miss and keep testing the worker.
 
 ## The diff pipeline
 

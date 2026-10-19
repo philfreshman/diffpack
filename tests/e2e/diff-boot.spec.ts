@@ -47,6 +47,8 @@ test("builds the comparison without waiting for React", async ({ page }) => {
 
 	const outcome = await page.evaluate(async () => {
 		type Reply = { id?: number; ok?: boolean; error?: string };
+		const holder = window as unknown as Record<string, unknown>;
+		await (holder.__diffpackEntryBoot as { served: Promise<unknown> }).served;
 		const boot = (window as unknown as Record<string, unknown>)
 			.__diffpackDiffBoot as
 			| { worker: Worker; id: number; replies: Reply[] }

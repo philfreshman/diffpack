@@ -1,11 +1,18 @@
+import {
+	CACHE_SCHEMA,
+	canonicalThreshold,
+	ENGINE_VERSION,
+} from "#/lib/cache/diffKey.ts";
+import { CACHE_ORIGIN, LOOKUP_TIMEOUT_MS } from "#/lib/cache/entryLookup.ts";
 import { MODULE_VERSION } from "#/lib/registries/go.ts";
 import { registryAdapters } from "#/lib/registries/index.ts";
 import { IGNORE_WHITESPACE } from "#/lib/storage/settings.ts";
 import { readInHead } from "#/lib/storage/storedSetting.ts";
-import type { Comparison } from "./protocol.ts";
+import { type Comparison, SIMILARITY_THRESHOLD } from "./protocol.ts";
 
 // A name, not a symbol: the head script and this module share no module graph.
 const DIFF_BOOT_GLOBAL = "__diffpackDiffBoot";
+const ENTRY_BOOT_GLOBAL = "__diffpackEntryBoot";
 
 export interface DiffBoot {
 	worker: Worker;
@@ -15,20 +22,51 @@ export interface DiffBoot {
 	replies: unknown[];
 }
 
+export interface EntryBoot {
+	comparison: Comparison;
+	served: Promise<unknown>;
+	abandoned: boolean;
+}
+
+function readGlobal<T>(name: string): T | null {
+	const holder = globalThis as Record<string, unknown>;
+	return (holder[name] as T | undefined) ?? null;
+}
+
 // Read lazily: this module is also evaluated on the server.
 export function readDiffBoot(): DiffBoot | null {
-	const holder = globalThis as Record<string, unknown>;
-	return (holder[DIFF_BOOT_GLOBAL] as DiffBoot | undefined) ?? null;
+	return readGlobal<DiffBoot>(DIFF_BOOT_GLOBAL);
 }
+
+export function readEntryBoot(): EntryBoot | null {
+	return readGlobal<EntryBoot>(ENTRY_BOOT_GLOBAL);
+}
+
+interface BootCache {
+	origin: string;
+	engine: string;
+	timeoutMs: number;
+}
+
+const SERVER_CACHE: BootCache = {
+	origin: CACHE_ORIGIN,
+	engine: ENGINE_VERSION,
+	timeoutMs: LOOKUP_TIMEOUT_MS,
+};
 
 const REGISTRY_IDS = registryAdapters.map((adapter) => adapter.id);
 
-// Restates each adapter's `packagePath` rule and the `Comparison` fields inline,
-// since it cannot import. Change them together; `bootScript.test.ts` checks it.
-export function buildDiffBootScript(workerUrl: string): string {
+// Restates each adapter's `packagePath` rule, the `Comparison` fields and the
+// cache key inline, since it cannot import. Change them together;
+// `bootScript.test.ts` checks it.
+export function buildDiffBootScript(
+	workerUrl: string,
+	cache: BootCache = SERVER_CACHE,
+): string {
+	const asLiteral = JSON.stringify;
 	return `(()=>{try{
-var REGISTRIES=${JSON.stringify(REGISTRY_IDS)};
-var GO_VERSION=new RegExp(${JSON.stringify(MODULE_VERSION.source)});
+var REGISTRIES=${asLiteral(REGISTRY_IDS)};
+var GO_VERSION=new RegExp(${asLiteral(MODULE_VERSION.source)});
 var decode=function(s){try{return decodeURIComponent(s)}catch(e){return s}};
 var parts=location.pathname.split("/").filter(Boolean).map(decode);
 var registry=parts.shift();
@@ -40,10 +78,27 @@ for(var i=0;i<parts.length;i++)if(GO_VERSION.test(parts[i])){width=i;break}}
 var pkg=parts.slice(0,width).join("/"),from=parts[width],to=parts[width+1];
 if(!pkg||!from||!to)return;
 var comparison={registry:registry,pkg:pkg,from:from,to:to,ignoreWhitespace:${readInHead(IGNORE_WHITESPACE)}};
-var worker=new Worker(${JSON.stringify(workerUrl)},{type:"module"});
+var entryBoot={comparison:comparison,served:null,abandoned:false};
+var start=function(){
+if(entryBoot.abandoned)return null;
+var worker=new Worker(${asLiteral(workerUrl)},{type:"module"});
 var boot={worker:worker,id:0,comparison:comparison,replies:[]};
 worker.onmessage=function(event){boot.replies.push(event.data)};
 worker.postMessage(Object.assign({id:boot.id,type:"build-tree"},comparison));
 window.${DIFF_BOOT_GLOBAL}=boot;
+return null};
+var jsonString=JSON.stringify;
+var canonical='{"engine":'+jsonString(${asLiteral(cache.engine)})+',"from":'+jsonString(from)+',"ignore_whitespace":'+comparison.ignoreWhitespace+',"package":'+jsonString(pkg)+',"registry":'+jsonString(registry)+',"schema":${CACHE_SCHEMA},"similarity_threshold":'+jsonString(${asLiteral(canonicalThreshold(SIMILARITY_THRESHOLD))})+',"to":'+jsonString(to)+'}';
+var served=Promise.resolve().then(function(){
+return crypto.subtle.digest("SHA-256",new TextEncoder().encode(canonical))}).then(function(digest){
+var id=Array.prototype.map.call(new Uint8Array(digest),function(b){return(b<16?"0":"")+b.toString(16)}).join("");
+var answered=new AbortController();
+var giveUp=setTimeout(function(){answered.abort()},${cache.timeoutMs});
+var settled=function(){clearTimeout(giveUp)};
+return fetch(${asLiteral(cache.origin)}+"/diffs/v${CACHE_SCHEMA}/"+id,{credentials:"omit",referrerPolicy:"no-referrer",signal:answered.signal}).then(function(response){settled();return response},function(error){settled();throw error})}).then(function(response){
+return response.ok?response.json():null}).catch(function(){return null}).then(function(body){
+return body||start()});
+entryBoot.served=served;
+window.${ENTRY_BOOT_GLOBAL}=entryBoot;
 }catch(e){}})();`;
 }
