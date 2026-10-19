@@ -54,6 +54,18 @@ test("gives the Packagist tile PHP's purple, not the default accent", async ({
 	expect(accent).toBe("119 123 180");
 });
 
+test("names every registry in the keywords search engines read", async ({
+	request,
+}) => {
+	const html = await (await request.get("/npm")).text();
+
+	for (const keyword of ["go", "packagist", "composer", "php"]) {
+		expect(html).toMatch(
+			new RegExp(`name="keywords" content="[^"]*\\b${keyword}\\b`),
+		);
+	}
+});
+
 test("glows on hover without a single inline handler", async ({ page }) => {
 	await page.goto("/");
 
@@ -88,7 +100,7 @@ test("describes itself for anything that links to it", async ({ request }) => {
 
 	expect(html).toContain("<title>diffpack</title>");
 	expect(html).toContain(
-		'content="Compare package versions across ecosystems. Source-aware dependency review for npm, crates.io, Go and PyPI."',
+		'content="Compare package versions across ecosystems. Source-aware dependency review for npm, crates.io, Go, PyPI and Packagist."',
 	);
 });
 

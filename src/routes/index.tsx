@@ -6,7 +6,7 @@ import { GithubIcon } from "#/components/ui/icons.tsx";
 import styles from "./index.module.css";
 
 const DESCRIPTION =
-	"Compare package versions across ecosystems. Source-aware dependency review for npm, crates.io, Go and PyPI.";
+	"Compare package versions across ecosystems. Source-aware dependency review for npm, crates.io, Go, PyPI and Packagist.";
 
 export const Route = createFileRoute("/")({
 	head: () => ({

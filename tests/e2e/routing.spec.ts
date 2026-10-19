@@ -47,6 +47,9 @@ test("does not invent a registry that does not exist", async ({ page }) => {
 
 	expect(response?.status()).toBe(404);
 	await expect(page.getByTestId("not-found")).toBeVisible();
+	await expect(page.getByTestId("not-found")).toContainText(
+		"npm, crates.io, Go, PyPI and Packagist",
+	);
 	await expect(workspace(page)).toHaveCount(0);
 });
 

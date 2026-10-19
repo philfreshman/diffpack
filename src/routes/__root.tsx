@@ -17,10 +17,10 @@ import diffWorkerUrl from "#/lib/worker/diff.worker.ts?worker&url";
 import globalsCss from "#/styles/globals.css?url";
 
 const DESCRIPTION =
-	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io and PyPI.";
+	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io, Go, PyPI and Packagist.";
 
 const KEYWORDS =
-	"dependency, review, diff, npm, crates.io, pypi, python, rust, javascript, typescript, package, compare";
+	"dependency, review, diff, npm, crates.io, go, pypi, packagist, composer, python, rust, golang, php, javascript, typescript, package, compare";
 
 const SITE = "https://diffpack.io";
 
