@@ -55,8 +55,9 @@ test("builds the comparison without waiting for React", async ({ page }) => {
 			| undefined;
 		if (!boot) return "nothing was booted";
 
-		// By id: the worker's other messages share the channel.
-		const answer = (reply: Reply) => reply.id === boot.id;
+		// By id, and with an outcome: the worker's other messages and the
+		// build's download progress share the channel.
+		const answer = (reply: Reply) => reply.id === boot.id && "ok" in reply;
 		const reply =
 			boot.replies.find(answer) ??
 			(await new Promise<Reply>((resolve) => {

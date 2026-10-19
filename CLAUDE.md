@@ -7,7 +7,10 @@ that are easy to break without knowing they exist.
 
 diffpack compares two versions of a package in the browser. The URL names the comparison, a Web
 Worker running a Rust/WebAssembly engine downloads and diffs both archives, and the server renders
-the shell and nothing else — package contents never reach it.
+the shell and nothing else — package contents never reach it. Composer is the one exception to
+"straight from the registry": Packagist's metadata and archives send no CORS header, so the browser
+fetches them through `diffpack-proxy`, a Cloudflare Worker that streams the bytes without storing
+them. The diff is still computed in the browser.
 
 ## Commands
 
@@ -29,6 +32,9 @@ bun run badge            # regenerate .github/badges/fallow-health.svg when the 
 - One e2e spec: `bunx playwright test tests/e2e/file-tree.spec.ts`. It builds and serves the app
   itself with `--strictPort`; use `PORT=4399` to stay out of another worktree's way, or
   `BASE_URL=http://localhost:4321` to point at a server already running and skip the rebuild.
+- `VITE_DIFFPACK_PROXY_ORIGIN` points the Composer and Go adapters and the engine at another proxy, such as
+  `http://localhost:8787` for `bun run dev` in `../diffpack-proxy`. Unset, both use the deployed
+  `https://diffpack-proxy.philipswiezak.workers.dev`, and so does every e2e run.
 - The pre-commit hook runs typecheck, lint, format, test, then `fallow audit` against the branch's
   upstream. Run those before committing rather than finding out from the hook.
 - `src/routeTree.gen.ts` is generated and committed. Do not edit it by hand.
@@ -68,7 +74,8 @@ network, a worker or `localStorage`. Keep new code in that shape.
   `parseSlug(adapter, splat)` from `src/lib/url/slug.ts` and render `DiffWorkspace`.
 - How many segments a package name spans is the adapter's business, through `packagePath`: npm
   takes two for a scoped name, Go takes everything up to the first segment matching
-  `MODULE_VERSION`, crates and PyPI take one (`singleSegmentPath`).
+  `MODULE_VERSION`, Composer takes two (`vendor/package`, lowercased), crates and PyPI take one
+  (`singleSegmentPath`).
 - `buildPath` is the inverse of `parseSlug`, and it keeps `@` unescaped because `/npm/@types/node`
   is the URL that is live and indexed. Build links with `buildPath`, never by concatenating strings.
 - A package plus two versions in the URL *is* the request for a comparison. Nothing else starts
@@ -89,25 +96,53 @@ landing-page order and exposes `getAdapter` / `requireAdapter` / `isRegistryId`.
   `` `${REGISTRY_URL}/${encodeURIComponent(name)}` ``. Never `new URL(name, BASE)`, which lets a
   name replace the host. `tests/unit/registries/outboundOrigins.test.ts` asserts it with hostile
   names, and `docs/security-candidates.md` explains why.
-- Go has no browser-reachable search, so `capabilities.discoverySearch` is `false` and the field
-  takes a full module path. Module paths are case-escaped for the proxy (`!masterminds`).
+- Go search looks a full module path up at `proxy.golang.org` (case-escaped: `!masterminds`). Any
+  other text, or a path that does not resolve, is a keyword search at
+  `${PROXY_ORIGIN}/v1/go/search`, which relays pkg.go.dev's search API (no CORS header of its
+  own). pkg.go.dev lists packages, so the adapter groups them by module. Enter still takes a typed
+  path, for modules pkg.go.dev does not list.
+- Composer search goes straight to `packagist.org`, but its version list comes through the proxy
+  at `PROXY_ORIGIN` (`src/lib/proxy/origin.ts`), and the engine downloads its archives through the
+  same origin. A call to the proxy passes that origin to `getJson` / `getText` as the last
+  argument, which turns a failed `fetch` into `proxy_unreachable` and an answer with a
+  `Diffpack-Proxy-Error` header into a `CodedError` with the proxy's code.
 - The engine does its own downloads, keyed by registry id and package name. `downloadUrl` is only
   the link shown beside a version.
 
 Adding a registry touches more than the adapter:
 
 1. The engine has to support it: a release of `diffpack-engine` and a version bump here.
-2. The adapter, and its entry in `index.ts`.
-3. `buildDiffBootScript` in `src/lib/worker/bootScript.ts`, which restates each registry's
+2. If the registry's metadata or archives send no CORS header, the browser cannot read them: add
+   routes for them to `diffpack-proxy` (its `docs/contract.md`), have the engine download through
+   the origin `set_proxy_origin` gives it, and fetch the adapter's calls from `PROXY_ORIGIN`. Add
+   the proxy origin to the registry's `ALLOWED_ORIGINS` in `outboundOrigins.test.ts`, any new
+   failure code to `src/lib/failure/failure.ts`, and say in the README's "It runs in your browser"
+   that the registry is proxied.
+3. The adapter, and its entry in `index.ts`.
+4. `buildDiffBootScript` in `src/lib/worker/bootScript.ts`, which restates each registry's
    `packagePath` rule inline (see below).
-4. `RegistryId` in `types.ts`, the `--registry-<id>-rgb` accent in `globals.css`, the tile rule in
+5. `RegistryId` in `types.ts`, the `--registry-<id>-rgb` accent in `globals.css`, the tile rule in
    `RegistryTile.module.css`, and the README table.
-5. Unit tests beside the others in `tests/unit/registries/`, including `outboundOrigins`.
+6. Unit tests beside the others in `tests/unit/registries/`, including `outboundOrigins`.
+
+### Failure codes
+
+`src/lib/failure/`. A failure carries a `FailureCode` (`failure.ts`) beside its message: the
+engine's codes, the proxy's, and `proxy_unreachable`. `CodedError` is how it is thrown, `failureOf`
+reads one back from anything thrown, and an error crosses the worker boundary as its message plus
+`code`, `resetsAt` and `status` (`protocol.ts`, `diffWorkerClient.ts`). `isProxyLimit` picks out
+`quota_exhausted` and `proxy_unreachable`, for which `DiffWorkspace` shows `ProxyLimitNotice` with
+the time Composer comes back (`resetTime.ts`: the proxy's `resetsAt`, or the next 00:00 UTC).
+`FAILURE_CODES` restates the codes in the engine's README and the proxy's `docs/contract.md`. A code
+missing from it is dropped, and the failure arrives as a bare message.
 
 ## The engine and the worker protocol
 
 `src/lib/worker/`. The engine is a `wasm-pack --target web` module that
-`diff.worker.ts` initializes once against the `.wasm` URL Vite fingerprints. It is excluded from
+`diff.worker.ts` initializes once against the `.wasm` URL Vite fingerprints, then calls
+`set_proxy_origin(PROXY_ORIGIN)` (`src/lib/proxy/origin.ts`), without which every Composer request
+fails with `proxy_not_configured` (`engineReady.ts`: a refused origin leaves the other registries
+working, and a failed start is retried on the next message). The engine is excluded from
 `optimizeDeps`, and has to stay excluded. Changing how a diff is *computed* is a PR in
 `philfreshman/diffpack-engine`, not here; `DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg bun run dev`
 tries an unreleased build.
@@ -117,7 +152,7 @@ tries an unreleased build.
 
 | Request | Engine call | Notes |
 | :--- | :--- | :--- |
-| `build-tree` | `build_diff_tree_for_package` | Downloads both versions, returns the `DiffFileEntry` tree, and makes this the engine's *active diff*. |
+| `build-tree` | `prefetch_package` ×2, then `build_diff_tree_for_package` | Downloads both versions, sending `{ id, fetched: { side, failure } }` as each one lands (the viewer's progress box), then returns the `DiffFileEntry` tree and makes this the engine's *active diff*. |
 | `get-file` | `get_diff_for_path` | Reads one file out of the active diff. Takes `oldPath` for a rename. |
 | `prefetch` | `prefetch_package` ×2 | Warms the download cache. Never touches the active diff. |
 

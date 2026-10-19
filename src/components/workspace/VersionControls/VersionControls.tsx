@@ -19,7 +19,7 @@ export function VersionControls({
 	slug: DiffSlug;
 }) {
 	const navigate = useNavigate();
-	const { list, loading } = useVersions(adapter, slug.package);
+	const { list, loading, error } = useVersions(adapter, slug.package);
 	const [selection, setSelection] = useState(() =>
 		resolveSelection(list, slug),
 	);
@@ -55,7 +55,9 @@ export function VersionControls({
 					setSelection((current) => ({ ...current, from: version }))
 				}
 				loading={loading}
+				unavailable={error !== null}
 				downloadUrl={from ? adapter.downloadUrl(slug.package, from) : undefined}
+				linkCopy={adapter.versionLink}
 			/>
 			<VersionCombobox
 				label="To Version"
@@ -65,7 +67,9 @@ export function VersionControls({
 					setSelection((current) => ({ ...current, to: version }))
 				}
 				loading={loading}
+				unavailable={error !== null}
 				downloadUrl={to ? adapter.downloadUrl(slug.package, to) : undefined}
+				linkCopy={adapter.versionLink}
 			/>
 			<Button
 				className={styles.compare}

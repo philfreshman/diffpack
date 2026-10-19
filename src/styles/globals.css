@@ -80,10 +80,12 @@
 	--registry-crates-rgb: 222 132 44;
 	--registry-go-rgb: 0 173 216;
 	--registry-pypi-rgb: 55 118 171;
+	--registry-composer-rgb: 119 123 180;
 	--registry-npm: rgb(var(--registry-npm-rgb));
 	--registry-crates: rgb(var(--registry-crates-rgb));
 	--registry-go: rgb(var(--registry-go-rgb));
 	--registry-pypi: rgb(var(--registry-pypi-rgb));
+	--registry-composer: rgb(var(--registry-composer-rgb));
 
 	--font-display: "Miriam Libre", sans-serif;
 	--font-sans:

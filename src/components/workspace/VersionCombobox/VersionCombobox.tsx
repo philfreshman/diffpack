@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
-import { DownloadIcon } from "#/components/ui/icons.tsx";
+import { DownloadIcon, ExternalLinkIcon } from "#/components/ui/icons.tsx";
+import type { VersionLinkCopy } from "#/lib/registries/types.ts";
 import styles from "./VersionCombobox.module.css";
 
 export interface VersionComboboxProps {
@@ -9,7 +10,23 @@ export interface VersionComboboxProps {
 	value: string;
 	onChange(version: string): void;
 	loading?: boolean;
+	unavailable?: boolean;
 	downloadUrl?: string;
+	linkCopy?: VersionLinkCopy;
+}
+
+const DOWNLOAD_LINK: VersionLinkCopy = {
+	labelPrefix: "Download",
+	title: "Download package",
+	opens: "download",
+};
+
+const LINK_ICONS = { download: DownloadIcon, page: ExternalLinkIcon };
+
+function placeholderFor(loading: boolean, unavailable: boolean): string {
+	if (loading) return "Loading…";
+	if (unavailable) return "Versions unavailable";
+	return "Select version";
 }
 
 // No `onSubmitText`: unlike package search, only listed versions are valid.
@@ -19,11 +36,15 @@ export function VersionCombobox({
 	value,
 	onChange,
 	loading = false,
+	unavailable = false,
 	downloadUrl,
+	linkCopy = DOWNLOAD_LINK,
 }: VersionComboboxProps) {
 	const [inputValue, setInputValue] = useState(value);
 
 	useEffect(() => setInputValue(value), [value]);
+
+	const LinkIcon = LINK_ICONS[linkCopy.opens];
 
 	return (
 		<div className={styles.field}>
@@ -33,11 +54,12 @@ export function VersionCombobox({
 					<a
 						className={styles.download}
 						href={downloadUrl}
-						aria-label={`Download ${value}`}
-						title="Download package"
+						aria-label={`${linkCopy.labelPrefix} ${value}`}
+						title={linkCopy.title}
+						data-opens={linkCopy.opens}
 						rel="noopener noreferrer"
 					>
-						<DownloadIcon width="14" height="14" />
+						<LinkIcon width="14" height="14" />
 					</a>
 				) : null}
 			</span>
@@ -59,7 +81,7 @@ export function VersionCombobox({
 				loading={loading}
 				loadingMessage="Loading versions…"
 				emptyMessage={versions.length ? "No matching versions" : "No versions"}
-				placeholder={loading ? "Loading…" : "Select version"}
+				placeholder={placeholderFor(loading, unavailable)}
 				disabled={!loading && versions.length === 0}
 			/>
 		</div>

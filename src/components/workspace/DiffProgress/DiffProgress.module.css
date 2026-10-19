@@ -1,0 +1,88 @@
+.stage {
+	--step-height: 1.75rem;
+	--steps-gap: var(--space-1);
+	--steps-height: calc(
+		var(--step-count) *
+		var(--step-height) +
+		(var(--step-count) - 1) *
+		var(--steps-gap) +
+		2 *
+		var(--space-3)
+	);
+
+	display: grid;
+	flex: 1;
+	min-height: 0;
+	grid-template-rows: minmax(0, 1fr) var(--steps-height) minmax(0, 1fr);
+	justify-items: center;
+	overflow: auto;
+}
+
+.box {
+	width: min(28rem, 100%);
+	grid-row: 2 / 4;
+	align-self: start;
+}
+
+.steps {
+	display: flex;
+	flex-direction: column;
+	gap: var(--steps-gap);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.step {
+	display: flex;
+	height: var(--step-height);
+	min-width: 0;
+	align-items: center;
+	gap: var(--space-3);
+	color: var(--color-foreground);
+}
+
+.step[data-state="waiting"] {
+	color: var(--color-muted);
+}
+
+.indicator {
+	display: inline-flex;
+	width: 1rem;
+	height: 1rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+}
+
+.dot {
+	width: 0.5rem;
+	height: 0.5rem;
+	border: 1px solid var(--color-muted);
+	border-radius: var(--radius-full);
+}
+
+.dot[data-state="done"] {
+	border-color: var(--color-added);
+	background-color: var(--color-added);
+}
+
+.dot[data-state="failed"] {
+	border-color: var(--color-danger);
+	background-color: var(--color-danger);
+}
+
+.label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.failures {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	margin-top: var(--space-3);
+	padding-top: var(--space-3);
+	border-top: 1px solid var(--color-border);
+}

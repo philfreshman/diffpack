@@ -1,0 +1,19 @@
+.notice {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+}
+
+.title,
+.detail {
+	margin: 0;
+}
+
+.title {
+	color: var(--color-foreground);
+	font-weight: 600;
+}
+
+.detail {
+	color: var(--color-muted);
+}

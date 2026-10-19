@@ -28,13 +28,29 @@ a Rust toolchain is needed only to work on
 There is no build step in front of that, and no toolchain to install for it. `bun install` brings
 the compiled engine down with everything else.
 
+### The Composer proxy
+
+Packagist's version metadata and the archives it lists send no CORS header, so the browser reads
+Composer versions and downloads Composer archives through
+[diffpack-proxy](https://github.com/philfreshman/diffpack-proxy), a Cloudflare Worker. The version
+list asks it from the page; the diff worker hands the same origin to the engine with
+`set_proxy_origin` before anything else runs. Both use the deployed proxy,
+`https://diffpack-proxy.philipswiezak.workers.dev`, unless `VITE_DIFFPACK_PROXY_ORIGIN` names
+another, and so does every e2e run. It answers pages on `http://localhost:<port>`, so `bun run dev`
+works against it as is. To run against a local copy instead:
+
+```bash
+cd ../diffpack-proxy && bun run dev    # wrangler dev on :8787
+cd ../diffpack && VITE_DIFFPACK_PROXY_ORIGIN=http://localhost:8787 bun run dev
+```
+
 ### The engine
 
 The extraction and diffing logic — everything that downloads an archive, unpacks it and compares
 two versions — is Rust compiled to WebAssembly. It lives in
 **[philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine)** and is consumed
 here as an ordinary dependency, `@philfreshman/diffpack-engine`, pinned in `package.json`. It is a
-`wasm-pack --target web` module: `src/lib/worker/diff.worker.ts` imports its three entry points and
+`wasm-pack --target web` module: `src/lib/worker/diff.worker.ts` imports its four entry points and
 initialises it against the `.wasm` URL Vite fingerprints.
 
 Two consequences worth knowing:

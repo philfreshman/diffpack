@@ -1,10 +1,13 @@
 import { describe, expect, test } from "bun:test";
+import { failureOf } from "#/lib/failure/failure.ts";
 import type { DiffBoot } from "#/lib/worker/bootScript.ts";
 import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
-import type {
-	Comparison,
-	DiffFileEntry,
-	WorkerRequest,
+import {
+	type ArchiveFetched,
+	type Comparison,
+	type DiffFileEntry,
+	failedReply,
+	type WorkerRequest,
 } from "#/lib/worker/protocol.ts";
 
 const COMPARISON: Comparison = {
@@ -176,6 +179,60 @@ describe("createDiffClient", () => {
 	});
 });
 
+describe("a build's progress", () => {
+	const FROM_FETCHED: ArchiveFetched = { side: "from", failure: null };
+	const TO_FAILED: ArchiveFetched = {
+		side: "to",
+		failure: { message: "404 fetching linux-raw-sys@0.12.1" },
+	};
+
+	test("reaches the caller as each archive arrives, without settling the build", async () => {
+		const { client, spawned } = clientWith(null);
+		const heard: ArchiveFetched[] = [];
+
+		let done = false;
+		const tree = client
+			.buildTree(COMPARISON, (fetched) => heard.push(fetched))
+			.finally(() => {
+				done = true;
+			});
+		await settled();
+		spawned[0]?.reply({ id: 0, fetched: FROM_FETCHED });
+		await settled();
+
+		expect(heard).toEqual([FROM_FETCHED]);
+		expect(done).toBe(false);
+
+		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
+		expect(await tree).toEqual(TREE);
+	});
+
+	test("of the boot's build reaches the client that claims it, including what came before", async () => {
+		const booted = new FakeWorker();
+		const { client } = clientWith(
+			bootOf(booted, [{ id: 0, fetched: FROM_FETCHED }]),
+		);
+		const heard: ArchiveFetched[] = [];
+
+		void client.buildTree(COMPARISON, (fetched) => heard.push(fetched));
+		booted.reply({ id: 0, fetched: TO_FAILED });
+
+		expect(heard).toEqual([FROM_FETCHED, TO_FAILED]);
+	});
+
+	test("of a build no one waits on any more is dropped", async () => {
+		const { client, spawned } = clientWith(null);
+		const heard: ArchiveFetched[] = [];
+
+		void client.buildTree(COMPARISON, (fetched) => heard.push(fetched));
+		await settled();
+		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
+		spawned[0]?.reply({ id: 0, fetched: FROM_FETCHED });
+
+		expect(heard).toEqual([]);
+	});
+});
+
 describe("the engine's one active diff", () => {
 	test("a file is read out of the comparison it was asked of, not the build that finished last", async () => {
 		const engine = new FakeEngine(new Set([ANOTHER.to]));
@@ -266,5 +323,39 @@ describe("the engine's one active diff", () => {
 			{ id: 1, type: "build-tree", ...COMPARISON },
 		]);
 		await expect(overtaken).rejects.toThrow("overtaken");
+	});
+});
+
+describe("a failure's code", () => {
+	test("reaches the caller from the engine, through the worker's reply", async () => {
+		const { client, spawned } = clientWith(null);
+		const failed = client.buildTree(COMPARISON);
+		await settled();
+		const thrown = Object.assign(new Error("Composer diffs are paused"), {
+			code: "quota_exhausted",
+			resetsAt: "2026-10-20T00:00:00Z",
+			status: 503,
+		});
+
+		spawned[0]?.reply(failedReply(0, thrown));
+
+		expect(failureOf(await failed.catch((error) => error))).toEqual({
+			message: "Composer diffs are paused",
+			code: "quota_exhausted",
+			resetsAt: "2026-10-20T00:00:00Z",
+			status: 503,
+		});
+	});
+
+	test("is absent when the engine threw a plain string, as 0.4.1 does", async () => {
+		const { client, spawned } = clientWith(null);
+		const failed = client.buildTree(COMPARISON);
+		await settled();
+
+		spawned[0]?.reply(failedReply(0, "404 Not Found"));
+
+		expect(failureOf(await failed.catch((error) => error))).toEqual({
+			message: "404 Not Found",
+		});
 	});
 });

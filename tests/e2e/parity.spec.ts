@@ -38,6 +38,11 @@ const MATRIX = [
 		file: "tree.go",
 	},
 	{
+		name: "Packagist",
+		path: "/composer/monolog/monolog/3.12.0/3.12.1",
+		file: "Logger.php",
+	},
+	{
 		name: "a scoped npm package",
 		path: "/npm/@types/node/26.3.0/26.4.0",
 		file: "package.json",
@@ -145,11 +150,12 @@ test("serves every icon and card image it points at", async ({
 		"/site.webmanifest",
 	]);
 	expect(referenced.cards).toEqual([
-		"/web-app-manifest-512x512.png",
-		"/web-app-manifest-512x512.png",
+		"https://diffpack.io/web-app-manifest-512x512.png",
+		"https://diffpack.io/web-app-manifest-512x512.png",
 	]);
 
-	for (const href of [...referenced.icons, ...referenced.cards]) {
+	const cardPaths = referenced.cards.map((card) => new URL(card).pathname);
+	for (const href of [...referenced.icons, ...cardPaths]) {
 		const response = await request.get(href);
 		expect(response.status(), href).toBe(200);
 	}
@@ -215,7 +221,9 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 	expect([type, name]).toEqual(["event", "page_view"]);
 	expect(params.page_path).toBe("/");
 	// The title of the page arrived at, not the one just left.
-	expect(params.page_title).toBe("diffpack");
+	expect(params.page_title).toBe(
+		"diffpack: compare npm, crates.io, Go, PyPI and Packagist versions",
+	);
 });
 
 // A hydration mismatch only shows as a console error; the pre-paint `<head>` scripts are the usual cause.
@@ -225,7 +233,9 @@ const ROUTES = [
 	"/crates",
 	"/pypi",
 	"/go",
+	"/composer",
 	"/npm/express/4.18.2/5.1.0",
+	"/composer/monolog/monolog/3.12.0/3.12.1/src/Monolog/Logger.php",
 	"/go/github.com/go-chi/chi/v5/v5.3.1/v5.3.2/tree.go",
 ];
 

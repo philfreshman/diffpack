@@ -12,19 +12,18 @@ import { GA_SCRIPT, GA_SRC } from "#/lib/analytics.ts";
 import { createQueryClient } from "#/lib/query/queryClient.ts";
 import { THEME_SCRIPT } from "#/lib/themeScript.ts";
 import { TREE_WIDTH_SCRIPT } from "#/lib/tree/widthScript.ts";
+import { siteUrl } from "#/lib/url/site.ts";
 import { buildDiffBootScript } from "#/lib/worker/bootScript.ts";
 import diffWorkerUrl from "#/lib/worker/diff.worker.ts?worker&url";
 import globalsCss from "#/styles/globals.css?url";
 
 const DESCRIPTION =
-	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io and PyPI.";
+	"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io, Go, PyPI and Packagist.";
 
 const KEYWORDS =
-	"dependency, review, diff, npm, crates.io, pypi, python, rust, javascript, typescript, package, compare";
+	"dependency, review, diff, npm, crates.io, go, pypi, packagist, composer, python, rust, golang, php, javascript, typescript, package, compare";
 
-const SITE = "https://diffpack.io";
-
-const SHARE_IMAGE = "/web-app-manifest-512x512.png";
+const SHARE_IMAGE = siteUrl("/web-app-manifest-512x512.png");
 
 const DIFF_BOOT_SCRIPT = buildDiffBootScript(diffWorkerUrl);
 
@@ -37,12 +36,10 @@ export const Route = createRootRoute({
 			{ name: "description", content: DESCRIPTION },
 			{ name: "keywords", content: KEYWORDS },
 			{ property: "og:type", content: "website" },
-			{ property: "og:url", content: SITE },
 			{ property: "og:title", content: "diffpack" },
 			{ property: "og:description", content: DESCRIPTION },
 			{ property: "og:image", content: SHARE_IMAGE },
 			{ property: "twitter:card", content: "summary_large_image" },
-			{ property: "twitter:url", content: SITE },
 			{ property: "twitter:title", content: "diffpack" },
 			{ property: "twitter:description", content: DESCRIPTION },
 			{ property: "twitter:image", content: SHARE_IMAGE },

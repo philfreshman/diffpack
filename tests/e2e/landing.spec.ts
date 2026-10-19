@@ -6,8 +6,14 @@ test("offers every registry diffpack supports", async ({ page }) => {
 
 	const tiles = page.getByTestId("registry-tile");
 
-	await expect(tiles).toHaveCount(4);
-	await expect(tiles).toHaveText([/npm/, /crates\.io/, /Go/, /PyPI/]);
+	await expect(tiles).toHaveCount(5);
+	await expect(tiles).toHaveText([
+		/npm/,
+		/crates\.io/,
+		/Go/,
+		/PyPI/,
+		/Packagist/,
+	]);
 });
 
 test("says what each registry is for, and offers it as one link", async ({
@@ -30,7 +36,36 @@ test("opens a registry from its tile", async ({ page }) => {
 		.click();
 
 	await expect(page).toHaveURL(/\/crates$/);
-	await expect(page).toHaveTitle("diffpack | crates.io");
+	await expect(page).toHaveTitle(
+		"Compare crates.io package versions | diffpack",
+	);
+});
+
+test("gives the Packagist tile PHP's purple, not the default accent", async ({
+	page,
+}) => {
+	await page.goto("/");
+
+	const accent = await page
+		.getByTestId("registry-tile")
+		.filter({ hasText: "Packagist" })
+		.evaluate((node) =>
+			getComputedStyle(node).getPropertyValue("--tile-accent").trim(),
+		);
+
+	expect(accent).toBe("119 123 180");
+});
+
+test("names every registry in the keywords search engines read", async ({
+	request,
+}) => {
+	const html = await (await request.get("/npm")).text();
+
+	for (const keyword of ["go", "packagist", "composer", "php"]) {
+		expect(html).toMatch(
+			new RegExp(`name="keywords" content="[^"]*\\b${keyword}\\b`),
+		);
+	}
 });
 
 test("glows on hover without a single inline handler", async ({ page }) => {
@@ -65,10 +100,26 @@ test("points at the repository from the footer", async ({ page }) => {
 test("describes itself for anything that links to it", async ({ request }) => {
 	const html = await (await request.get("/")).text();
 
-	expect(html).toContain("<title>diffpack</title>");
 	expect(html).toContain(
-		'content="Compare package versions across ecosystems. Source-aware dependency review for npm, crates.io, Go and PyPI."',
+		"<title>diffpack: compare npm, crates.io, Go, PyPI and Packagist versions</title>",
 	);
+	expect(html).toContain('<link rel="canonical" href="https://diffpack.io/"/>');
+	expect(html).toContain('<script type="application/ld+json">');
+	expect(html).toContain('"@type":"WebSite","name":"diffpack"');
+	expect(html).toContain(
+		'content="Compare package versions across ecosystems. Source-aware dependency review for npm, crates.io, Go, PyPI and Packagist."',
+	);
+});
+
+test("shares the site-wide description, naming every registry", async ({
+	request,
+}) => {
+	const html = await (await request.get("/")).text();
+	const shared =
+		"Compare package versions across ecosystems. Clean. Fast. Source-aware dependency review tool for npm, crates.io, Go, PyPI and Packagist.";
+
+	expect(html).toContain(`property="og:description" content="${shared}"`);
+	expect(html).toContain(`property="twitter:description" content="${shared}"`);
 });
 
 test("hangs the nebula behind the stars, in the dark theme only", async ({

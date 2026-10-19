@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { composerAdapter } from "#/lib/registries/composer.ts";
 import { cratesAdapter } from "#/lib/registries/crates.ts";
 import { goAdapter } from "#/lib/registries/go.ts";
 import { npmAdapter } from "#/lib/registries/npm.ts";
@@ -48,6 +49,18 @@ describe("parseSlug across registries", () => {
 			from: "",
 			to: "",
 			file: "",
+		});
+	});
+
+	test("takes vendor and package for a composer name, lowercased as typed by hand", () => {
+		expect(
+			parseSlug(composerAdapter, "Monolog/Monolog/3.12.0/3.12.1/src/Monolog"),
+		).toEqual({
+			registry: "composer",
+			package: "monolog/monolog",
+			from: "3.12.0",
+			to: "3.12.1",
+			file: "src/Monolog",
 		});
 	});
 
@@ -196,6 +209,24 @@ describe("a URL built by diffpack", () => {
 				from: "4.18.2",
 				to: "5.1.0",
 				file: "test/a b#c.js",
+			},
+		},
+		{
+			adapter: composerAdapter,
+			slug: {
+				package: "monolog/monolog",
+				from: "3.12.0",
+				to: "3.12.1",
+				file: "src/Monolog/Logger.php",
+			},
+		},
+		{
+			adapter: composerAdapter,
+			slug: {
+				package: "symfony/console",
+				from: "v7.3.0",
+				to: "v7.3.1",
+				file: "Application.php",
 			},
 		},
 	];

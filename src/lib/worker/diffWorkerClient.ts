@@ -1,19 +1,44 @@
+import { CodedError } from "#/lib/failure/failure.ts";
 import { type DiffBoot, readDiffBoot } from "./bootScript.ts";
 import {
+	type ArchiveFetched,
 	type Comparison,
 	comparisonKey,
 	type DiffFileEntry,
 	type DiffRequest,
 	type FileDiff,
+	isProgress,
+	type OnArchiveFetched,
+	type WorkerMessage,
 	type WorkerRequest,
 	type WorkerRequestInput,
-	type WorkerResponse,
 } from "./protocol.ts";
 
 type Pending = {
 	resolve: (value: unknown) => void;
 	reject: (reason: Error) => void;
+	onProgress?: OnArchiveFetched;
 };
+
+const ignoreProgress: OnArchiveFetched = () => {};
+
+function createProgressRelay() {
+	const heard: ArchiveFetched[] = [];
+	let listener: OnArchiveFetched | null = null;
+
+	return {
+		tell(fetched: ArchiveFetched) {
+			if (listener) listener(fetched);
+			else heard.push(fetched);
+		},
+		listen(next: OnArchiveFetched) {
+			listener = next;
+			for (const fetched of heard.splice(0)) next(fetched);
+		},
+	};
+}
+
+type ProgressRelay = ReturnType<typeof createProgressRelay>;
 
 export function createDiffClient(
 	spawn: () => Worker,
@@ -24,8 +49,11 @@ export function createDiffClient(
 	let worker: Worker | null = null;
 	// Cleared once claimed *or* once another comparison is asked for: after a
 	// second `build-tree` this tree would describe a diff no longer loaded.
-	let adopted: { comparison: Comparison; tree: Promise<DiffFileEntry> } | null =
-		null;
+	let adopted: {
+		comparison: Comparison;
+		tree: Promise<DiffFileEntry>;
+		progress: ProgressRelay;
+	} | null = null;
 	// Builds and reads run one at a time. A download that never finishes stalls
 	// everything behind it: the engine cannot cancel a build.
 	let lane: Promise<unknown> = Promise.resolve();
@@ -33,17 +61,28 @@ export function createDiffClient(
 	let active: string | null = null;
 	let buildsAsked = 0;
 
-	function receive(message: WorkerResponse) {
+	function receive(message: WorkerMessage) {
 		const entry = pending.get(message.id);
 		if (!entry) return;
+		if (isProgress(message)) {
+			entry.onProgress?.(message.fetched);
+			return;
+		}
 		pending.delete(message.id);
 		if (message.ok) entry.resolve(message.data);
-		else entry.reject(new Error(message.error));
+		else entry.reject(new CodedError({ ...message, message: message.error }));
 	}
 
-	function awaitReply<T>(id: number): Promise<T> {
+	function awaitReply<T>(
+		id: number,
+		onProgress?: OnArchiveFetched,
+	): Promise<T> {
 		return new Promise<T>((resolve, reject) => {
-			pending.set(id, { resolve: resolve as (value: unknown) => void, reject });
+			pending.set(id, {
+				resolve: resolve as (value: unknown) => void,
+				reject,
+				onProgress,
+			});
 		});
 	}
 
@@ -63,24 +102,28 @@ export function createDiffClient(
 		// Past whatever the script used, so a reply cannot resolve the wrong call.
 		nextId = booted.id + 1;
 
-		const tree = built(booted.comparison, awaitReply(booted.id));
+		const progress = createProgressRelay();
+		const tree = built(booted.comparison, awaitReply(booted.id, progress.tell));
 		// Already in flight, so first in the lane. It may never be claimed, so
 		// its failure is swallowed here.
 		lane = tree.catch(() => {});
-		adopted = { comparison: booted.comparison, tree };
+		adopted = { comparison: booted.comparison, tree, progress };
 
 		worker.onmessage = (event) => receive(event.data);
 		for (const reply of booted.replies) {
-			receive(reply as WorkerResponse);
+			receive(reply as WorkerMessage);
 		}
 
 		return worker;
 	}
 
-	function send<T>(request: WorkerRequestInput): Promise<T> {
+	function send<T>(
+		request: WorkerRequestInput,
+		onProgress?: OnArchiveFetched,
+	): Promise<T> {
 		const target = getWorker();
 		const id = nextId++;
-		const reply = awaitReply<T>(id);
+		const reply = awaitReply<T>(id, onProgress);
 		target.postMessage({ ...request, id } as WorkerRequest);
 		return reply;
 	}
@@ -110,7 +153,10 @@ export function createDiffClient(
 	}
 
 	return {
-		buildTree(comparison: Comparison): Promise<DiffFileEntry> {
+		buildTree(
+			comparison: Comparison,
+			onProgress: OnArchiveFetched = ignoreProgress,
+		): Promise<DiffFileEntry> {
 			getWorker();
 
 			const claim = adopted;
@@ -119,8 +165,10 @@ export function createDiffClient(
 			if (
 				claim &&
 				comparisonKey(claim.comparison) === comparisonKey(comparison)
-			)
+			) {
+				claim.progress.listen(onProgress);
 				return claim.tree;
+			}
 
 			const build = ++buildsAsked;
 			return enqueue(() => {
@@ -128,7 +176,10 @@ export function createDiffClient(
 					return Promise.reject(
 						new Error("Build overtaken by a newer comparison before it began"),
 					);
-				return built(comparison, send({ type: "build-tree", ...comparison }));
+				return built(
+					comparison,
+					send({ type: "build-tree", ...comparison }, onProgress),
+				);
 			});
 		},
 

@@ -1,39 +1,59 @@
 import { Store } from "@tanstack/react-store";
 import { cachedDiffClient } from "#/lib/cache/cachedDiffClient.ts";
+import { type FailureCode, failureOf } from "#/lib/failure/failure.ts";
 import type { DiffSlug } from "#/lib/url/slug.ts";
 import type { DiffClient } from "#/lib/worker/diffWorkerClient.ts";
 import {
+	type ArchiveFetched,
 	type Comparison,
 	comparisonKey,
 	type DiffFileEntry,
 	type DiffRequest,
 	type FileDiff,
 } from "#/lib/worker/protocol.ts";
+import {
+	archiveFetched,
+	type BuildProgress,
+	buildFailed,
+	FETCHING,
+} from "./buildProgress.ts";
 import { findFile } from "./tree.ts";
 
 export type SessionStatus = "idle" | "loading" | "ready" | "error";
 
-export interface OpenFile {
+interface ShownFailure {
+	error: string | null;
+	errorCode: FailureCode | null;
+	resetsAt: string | null;
+}
+
+export interface OpenFile extends ShownFailure {
 	path: string;
 	status: "loading" | "ready" | "error";
 	diff: FileDiff | null;
-	error: string | null;
 }
 
-export interface DiffSessionState {
+export interface DiffSessionState extends ShownFailure {
 	key: string | null;
 	status: SessionStatus;
 	tree: DiffFileEntry | null;
-	error: string | null;
+	progress: BuildProgress | null;
 	/** `null` until the tree is ready to read the URL's file from. */
 	file: OpenFile | null;
 }
+
+const NO_FAILURE: ShownFailure = {
+	error: null,
+	errorCode: null,
+	resetsAt: null,
+};
 
 const IDLE: DiffSessionState = {
 	key: null,
 	status: "idle",
 	tree: null,
-	error: null,
+	progress: null,
+	...NO_FAILURE,
 	file: null,
 };
 
@@ -46,8 +66,13 @@ function archives(request: DiffRequest): DiffRequest {
 	};
 }
 
-function message(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
+function shownFailure(error: unknown): ShownFailure {
+	const { message, code, resetsAt } = failureOf(error);
+	return {
+		error: message,
+		errorCode: code ?? null,
+		resetsAt: resetsAt ?? null,
+	};
 }
 
 // A store, not component state: replies must outlive any one route match.
@@ -85,12 +110,31 @@ export function createDiffSession(client: DiffClient) {
 		else void build(comparison);
 	}
 
+	function updateProgress(
+		change: (progress: BuildProgress) => BuildProgress,
+	): void {
+		store.setState((state) => ({
+			...state,
+			progress: state.progress && change(state.progress),
+		}));
+	}
+
 	async function build(comparison: Comparison): Promise<void> {
 		const key = comparisonKey(comparison);
-		store.setState(() => ({ ...IDLE, key, status: "loading" }));
+		store.setState(() => ({
+			...IDLE,
+			key,
+			status: "loading",
+			progress: FETCHING,
+		}));
+
+		const report = (fetched: ArchiveFetched) => {
+			if (isCurrent(key))
+				updateProgress((progress) => archiveFetched(progress, fetched));
+		};
 
 		try {
-			const tree = await client.buildTree(comparison);
+			const tree = await client.buildTree(comparison, report);
 			if (!isCurrent(key)) return;
 			store.setState((state) => ({ ...state, status: "ready", tree }));
 		} catch (error) {
@@ -98,8 +142,9 @@ export function createDiffSession(client: DiffClient) {
 			store.setState((state) => ({
 				...state,
 				status: "error",
-				error: message(error),
+				...shownFailure(error),
 			}));
+			updateProgress((progress) => buildFailed(progress, failureOf(error)));
 			return;
 		}
 
@@ -136,22 +181,23 @@ export function createDiffSession(client: DiffClient) {
 				path,
 				status: "error",
 				diff: null,
+				...NO_FAILURE,
 				error: `${path} is not in this comparison`,
 			});
 			return;
 		}
 
-		open({ path, status: "loading", diff: null, error: null });
+		open({ path, status: "loading", diff: null, ...NO_FAILURE });
 
 		const stillOpen = () => isCurrent(key) && store.state.file?.path === path;
 
 		try {
 			const diff = await client.getFile(comparison, entry.path, entry.oldPath);
 			if (!stillOpen()) return;
-			open({ path, status: "ready", diff, error: null });
+			open({ path, status: "ready", diff, ...NO_FAILURE });
 		} catch (error) {
 			if (!stillOpen()) return;
-			open({ path, status: "error", diff: null, error: message(error) });
+			open({ path, status: "error", diff: null, ...shownFailure(error) });
 		}
 	}
 

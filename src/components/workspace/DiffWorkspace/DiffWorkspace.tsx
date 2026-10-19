@@ -11,13 +11,19 @@ import { useSetting } from "#/components/storage/useSetting.ts";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
+import { failureOf } from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
+import { type BuildProgress, FETCHING } from "#/lib/session/buildProgress.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
 import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
+import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
+import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
+import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
+import { useVersions } from "../useVersions.ts";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
 
@@ -41,11 +47,18 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 		(entry) => entry.path === session.file?.path,
 	);
 
+	// The header's list, shared through the query cache: no second request.
+	const versions = useVersions(adapter, slug.package);
+
 	const split = useSetting(SPLIT_VIEW);
 	// What is on screen, not what was last asked for: it lags while the blur shows.
 	const shown = useFileModel(session.key, session.file, split.value);
 	// Unlike `session.key`, this holds still when whitespace is toggled.
 	const comparisonPath = buildPath(adapter, { ...slug, file: "" });
+
+	const versionsFailure = versions.error && failureOf(versions.error);
+	const progress = shownProgress(session, slug);
+	const pane = paneOf(session.status, progress, versionsFailure !== null);
 
 	function openFile(file: string) {
 		navigate({ to: buildPath(adapter, { ...slug, file }) });
@@ -81,7 +94,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 						<TreeStatus
 							changedCount={changed.length}
 							fileCount={files.length}
-							packageName={slug.package}
 							status={session.status}
 						/>
 						<ThemeToggle />
@@ -91,57 +103,98 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />
 				<main className={styles.body}>
-					{session.status === "error" && (
-						<p className={styles.error} role="alert" data-testid="diff-error">
-							{session.error}
-						</p>
+					{versionsFailure && pane !== "progress" && (
+						<FailureNotice
+							{...versionsFailure}
+							testId="versions-error"
+							centered={pane === "versions-failure"}
+						/>
 					)}
 
-					<section className={styles.file} data-testid="diff-file">
-						<DiffToolbar
-							path={session.file?.path ?? ""}
-							fileIndex={fileIndex}
-							fileCount={changed.length}
-							onStepFile={stepFile}
-							onClose={closeFile}
-							file={shown}
-							split={split.value}
-							onSplitChange={split.set}
-							ignoreWhitespace={whitespace.value}
-							onIgnoreWhitespaceChange={whitespace.set}
-							highlight={highlight}
-						/>
-						<FilePane
-							file={session.file}
-							highlight={highlight}
-							onClose={closeFile}
-							sessionStatus={session.status}
-							shown={shown}
-						/>
-					</section>
+					{pane !== "versions-failure" && (
+						<section className={styles.file} data-testid="diff-file">
+							<DiffToolbar
+								path={session.file?.path ?? ""}
+								fileIndex={fileIndex}
+								fileCount={changed.length}
+								onStepFile={stepFile}
+								onClose={closeFile}
+								file={shown}
+								split={split.value}
+								onSplitChange={split.set}
+								ignoreWhitespace={whitespace.value}
+								onIgnoreWhitespaceChange={whitespace.set}
+								highlight={highlight}
+							/>
+							{showsIntro(session.status) && (
+								<p className={styles.empty} data-testid="workspace-intro">
+									{workspaceIntro(adapter, slug)}
+								</p>
+							)}
+							{progress ? (
+								<DiffProgress
+									packageName={slug.package}
+									from={slug.from}
+									to={slug.to}
+									progress={progress}
+								/>
+							) : (
+								<FilePane
+									file={session.file}
+									highlight={highlight}
+									onClose={closeFile}
+									shown={shown}
+								/>
+							)}
+						</section>
+					)}
 				</main>
 			</div>
 		</div>
 	);
 }
 
+type Pane = "progress" | "versions-failure" | "file";
+
+function namesComparison(slug: DiffSlug): boolean {
+	return Boolean(slug.package && slug.from && slug.to);
+}
+
+function showsIntro(status: DiffSessionState["status"]): boolean {
+	return status === "idle" || status === "loading";
+}
+
+function shownProgress(
+	session: DiffSessionState,
+	slug: DiffSlug,
+): BuildProgress | null {
+	if (session.status === "loading" || session.status === "error")
+		return session.progress;
+	if (session.status === "idle" && namesComparison(slug)) return FETCHING;
+	return null;
+}
+
+// A comparison in progress, or one that failed, says more than its version list.
+function paneOf(
+	status: DiffSessionState["status"],
+	progress: BuildProgress | null,
+	versionsFailed: boolean,
+): Pane {
+	if (progress) return "progress";
+	if (status === "idle" && versionsFailed) return "versions-failure";
+	return "file";
+}
+
 interface TreeStatusProps {
 	status: DiffSessionState["status"];
-	packageName: string;
 	fileCount: number;
 	changedCount: number;
 }
 
 // Rendered even when empty: tests read the state off `data-state`.
-function TreeStatus({
-	status,
-	packageName,
-	fileCount,
-	changedCount,
-}: TreeStatusProps) {
+function TreeStatus({ status, fileCount, changedCount }: TreeStatusProps) {
 	return (
 		<p className={styles.status} data-testid="diff-status" data-state={status}>
-			{status === "loading" && <Spinner label={`Comparing ${packageName}…`} />}
 			{status === "ready" &&
 				`${fileCount} ${fileCount === 1 ? "file" : "files"}, ${changedCount} changed`}
 		</p>
@@ -149,33 +202,27 @@ function TreeStatus({
 }
 
 interface FilePaneProps {
-	sessionStatus: DiffSessionState["status"];
 	file: OpenFile | null;
 	shown: FileModelControls | null;
 	onClose(): void;
 	highlight: HighlightThemeControls;
 }
 
-function FilePane({
-	sessionStatus,
-	file,
-	shown,
-	onClose,
-	highlight,
-}: FilePaneProps) {
+function FilePane({ file, shown, onClose, highlight }: FilePaneProps) {
 	return (
 		<>
-			{sessionStatus === "idle" && (
-				<p className={styles.empty}>Choose a package and two versions.</p>
-			)}
 			{/* Only the first file: later ones keep the previous file blurred instead. */}
 			{file?.status === "loading" && !shown && (
 				<Spinner label={`Loading ${file.path}…`} />
 			)}
 			{file?.status === "error" && (
-				<p role="alert" data-testid="file-error">
-					{file.error}
-				</p>
+				<FailureNotice
+					message={file.error}
+					code={file.errorCode}
+					resetsAt={file.resetsAt}
+					testId="file-error"
+					centered
+				/>
 			)}
 			{shown && (
 				// Keyed by path, so restoring scroll is a plain mount effect.

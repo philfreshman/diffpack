@@ -30,12 +30,6 @@
 	color: var(--color-muted);
 }
 
-.error {
-	margin: 0;
-	color: var(--color-danger);
-	font-family: var(--font-mono);
-}
-
 .column,
 .file {
 	display: flex;

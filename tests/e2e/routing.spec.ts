@@ -30,7 +30,15 @@ test("opens a registry with nothing selected", async ({ page }) => {
 	await page.goto("/crates");
 
 	await expect(workspace(page)).toHaveAttribute("data-package", "");
-	await expect(page).toHaveTitle("diffpack | crates.io");
+	await expect(page).toHaveTitle(
+		"Compare crates.io package versions | diffpack",
+	);
+});
+
+test("introduces a registry in the HTML it serves", async ({ request }) => {
+	const html = await (await request.get("/crates")).text();
+
+	expect(html).toContain("Compare two versions of any crates.io package.");
 });
 
 test("titles the document after the comparison in the URL", async ({
@@ -38,7 +46,7 @@ test("titles the document after the comparison in the URL", async ({
 }) => {
 	await page.goto("/npm/@types/node/26.6.0/26.7.0");
 
-	await expect(page).toHaveTitle("diffpack | @types/node 26.6.0 → 26.7.0");
+	await expect(page).toHaveTitle("@types/node 26.6.0 → 26.7.0 | diffpack");
 	await expect(workspace(page)).toHaveAttribute("data-package", "@types/node");
 });
 
@@ -47,6 +55,9 @@ test("does not invent a registry that does not exist", async ({ page }) => {
 
 	expect(response?.status()).toBe(404);
 	await expect(page.getByTestId("not-found")).toBeVisible();
+	await expect(page.getByTestId("not-found")).toContainText(
+		"npm, crates.io, Go, PyPI and Packagist",
+	);
 	await expect(workspace(page)).toHaveCount(0);
 });
 
@@ -56,9 +67,28 @@ test("answers a deep link fully rendered, before any JavaScript runs", async ({
 	const response = await request.get("/npm/express/4.18.2/5.1.0");
 	const html = await response.text();
 
-	expect(html).toContain("<title>diffpack | express 4.18.2 → 5.1.0</title>");
+	expect(html).toContain("<title>express 4.18.2 → 5.1.0 | diffpack</title>");
 	expect(html).toContain("Changes in express 4.18.2 → 5.1.0.");
 	expect(html).toContain("express");
+});
+
+test("summarizes the comparison in the HTML it serves", async ({ request }) => {
+	const html = await (await request.get("/npm/express/4.18.2/5.1.0")).text();
+
+	expect(html).toContain(
+		"Every file that changed between express 4.18.2 and 5.1.0: added, removed, renamed or edited files, with a diff for each.",
+	);
+});
+
+test("points search engines from a file at its comparison", async ({
+	request,
+}) => {
+	const comparison = "https://diffpack.io/npm/express/4.18.2/5.1.0";
+	const response = await request.get("/npm/express/4.18.2/5.1.0/package.json");
+	const html = await response.text();
+
+	expect(html).toContain(`<link rel="canonical" href="${comparison}"/>`);
+	expect(html).toContain(`property="og:url" content="${comparison}"`);
 });
 
 test("restores the previous comparison when the user goes back", async ({

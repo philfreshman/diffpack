@@ -8,7 +8,7 @@ export function NotFound() {
 			<ThemeToggle floating />
 			<h1 className={styles.heading}>Nothing here</h1>
 			<p className={styles.message}>
-				diffpack compares packages on npm, crates.io, Go and PyPI.
+				diffpack compares packages on npm, crates.io, Go, PyPI and Packagist.
 			</p>
 			<Link to="/">Back to the registries</Link>
 		</main>

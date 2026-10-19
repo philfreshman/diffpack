@@ -10,6 +10,7 @@ import { gutterChars } from "#/lib/diff/gutter.ts";
 import type { HighlightAppearance } from "#/lib/diff/highlightThemes.ts";
 import styles from "./DiffView.module.css";
 import { useCloseOnEscape } from "./useCloseOnEscape.ts";
+import { useOneSidedSelection } from "./useOneSidedSelection.ts";
 import { useScrollMemory } from "./useScrollMemory.ts";
 
 export interface DiffViewProps {
@@ -54,6 +55,7 @@ export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 
 	const at = useScrollMemory(file.scrollTop, file.rememberScroll);
 	useCloseOnEscape(onClose);
+	useOneSidedSelection(scroller);
 
 	return (
 		<div

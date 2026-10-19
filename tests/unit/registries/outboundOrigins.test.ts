@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { PROXY_ORIGIN } from "#/lib/proxy/origin.ts";
+import { createComposerAdapter } from "#/lib/registries/composer.ts";
 import { createCratesAdapter } from "#/lib/registries/crates.ts";
 import { createGoAdapter } from "#/lib/registries/go.ts";
 import { createNpmAdapter } from "#/lib/registries/npm.ts";
@@ -15,16 +17,21 @@ const ALLOWED_ORIGINS: Record<string, string[]> = {
 		"https://api.deps.dev",
 		"https://files.pythonhosted.org",
 	],
-	go: ["https://proxy.golang.org"],
+	go: ["https://proxy.golang.org", PROXY_ORIGIN],
+	composer: ["https://packagist.org", PROXY_ORIGIN],
 };
 
-// The last two are shaped like Go module paths, the only names here that may contain slashes.
+// Go module paths and Composer's vendor/package names may contain slashes, so the rest are shaped like those.
 const HOSTILE_NAMES = [
 	"https://evil.example/pkg",
 	"//evil.example/pkg",
 	"..%2f..%2fevil.example",
 	"evil.example/../../../etc/passwd",
 	"github.com/Evil/../../evil.example",
+	"../x",
+	"evil.example/x",
+	"%2e%2e/x",
+	"@evil/x",
 ];
 
 const ADAPTERS: {
@@ -35,11 +42,16 @@ const ADAPTERS: {
 	{ id: "crates", create: createCratesAdapter },
 	{ id: "pypi", create: createPypiAdapter },
 	{ id: "go", create: createGoAdapter },
+	{ id: "composer", create: createComposerAdapter },
 ];
 
 // Shapes every adapter can parse, so a rejection is never why a URL went unrecorded.
 function answerAnything(url: string): Response {
 	if (url.includes("proxy.golang.org")) return text("v1.0.0\n");
+	if (url.includes("packagist.org")) return json({ results: [] });
+	if (url.startsWith(PROXY_ORIGIN)) {
+		return json({ packages: { "x/x": [{ version: "1.0.0" }] }, items: null });
+	}
 	if (url.includes("api.diffpack.io")) return json([]);
 	if (url.includes("deps.dev")) {
 		return json({ versions: [{ versionKey: { version: "1.0.0" } }] });
@@ -50,24 +62,42 @@ function answerAnything(url: string): Response {
 	return json({ objects: [], versions: { "1.0.0": {} } });
 }
 
+async function requestedUrls(
+	create: (fetcher: Fetcher) => RegistryAdapter,
+): Promise<string[]> {
+	const { fetcher, calls } = stubFetch(answerAnything);
+	const adapter = create(fetcher);
+
+	for (const name of HOSTILE_NAMES) {
+		// A hostile name is an ordinary miss; what matters is where the request went first.
+		await adapter.search(name).catch(() => []);
+		await adapter.versions(name).catch(() => []);
+	}
+
+	return calls.map(({ url }) => url);
+}
+
 for (const { id, create } of ADAPTERS) {
 	const allowed = ALLOWED_ORIGINS[id] ?? [];
 
 	describe(`${id} outbound origins`, () => {
 		test("keeps every request on the registry's own origin", async () => {
-			const { fetcher, calls } = stubFetch(answerAnything);
-			const adapter = create(fetcher);
+			const urls = await requestedUrls(create);
 
-			for (const name of HOSTILE_NAMES) {
-				// A hostile name is an ordinary miss; what matters is where the request went first.
-				await adapter.search(name).catch(() => []);
-				await adapter.versions(name).catch(() => []);
-			}
-
-			expect(calls.length).toBeGreaterThan(0);
-			for (const { url } of calls) {
+			expect(urls.length).toBeGreaterThan(0);
+			for (const url of urls) {
 				expect(allowed).toContain(new URL(url).origin);
 			}
+		});
+
+		test("reaches every origin it allows with a hostile name", async () => {
+			const urls = [
+				...(await requestedUrls(create)),
+				...HOSTILE_NAMES.map((name) => adapterDownloadUrl(create, name)),
+			];
+			const reached = new Set(urls.map((url) => new URL(url).origin));
+
+			expect([...reached].sort()).toEqual([...allowed].sort());
 		});
 
 		test("keeps the download URL on the registry's own origin", () => {

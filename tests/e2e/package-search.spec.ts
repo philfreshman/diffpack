@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 const SEARCH_URL = "https://registry.npmjs.org/-/v1/search**";
 const GO_PROXY = "https://proxy.golang.org/**";
+const GO_SEARCH = "**/v1/go/search**";
 
 const RESULTS = [
 	{
@@ -166,24 +167,55 @@ test("keeps history apart per registry", async ({ page }) => {
 	await expect(page.getByRole("option")).toHaveCount(0);
 });
 
-test("tells a Go user what it can resolve, and takes a full module path", async ({
-	page,
-}) => {
+async function stubGoSearch(page: Page, items: unknown[] | null) {
 	await page.route(GO_PROXY, (route) =>
 		route.fulfill({ status: 404, body: "" }),
 	);
+	await page.route(GO_SEARCH, (route) =>
+		route.fulfill({ json: { items, total: items?.length ?? 0 } }),
+	);
+}
+
+test("finds a Go module by keyword through the diffpack proxy", async ({
+	page,
+}) => {
+	await stubGoSearch(page, [
+		{
+			packagePath: "github.com/go-chi/chi/v5",
+			modulePath: "github.com/go-chi/chi/v5",
+			version: "v5.5.0",
+			synopsis: "Package chi is a small router.",
+		},
+		{
+			packagePath: "github.com/go-chi/chi/v5/middleware",
+			modulePath: "github.com/go-chi/chi/v5",
+			version: "v5.5.0",
+			synopsis: "",
+		},
+	]);
 	await page.goto("/go");
 	await ready(page);
 
 	await expect(field(page)).toHaveAttribute(
 		"placeholder",
-		"github.com/user/module",
+		"Search Go modules…",
 	);
 
 	await field(page).fill("chi");
-	await expect(page.getByText("Type a full module path")).toBeVisible();
+	await expect(page.getByRole("option")).toHaveCount(1);
+	await option(page, "github.com/go-chi/chi/v5").click();
 
-	// With nothing highlighted, Enter takes the typed text: Go has no search.
+	await expect(page).toHaveURL("/go/github.com/go-chi/chi/v5");
+});
+
+test("takes a full Go module path that search does not list", async ({
+	page,
+}) => {
+	await stubGoSearch(page, null);
+	await page.goto("/go");
+	await ready(page);
+
+	// With nothing highlighted, Enter takes the typed text.
 	await field(page).fill("github.com/go-chi/chi/v5");
 	await field(page).press("Enter");
 
