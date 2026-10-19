@@ -52,5 +52,6 @@ test("links each version to its Packagist page rather than offering a download",
 		"https://packagist.org/packages/monolog/monolog#3.12.0",
 	);
 	await expect(link).toHaveAttribute("title", "Open on Packagist");
+	await expect(link).toHaveAttribute("data-opens", "page");
 	await expect(page.getByRole("link", { name: /^Download/ })).toHaveCount(0);
 });

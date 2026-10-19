@@ -37,6 +37,7 @@ export function createComposerAdapter(
 		versionLink: {
 			labelPrefix: "Packagist page for",
 			title: "Open on Packagist",
+			opens: "page",
 		},
 		packagePath: {
 			parse(segments) {

@@ -26,6 +26,7 @@ export interface RegistryCapabilities {
 export interface VersionLinkCopy {
 	labelPrefix: string;
 	title: string;
+	opens: "download" | "page";
 }
 
 export interface RegistryAdapter {

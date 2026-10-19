@@ -104,6 +104,12 @@ test("offers each version as an archive to download", async ({ page }) => {
 		"href",
 		"https://registry.npmjs.org/express/-/express-3.0.0.tgz",
 	);
+	await expect(
+		page.getByRole("link", { name: "Download 3.0.0" }),
+	).toHaveAttribute("title", "Download package");
+	await expect(
+		page.getByRole("link", { name: "Download 3.0.0" }),
+	).toHaveAttribute("data-opens", "download");
 
 	await from(page).click();
 	await page.getByRole("option", { name: "1.0.0" }).click();
