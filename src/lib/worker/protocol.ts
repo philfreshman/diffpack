@@ -1,3 +1,6 @@
+/** Rename detection threshold, as a content-similarity ratio. */
+export const SIMILARITY_THRESHOLD = 0.75;
+
 export type DiffStatus =
 	| "added"
 	| "removed"

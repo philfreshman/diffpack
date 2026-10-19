@@ -4,10 +4,11 @@ import init, {
 	prefetch_package,
 } from "@philfreshman/diffpack-engine";
 import wasmUrl from "@philfreshman/diffpack-engine/diffpack_engine_bg.wasm?url";
-import type { WorkerRequest, WorkerResponse } from "./protocol.ts";
-
-/** Rename detection threshold, as a content-similarity ratio. */
-const SIMILARITY_THRESHOLD = 0.75;
+import {
+	SIMILARITY_THRESHOLD,
+	type WorkerRequest,
+	type WorkerResponse,
+} from "./protocol.ts";
 
 let wasmReady: Promise<unknown> | null = null;
 

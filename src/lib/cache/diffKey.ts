@@ -1,3 +1,11 @@
+import enginePackage from "@philfreshman/diffpack-engine/package.json" with {
+	type: "json",
+};
+import {
+	type Comparison,
+	SIMILARITY_THRESHOLD,
+} from "#/lib/worker/protocol.ts";
+
 export interface DiffKey {
 	schema: number;
 	engine: string;
@@ -10,6 +18,24 @@ export interface DiffKey {
 }
 
 const THRESHOLD_DECIMALS = 4;
+
+export const CACHE_SCHEMA = 1;
+
+export function comparisonDiffKey(
+	comparison: Comparison,
+	engine: string = enginePackage.version,
+): DiffKey {
+	return {
+		schema: CACHE_SCHEMA,
+		engine,
+		registry: comparison.registry,
+		package: comparison.pkg,
+		from: comparison.from,
+		to: comparison.to,
+		similarityThreshold: SIMILARITY_THRESHOLD,
+		ignoreWhitespace: comparison.ignoreWhitespace,
+	};
+}
 
 export function canonicalString(key: DiffKey): string {
 	const text = JSON.stringify;
