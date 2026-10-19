@@ -1,3 +1,4 @@
+import rowStyles from "#/components/diff/DiffRow/DiffRow.module.css";
 import type { VirtualRowProps } from "#/components/diff/virtualRow.ts";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import {
@@ -22,7 +23,7 @@ export function CollapsedRow({
 
 	return (
 		<tr
-			className={styles.row}
+			className={`${rowStyles.row} ${styles.row}`}
 			data-count={fold.count}
 			data-end={fold.end}
 			data-index={index}

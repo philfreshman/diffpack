@@ -1,5 +1,4 @@
 .row {
-	composes: row from "../DiffRow/DiffRow.module.css";
 	background: var(--color-fold-surface);
 	color: var(--color-muted);
 }

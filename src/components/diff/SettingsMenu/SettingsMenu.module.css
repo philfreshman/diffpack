@@ -9,10 +9,6 @@
 	list-style: none;
 }
 
-.gear {
-	composes: iconButton from "../../ui/IconButton/IconButton.module.css";
-}
-
 .gear[data-popup-open] {
 	background-color: var(--color-surface-hover);
 }
