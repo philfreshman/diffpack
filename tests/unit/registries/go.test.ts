@@ -397,4 +397,20 @@ describe("go search cancellation", () => {
 			),
 		).rejects.toThrow(/abort/i);
 	});
+
+	test("cancels a keyword search with the caller's signal", async () => {
+		const controller = new AbortController();
+		const { fetcher, calls } = stubFetch(() => {
+			controller.abort();
+			throw new DOMException("The operation was aborted.", "AbortError");
+		});
+
+		const failure = await createGoAdapter(fetcher, PROXY)
+			.search("chi", controller.signal)
+			.catch((error: unknown) => error);
+
+		expect(calls[0]?.signal).toBe(controller.signal);
+		expect(failure).not.toBeInstanceOf(CodedError);
+		expect(failure).toMatchObject({ name: "AbortError" });
+	});
 });
