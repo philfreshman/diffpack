@@ -4,6 +4,8 @@ import { defineConfig } from "@playwright/test";
 const port = Number(process.env.PORT ?? 4321);
 const baseURL = process.env.BASE_URL ?? `http://localhost:${port}`;
 
+const ALWAYS_MISSING_CACHE = "http://127.0.0.1:9";
+
 export default defineConfig({
 	testDir: "./tests/e2e",
 	// Real registry downloads: slow and network-dependent.
@@ -22,6 +24,7 @@ export default defineConfig({
 				// `--strictPort`, or preview moves to another port while Playwright keeps
 				// polling this one and tests another worktree's server.
 				command: `bun run build && bunx vite preview --port ${port} --strictPort`,
+				env: { VITE_DIFFPACK_CACHE_ORIGIN: ALWAYS_MISSING_CACHE },
 				url: baseURL,
 				reuseExistingServer: false,
 				timeout: 600_000,
