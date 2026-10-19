@@ -89,7 +89,7 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-latest
-    # Downloading and diffing real archives from four registries is slow.
+    # Downloading and diffing real archives from five registries is slow.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
