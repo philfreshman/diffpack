@@ -20,6 +20,15 @@ test("a deep link is the request for a comparison", async ({ page }) => {
 	await expect(files(page).filter({ hasText: "package.json" })).toHaveCount(1);
 });
 
+test("the comparison summary gives way to the finished tree", async ({
+	page,
+}) => {
+	await page.goto(NODE);
+	await ready(page);
+
+	await expect(page.getByTestId("workspace-intro")).toHaveCount(0);
+});
+
 test("opening a file writes the URL and renders its diff", async ({ page }) => {
 	await page.goto(NODE);
 	await ready(page);

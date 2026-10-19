@@ -72,6 +72,14 @@ test("answers a deep link fully rendered, before any JavaScript runs", async ({
 	expect(html).toContain("express");
 });
 
+test("summarizes the comparison in the HTML it serves", async ({ request }) => {
+	const html = await (await request.get("/npm/express/4.18.2/5.1.0")).text();
+
+	expect(html).toContain(
+		"Every file that changed between express 4.18.2 and 5.1.0: added, removed, renamed or edited files, with a diff for each.",
+	);
+});
+
 test("points search engines from a file at its comparison", async ({
 	request,
 }) => {
