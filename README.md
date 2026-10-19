@@ -65,8 +65,9 @@ proxy: it goes straight from your browser to `packagist.org`.
 
 Searching Go modules by keyword goes through the same proxy. pkg.go.dev's search sends no CORS
 header either, so the proxy passes the words you type to `pkg.go.dev` and its list of modules back.
-A full module path skips both: it is looked up straight at `proxy.golang.org`, and Go archives
-always come from there.
+A full module path that resolves skips the proxy: it is looked up straight at `proxy.golang.org`,
+where Go archives always come from. Text that does not resolve, including a path you are still
+typing, is searched through the proxy.
 
 The proxy runs on Cloudflare's free plan, which allows 100,000 requests a day. It stops itself at
 90,000 so that it can still answer clearly, and it starts again at 00:00 UTC. Until then, a Composer
