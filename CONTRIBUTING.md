@@ -28,6 +28,19 @@ a Rust toolchain is needed only to work on
 There is no build step in front of that, and no toolchain to install for it. `bun install` brings
 the compiled engine down with everything else.
 
+### The Composer proxy
+
+Packagist's version metadata sends no CORS header, so the browser reads Composer versions through
+[diffpack-proxy](https://github.com/philfreshman/diffpack-proxy), a Cloudflare Worker. The app
+uses the deployed one, `https://diffpack-proxy.philipswiezak.workers.dev`, unless
+`VITE_DIFFPACK_PROXY_ORIGIN` names another. It answers pages on `http://localhost:<port>`, so
+`bun run dev` works against it as is. To run against a local copy instead:
+
+```bash
+cd ../diffpack-proxy && bun run dev    # wrangler dev on :8787
+cd ../diffpack && VITE_DIFFPACK_PROXY_ORIGIN=http://localhost:8787 bun run dev
+```
+
 ### The engine
 
 The extraction and diffing logic — everything that downloads an archive, unpacks it and compares
