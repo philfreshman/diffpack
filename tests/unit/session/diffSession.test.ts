@@ -7,6 +7,7 @@ import type {
 	DiffFileEntry,
 	DiffRequest,
 	FileDiff,
+	OnArchiveFetched,
 } from "#/lib/worker/protocol.ts";
 
 const SLUG: DiffSlug = {
@@ -55,6 +56,7 @@ function deferred<T>() {
 function stubClient() {
 	const built: Comparison[] = [];
 	const trees: Array<ReturnType<typeof deferred<DiffFileEntry>>> = [];
+	const progress: OnArchiveFetched[] = [];
 	const filesAsked: Array<[Comparison, string, string | undefined]> = [];
 	const fileReplies: Array<ReturnType<typeof deferred<FileDiff>>> = [];
 	const prefetched: DiffRequest[] = [];
@@ -63,6 +65,7 @@ function stubClient() {
 	return {
 		built,
 		trees,
+		progress,
 		filesAsked,
 		fileReplies,
 		prefetched,
@@ -70,8 +73,9 @@ function stubClient() {
 			prefetchFails = true;
 		},
 		client: {
-			buildTree(comparison: Comparison) {
+			buildTree(comparison: Comparison, onProgress: OnArchiveFetched) {
 				built.push(comparison);
+				progress.push(onProgress);
 				const next = deferred<DiffFileEntry>();
 				trees.push(next);
 				return next.promise;
@@ -134,6 +138,43 @@ describe("a comparison", () => {
 
 		expect(session.store.state.status).toBe("ready");
 		expect(session.store.state.tree).toBe(TREE);
+	});
+
+	test("reports each archive as it arrives", () => {
+		const { stub, session } = toldOf(SLUG);
+
+		take(stub.progress, 0)({ side: "to", failure: null });
+
+		expect(session.store.state.progress).toMatchObject({
+			from: { state: "running" },
+			to: { state: "done" },
+			diff: { state: "waiting" },
+		});
+	});
+
+	test("ignores progress from a superseded comparison", () => {
+		const { stub, session } = toldOf(SLUG);
+		session.follow({ ...SLUG, to: "5.2.0" });
+
+		take(stub.progress, 0)({ side: "to", failure: null });
+
+		expect(session.store.state.progress?.to.state).toBe("running");
+	});
+
+	test("keeps which archive failed once the build fails", async () => {
+		const { stub, session } = toldOf(SLUG);
+		const missing = { message: "404 fetching express@5.1.0" };
+
+		take(stub.progress, 0)({ side: "from", failure: null });
+		take(stub.progress, 0)({ side: "to", failure: missing });
+		take(stub.trees, 0).reject(new Error(missing.message));
+		await settled();
+
+		expect(session.store.state.progress).toMatchObject({
+			from: { state: "done" },
+			to: { state: "failed", failure: missing },
+			diff: { state: "waiting" },
+		});
 	});
 
 	test("asking again for the comparison on screen costs nothing", async () => {

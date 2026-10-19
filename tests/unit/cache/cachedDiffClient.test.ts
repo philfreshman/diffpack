@@ -8,6 +8,7 @@ import type {
 	DiffFileEntry,
 	DiffRequest,
 	FileDiff,
+	OnArchiveFetched,
 } from "#/lib/worker/protocol.ts";
 
 const zod: Comparison = {
@@ -49,8 +50,9 @@ function localClient() {
 	return {
 		calls,
 		client: {
-			async buildTree(comparison: Comparison) {
+			async buildTree(comparison: Comparison, onProgress?: OnArchiveFetched) {
 				calls.push(`build ${comparison.pkg}`);
+				onProgress?.({ side: "from", failure: null });
 				return builtTree;
 			},
 			async getFile(_comparison: Comparison, path: string) {
@@ -165,6 +167,24 @@ describe("a diff client in front of the server's cache", () => {
 		expect(await client.buildTree(zod)).toEqual(builtTree);
 		expect(await client.getFile(zod, "index.js", undefined)).toEqual(localFile);
 		expect(calls).toEqual(["build zod", "get index.js"]);
+	});
+
+	test("passes the download progress of a build on this device through", async () => {
+		const { client } = clientFinding(null);
+		const heard: string[] = [];
+
+		await client.buildTree(zod, ({ side }) => heard.push(side));
+
+		expect(heard).toEqual(["from"]);
+	});
+
+	test("reports no downloads for a comparison the cache holds", async () => {
+		const { client } = clientFinding(entry);
+		const heard: string[] = [];
+
+		await client.buildTree(zod, ({ side }) => heard.push(side));
+
+		expect(heard).toEqual([]);
 	});
 
 	test("builds on this device when the lookup itself breaks", async () => {
