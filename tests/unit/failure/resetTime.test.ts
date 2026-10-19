@@ -25,6 +25,22 @@ describe("formatResetTime", () => {
 	});
 });
 
+describe("formatResetTime without a usable reset", () => {
+	const NOW = new Date("2026-10-19T15:42:10Z");
+
+	test("falls back to the next 00:00 UTC for a value that is not a date", () => {
+		expect(formatResetTime("tomorrow-ish", "en-US", "UTC", NOW)).toBe(
+			"12:00 AM UTC",
+		);
+	});
+
+	test("falls back to the next 00:00 UTC when there is none", () => {
+		expect(formatResetTime(undefined, "en-US", "America/New_York", NOW)).toBe(
+			"8:00 PM EDT",
+		);
+	});
+});
+
 describe("nextUtcMidnight", () => {
 	test("is the coming 00:00 UTC", () => {
 		expect(nextUtcMidnight(new Date("2026-10-19T15:42:10Z"))).toBe(

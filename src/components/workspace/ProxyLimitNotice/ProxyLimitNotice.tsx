@@ -1,5 +1,5 @@
 import type { ProxyLimitCode } from "#/lib/failure/failure.ts";
-import { formatResetTime, nextUtcMidnight } from "#/lib/failure/resetTime.ts";
+import { formatResetTime } from "#/lib/failure/resetTime.ts";
 import styles from "./ProxyLimitNotice.module.css";
 
 interface NoticeText {
@@ -27,7 +27,7 @@ interface ProxyLimitNoticeProps {
 
 export function ProxyLimitNotice({ code, resetsAt }: ProxyLimitNoticeProps) {
 	const notice = NOTICES[code];
-	const resetTime = formatResetTime(resetsAt ?? nextUtcMidnight(new Date()));
+	const resetTime = formatResetTime(resetsAt);
 
 	return (
 		<div
