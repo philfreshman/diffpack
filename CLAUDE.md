@@ -152,7 +152,7 @@ tries an unreleased build.
 
 | Request | Engine call | Notes |
 | :--- | :--- | :--- |
-| `build-tree` | `build_diff_tree_for_package` | Downloads both versions, returns the `DiffFileEntry` tree, and makes this the engine's *active diff*. |
+| `build-tree` | `prefetch_package` ×2, then `build_diff_tree_for_package` | Downloads both versions, sending `{ id, fetched: { side, failure } }` as each one lands (the viewer's progress box), then returns the `DiffFileEntry` tree and makes this the engine's *active diff*. |
 | `get-file` | `get_diff_for_path` | Reads one file out of the active diff. Takes `oldPath` for a rename. |
 | `prefetch` | `prefetch_package` ×2 | Warms the download cache. Never touches the active diff. |
 

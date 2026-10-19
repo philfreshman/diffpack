@@ -3,6 +3,7 @@ import { failureOf } from "#/lib/failure/failure.ts";
 import type { DiffBoot } from "#/lib/worker/bootScript.ts";
 import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
 import {
+	type ArchiveFetched,
 	type Comparison,
 	type DiffFileEntry,
 	failedReply,
@@ -175,6 +176,60 @@ describe("createDiffClient", () => {
 
 		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
 		expect(await tree).toEqual(TREE);
+	});
+});
+
+describe("a build's progress", () => {
+	const FROM_FETCHED: ArchiveFetched = { side: "from", failure: null };
+	const TO_FAILED: ArchiveFetched = {
+		side: "to",
+		failure: { message: "404 fetching linux-raw-sys@0.12.1" },
+	};
+
+	test("reaches the caller as each archive arrives, without settling the build", async () => {
+		const { client, spawned } = clientWith(null);
+		const heard: ArchiveFetched[] = [];
+
+		let done = false;
+		const tree = client
+			.buildTree(COMPARISON, (fetched) => heard.push(fetched))
+			.finally(() => {
+				done = true;
+			});
+		await settled();
+		spawned[0]?.reply({ id: 0, fetched: FROM_FETCHED });
+		await settled();
+
+		expect(heard).toEqual([FROM_FETCHED]);
+		expect(done).toBe(false);
+
+		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
+		expect(await tree).toEqual(TREE);
+	});
+
+	test("of the boot's build reaches the client that claims it, including what came before", async () => {
+		const booted = new FakeWorker();
+		const { client } = clientWith(
+			bootOf(booted, [{ id: 0, fetched: FROM_FETCHED }]),
+		);
+		const heard: ArchiveFetched[] = [];
+
+		void client.buildTree(COMPARISON, (fetched) => heard.push(fetched));
+		booted.reply({ id: 0, fetched: TO_FAILED });
+
+		expect(heard).toEqual([FROM_FETCHED, TO_FAILED]);
+	});
+
+	test("of a build no one waits on any more is dropped", async () => {
+		const { client, spawned } = clientWith(null);
+		const heard: ArchiveFetched[] = [];
+
+		void client.buildTree(COMPARISON, (fetched) => heard.push(fetched));
+		await settled();
+		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
+		spawned[0]?.reply({ id: 0, fetched: FROM_FETCHED });
+
+		expect(heard).toEqual([]);
 	});
 });
 

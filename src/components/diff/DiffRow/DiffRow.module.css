@@ -1,7 +1,7 @@
 /*
  * One line of the file. Every row in the viewer is placed at its own offset by
- * the virtualiser, which is why `.row` is positioned here and composed by the
- * split and fold rows.
+ * the virtualiser, which is why `.row` is positioned here and shared by the
+ * split and fold rows, which put it next to their own class.
  *
  * The two gutters are fixed at `--gutter-width` — set once per file from its
  * highest line number — so the content column does not shift sideways as a

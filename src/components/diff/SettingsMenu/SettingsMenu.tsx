@@ -1,5 +1,6 @@
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
+import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
 import {
 	CheckIcon,
 	ChevronRightIcon,
@@ -24,7 +25,7 @@ export function SettingsMenu({
 			<NavigationMenu.List className={styles.list}>
 				<NavigationMenu.Item>
 					<NavigationMenu.Trigger
-						className={styles.gear}
+						className={`${iconButtonStyles.iconButton} ${styles.gear}`}
 						aria-label="Settings"
 						title="Settings"
 					>

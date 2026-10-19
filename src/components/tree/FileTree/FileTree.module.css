@@ -1,5 +1,6 @@
 .tree {
 	overflow: auto;
+	font-family: var(--font-mono);
 	font-size: var(--text-sm);
 }
 
@@ -63,6 +64,7 @@
 	flex: 1;
 	min-width: 0;
 	overflow: hidden;
+	font-weight: 400;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }

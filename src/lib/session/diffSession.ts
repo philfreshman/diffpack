@@ -4,12 +4,19 @@ import { type FailureCode, failureOf } from "#/lib/failure/failure.ts";
 import type { DiffSlug } from "#/lib/url/slug.ts";
 import type { DiffClient } from "#/lib/worker/diffWorkerClient.ts";
 import {
+	type ArchiveFetched,
 	type Comparison,
 	comparisonKey,
 	type DiffFileEntry,
 	type DiffRequest,
 	type FileDiff,
 } from "#/lib/worker/protocol.ts";
+import {
+	archiveFetched,
+	type BuildProgress,
+	buildFailed,
+	FETCHING,
+} from "./buildProgress.ts";
 import { findFile } from "./tree.ts";
 
 export type SessionStatus = "idle" | "loading" | "ready" | "error";
@@ -30,6 +37,7 @@ export interface DiffSessionState extends ShownFailure {
 	key: string | null;
 	status: SessionStatus;
 	tree: DiffFileEntry | null;
+	progress: BuildProgress | null;
 	/** `null` until the tree is ready to read the URL's file from. */
 	file: OpenFile | null;
 }
@@ -44,6 +52,7 @@ const IDLE: DiffSessionState = {
 	key: null,
 	status: "idle",
 	tree: null,
+	progress: null,
 	...NO_FAILURE,
 	file: null,
 };
@@ -101,12 +110,31 @@ export function createDiffSession(client: DiffClient) {
 		else void build(comparison);
 	}
 
+	function updateProgress(
+		change: (progress: BuildProgress) => BuildProgress,
+	): void {
+		store.setState((state) => ({
+			...state,
+			progress: state.progress && change(state.progress),
+		}));
+	}
+
 	async function build(comparison: Comparison): Promise<void> {
 		const key = comparisonKey(comparison);
-		store.setState(() => ({ ...IDLE, key, status: "loading" }));
+		store.setState(() => ({
+			...IDLE,
+			key,
+			status: "loading",
+			progress: FETCHING,
+		}));
+
+		const report = (fetched: ArchiveFetched) => {
+			if (isCurrent(key))
+				updateProgress((progress) => archiveFetched(progress, fetched));
+		};
 
 		try {
-			const tree = await client.buildTree(comparison);
+			const tree = await client.buildTree(comparison, report);
 			if (!isCurrent(key)) return;
 			store.setState((state) => ({ ...state, status: "ready", tree }));
 		} catch (error) {
@@ -116,6 +144,7 @@ export function createDiffSession(client: DiffClient) {
 				status: "error",
 				...shownFailure(error),
 			}));
+			updateProgress((progress) => buildFailed(progress, failureOf(error)));
 			return;
 		}
 

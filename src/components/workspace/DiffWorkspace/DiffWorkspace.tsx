@@ -11,18 +11,16 @@ import { useSetting } from "#/components/storage/useSetting.ts";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
-import {
-	type FailureCode,
-	failureOf,
-	isProxyLimit,
-} from "#/lib/failure/failure.ts";
+import { failureOf } from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
+import { type BuildProgress, FETCHING } from "#/lib/session/buildProgress.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
 import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
-import { ProxyLimitNotice } from "../ProxyLimitNotice/ProxyLimitNotice.tsx";
+import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
+import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
 import { useVersions } from "../useVersions.ts";
@@ -58,6 +56,10 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	// Unlike `session.key`, this holds still when whitespace is toggled.
 	const comparisonPath = buildPath(adapter, { ...slug, file: "" });
 
+	const versionsFailure = versions.error && failureOf(versions.error);
+	const progress = shownProgress(session, slug);
+	const pane = paneOf(session.status, progress, versionsFailure !== null);
+
 	function openFile(file: string) {
 		navigate({ to: buildPath(adapter, { ...slug, file }) });
 	}
@@ -92,7 +94,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 						<TreeStatus
 							changedCount={changed.length}
 							fileCount={files.length}
-							packageName={slug.package}
 							status={session.status}
 						/>
 						<ThemeToggle />
@@ -102,110 +103,98 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />
 				<main className={styles.body}>
-					<WorkspaceFailure session={session} versionsError={versions.error} />
+					{versionsFailure && pane !== "progress" && (
+						<FailureNotice
+							{...versionsFailure}
+							testId="versions-error"
+							centered={pane === "versions-failure"}
+						/>
+					)}
 
-					<section className={styles.file} data-testid="diff-file">
-						<DiffToolbar
-							path={session.file?.path ?? ""}
-							fileIndex={fileIndex}
-							fileCount={changed.length}
-							onStepFile={stepFile}
-							onClose={closeFile}
-							file={shown}
-							split={split.value}
-							onSplitChange={split.set}
-							ignoreWhitespace={whitespace.value}
-							onIgnoreWhitespaceChange={whitespace.set}
-							highlight={highlight}
-						/>
-						<FilePane
-							file={session.file}
-							highlight={highlight}
-							onClose={closeFile}
-							intro={workspaceIntro(adapter, slug)}
-							sessionStatus={session.status}
-							shown={shown}
-						/>
-					</section>
+					{pane !== "versions-failure" && (
+						<section className={styles.file} data-testid="diff-file">
+							<DiffToolbar
+								path={session.file?.path ?? ""}
+								fileIndex={fileIndex}
+								fileCount={changed.length}
+								onStepFile={stepFile}
+								onClose={closeFile}
+								file={shown}
+								split={split.value}
+								onSplitChange={split.set}
+								ignoreWhitespace={whitespace.value}
+								onIgnoreWhitespaceChange={whitespace.set}
+								highlight={highlight}
+							/>
+							{showsIntro(session.status) && (
+								<p className={styles.empty} data-testid="workspace-intro">
+									{workspaceIntro(adapter, slug)}
+								</p>
+							)}
+							{progress ? (
+								<DiffProgress
+									packageName={slug.package}
+									from={slug.from}
+									to={slug.to}
+									progress={progress}
+								/>
+							) : (
+								<FilePane
+									file={session.file}
+									highlight={highlight}
+									onClose={closeFile}
+									shown={shown}
+								/>
+							)}
+						</section>
+					)}
 				</main>
 			</div>
 		</div>
 	);
 }
 
-interface WorkspaceFailureProps {
-	session: DiffSessionState;
-	versionsError: Error | null;
+type Pane = "progress" | "versions-failure" | "file";
+
+function namesComparison(slug: DiffSlug): boolean {
+	return Boolean(slug.package && slug.from && slug.to);
 }
 
-// A failed build says more than the version list it was started from.
-function WorkspaceFailure({ session, versionsError }: WorkspaceFailureProps) {
-	if (session.status === "error")
-		return (
-			<FailureNotice
-				message={session.error}
-				code={session.errorCode}
-				resetsAt={session.resetsAt}
-				testId="diff-error"
-				className={styles.error}
-			/>
-		);
-	if (!versionsError) return null;
-
-	const { message, code, resetsAt } = failureOf(versionsError);
-	return (
-		<FailureNotice
-			message={message}
-			code={code}
-			resetsAt={resetsAt}
-			testId="versions-error"
-			className={styles.error}
-		/>
-	);
+function showsIntro(status: DiffSessionState["status"]): boolean {
+	return status === "idle" || status === "loading";
 }
 
-interface FailureNoticeProps {
-	message: string | null;
-	code: FailureCode | null | undefined;
-	resetsAt: string | null | undefined;
-	testId: string;
-	className?: string;
+function shownProgress(
+	session: DiffSessionState,
+	slug: DiffSlug,
+): BuildProgress | null {
+	if (session.status === "loading" || session.status === "error")
+		return session.progress;
+	if (session.status === "idle" && namesComparison(slug)) return FETCHING;
+	return null;
 }
 
-function FailureNotice({
-	message,
-	code,
-	resetsAt,
-	testId,
-	className,
-}: FailureNoticeProps) {
-	if (isProxyLimit(code))
-		return <ProxyLimitNotice code={code} resetsAt={resetsAt} />;
-
-	return (
-		<p className={className} role="alert" data-testid={testId}>
-			{message}
-		</p>
-	);
+// A comparison in progress, or one that failed, says more than its version list.
+function paneOf(
+	status: DiffSessionState["status"],
+	progress: BuildProgress | null,
+	versionsFailed: boolean,
+): Pane {
+	if (progress) return "progress";
+	if (status === "idle" && versionsFailed) return "versions-failure";
+	return "file";
 }
 
 interface TreeStatusProps {
 	status: DiffSessionState["status"];
-	packageName: string;
 	fileCount: number;
 	changedCount: number;
 }
 
 // Rendered even when empty: tests read the state off `data-state`.
-function TreeStatus({
-	status,
-	packageName,
-	fileCount,
-	changedCount,
-}: TreeStatusProps) {
+function TreeStatus({ status, fileCount, changedCount }: TreeStatusProps) {
 	return (
 		<p className={styles.status} data-testid="diff-status" data-state={status}>
-			{status === "loading" && <Spinner label={`Comparing ${packageName}…`} />}
 			{status === "ready" &&
 				`${fileCount} ${fileCount === 1 ? "file" : "files"}, ${changedCount} changed`}
 		</p>
@@ -213,29 +202,15 @@ function TreeStatus({
 }
 
 interface FilePaneProps {
-	intro: string;
-	sessionStatus: DiffSessionState["status"];
 	file: OpenFile | null;
 	shown: FileModelControls | null;
 	onClose(): void;
 	highlight: HighlightThemeControls;
 }
 
-function FilePane({
-	intro,
-	sessionStatus,
-	file,
-	shown,
-	onClose,
-	highlight,
-}: FilePaneProps) {
+function FilePane({ file, shown, onClose, highlight }: FilePaneProps) {
 	return (
 		<>
-			{(sessionStatus === "idle" || sessionStatus === "loading") && (
-				<p className={styles.empty} data-testid="workspace-intro">
-					{intro}
-				</p>
-			)}
 			{/* Only the first file: later ones keep the previous file blurred instead. */}
 			{file?.status === "loading" && !shown && (
 				<Spinner label={`Loading ${file.path}…`} />
@@ -246,6 +221,7 @@ function FilePane({
 					code={file.errorCode}
 					resetsAt={file.resetsAt}
 					testId="file-error"
+					centered
 				/>
 			)}
 			{shown && (
