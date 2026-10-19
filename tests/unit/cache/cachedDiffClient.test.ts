@@ -124,6 +124,41 @@ describe("a diff client in front of the server's cache", () => {
 		expect(await client.getFile(zod, "index.js", undefined)).toEqual(localFile);
 	});
 
+	test("asks the worker for a file of any comparison but the cached one", async () => {
+		const { client, calls } = clientFinding(entry);
+		await client.buildTree(zod);
+
+		await client.getFile({ ...zod, to: "4.1.0" }, "index.js", undefined);
+
+		expect(calls).toEqual(["get index.js"]);
+	});
+
+	test("builds a cached comparison here again after a build that failed", async () => {
+		const local = localClient();
+		let failing = true;
+		const client = createCachedDiffClient(
+			{
+				...local.client,
+				async buildTree(comparison: Comparison) {
+					if (failing) throw new Error("download failed");
+					return local.client.buildTree(comparison);
+				},
+			},
+			async () => ({ tree: cachedTree, patches: new Map() }),
+			() => null,
+		);
+		await client.buildTree(zod);
+
+		await expect(client.getFile(zod, "README.md", undefined)).rejects.toThrow(
+			"download failed",
+		);
+		failing = false;
+
+		expect(await client.getFile(zod, "README.md", undefined)).toEqual(
+			localFile,
+		);
+	});
+
 	test("builds on this device what the cache does not hold", async () => {
 		const { client, calls } = clientFinding(null);
 

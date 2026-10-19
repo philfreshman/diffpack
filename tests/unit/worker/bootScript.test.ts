@@ -18,6 +18,7 @@ type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 const missing: Fetch = async () => new Response("", { status: 404 });
 
 interface BootOptions {
+	crypto?: unknown;
 	meanwhile?: (window: Record<string, unknown>) => void;
 	stored?: Record<string, string>;
 	store?: unknown;
@@ -33,6 +34,7 @@ async function boot(
 		fetch = missing,
 		engine = "0.4.1",
 		meanwhile = () => {},
+		crypto = globalThis.crypto,
 	}: BootOptions = {},
 ) {
 	const posted: unknown[] = [];
@@ -63,12 +65,13 @@ async function boot(
 		"localStorage",
 		"Worker",
 		"fetch",
+		"crypto",
 		buildDiffBootScript(WORKER_URL, {
 			origin: CACHE_ORIGIN,
 			engine,
 			timeoutMs: 50,
 		}),
-	)(window, { pathname }, store, FakeWorker, recordingFetch);
+	)(window, { pathname }, store, FakeWorker, recordingFetch, crypto);
 
 	meanwhile(window);
 	await (window.__diffpackEntryBoot as EntryBoot | undefined)?.served;
@@ -281,6 +284,15 @@ describe("the diff boot script, in front of the server's cache", () => {
 		});
 
 		expect(spawned).toEqual([]);
+	});
+
+	test("starts the worker where the page cannot hash, outside a secure context", async () => {
+		const { posted, fetched } = await boot("/crates/serde/1.0.0/1.0.1", {
+			crypto: {},
+		});
+
+		expect(fetched).toEqual([]);
+		expect(posted).toMatchObject([{ type: "build-tree", pkg: "serde" }]);
 	});
 
 	test("sends only the diff_id, with no cookies and no referrer", async () => {
