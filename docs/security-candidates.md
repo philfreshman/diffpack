@@ -67,11 +67,23 @@ segment. Composer encodes the vendor and the package separately, and refuses any
 `vendor/package` before building a URL. Go does not encode, because a module path legitimately
 contains slashes.
 
+Composer has two origins, both constant. `https://packagist.org` answers search and is the link
+shown beside a version. The proxy origin, `PROXY_ORIGIN` in
+`src/lib/proxy/origin.ts`, answers the version list: it is
+`https://diffpack-proxy.philipswiezak.workers.dev` unless `VITE_DIFFPACK_PROXY_ORIGIN` names another
+at build time, so no request data can choose it. The version list is the only Composer URL that
+puts the name in its path, and it is safe for the same reason as the others: the name must
+first match Packagist's own `vendor/package` pattern (lower-case letters, digits, `.`, `_`, `-`,
+and one slash), and then each of its two segments is encoded on its own. A second slash, a `..` or a
+`%` never reaches the URL.
+
 **What would break it** is assembling one of these URLs differently — `new URL(name, BASE)` reads
 almost the same and *does* let a name replace the base outright. So the property is asserted rather
 than argued: `tests/unit/registries/outboundOrigins.test.ts` drives every adapter's `search`,
 `versions` and `downloadUrl` with names crafted to escape, and fails unless every recorded request
-lands on that registry's own origin.
+lands on that registry's own origin. It also fails unless the hostile names reach every origin a
+registry allows, so the Composer version list is checked with a hostile name that passes the
+`vendor/package` check (`evil.example/x`), rather than skipped because every name was refused first.
 
 One consequence worth knowing before it confuses somebody: **adding that test raised fallow's own
 severity for these two rows from `low` to `medium`.** Its taint model reads the spec as a module
@@ -84,7 +96,10 @@ on the pull request that added the test.
 
 Note that this covers the TypeScript layer only — search, version lists and download links. Package
 *content* is fetched by the Rust module ([`src/package.rs`](https://github.com/philfreshman/diffpack-engine/blob/main/src/package.rs) in diffpack-engine), which builds its URLs the
-same way and is outside every JavaScript analysis.
+same way and is outside every JavaScript analysis. For Composer it fetches through the same proxy
+origin, and the proxy serves only archives that Packagist lists for the named package
+([diffpack-proxy](https://github.com/philfreshman/diffpack-proxy)), so a name cannot steer it to any
+archive Packagist does not list.
 
 ### 3–4 · `dangerouslySetInnerHTML` in the diff rows
 
