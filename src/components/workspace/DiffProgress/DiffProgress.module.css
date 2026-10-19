@@ -13,7 +13,7 @@
 	display: grid;
 	flex: 1;
 	min-height: 0;
-	grid-template-rows: 1fr var(--steps-height) 1fr;
+	grid-template-rows: minmax(0, 1fr) var(--steps-height) minmax(0, 1fr);
 	justify-items: center;
 	overflow: auto;
 }
