@@ -35,6 +35,12 @@ test("opens a registry with nothing selected", async ({ page }) => {
 	);
 });
 
+test("introduces a registry in the HTML it serves", async ({ request }) => {
+	const html = await (await request.get("/crates")).text();
+
+	expect(html).toContain("Compare two versions of any crates.io package.");
+});
+
 test("titles the document after the comparison in the URL", async ({
 	page,
 }) => {
