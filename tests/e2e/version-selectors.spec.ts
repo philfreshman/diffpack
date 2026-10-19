@@ -129,6 +129,21 @@ test("a package with no version list has nothing to compare", async ({
 	await expect(compare(page)).toBeDisabled();
 });
 
+test("a version list that fails to load says why", async ({ page }) => {
+	await page.route(PACKAGE_DOC, (route) =>
+		route.fulfill({ status: 500, body: "" }),
+	);
+	await page.goto("/npm/express");
+
+	await expect(page.getByTestId("versions-error")).toHaveText(
+		"npm: no versions for express (500)",
+	);
+	await expect(from(page)).toHaveAttribute(
+		"placeholder",
+		"Versions unavailable",
+	);
+});
+
 test("Compare is dead until there is something to compare", async ({
 	page,
 }) => {
