@@ -188,6 +188,9 @@ took no arguments and read no environment, and fallow put its blast radius at 0.
 ## Blind spots
 
 The report ends with a note that ~1600 call sites use patterns it could not resolve (dynamic
-dispatch, computed members, aliased bindings), most of them in `tests/e2e/`. That is expected for
-Playwright specs and is not a finding; `bunx fallow security blind-spots` groups them if the
-distribution is ever worth looking at.
+dispatch, computed members, aliased bindings). Almost all are dynamic dispatch, and the ten files
+with the most are all tests: eight Playwright specs in `tests/e2e/`, led by `file-tree.spec.ts`,
+and two unit tests. That is expected for test code and is not a finding. `bunx fallow security
+--format json` lists those files under `unresolved_callee_diagnostics.top_files`;
+`bunx fallow security blind-spots` groups only a small sample of sites, so it is not the way to
+see where they are.
