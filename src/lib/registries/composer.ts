@@ -34,6 +34,7 @@ export function createComposerAdapter(
 			discoverySearch: true,
 			searchPlaceholder: "Search Packagist…",
 		},
+		versionLink: { action: "Packagist page for", title: "Open on Packagist" },
 		packagePath: {
 			parse(segments) {
 				return {

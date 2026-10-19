@@ -23,12 +23,18 @@ export interface RegistryCapabilities {
 	searchHint?: string;
 }
 
+export interface VersionLinkCopy {
+	action: string;
+	title: string;
+}
+
 export interface RegistryAdapter {
 	id: RegistryId;
 	label: string;
 	tagline: string;
 	capabilities: RegistryCapabilities;
 	packagePath: PackagePath;
+	versionLink?: VersionLinkCopy;
 	search(query: string, signal?: AbortSignal): Promise<SearchResult[]>;
 	/** Newest first. */
 	versions(name: string, signal?: AbortSignal): Promise<string[]>;

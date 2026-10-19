@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
 import { DownloadIcon } from "#/components/ui/icons.tsx";
+import type { VersionLinkCopy } from "#/lib/registries/types.ts";
 import styles from "./VersionCombobox.module.css";
 
 export interface VersionComboboxProps {
@@ -10,7 +11,13 @@ export interface VersionComboboxProps {
 	onChange(version: string): void;
 	loading?: boolean;
 	downloadUrl?: string;
+	linkCopy?: VersionLinkCopy;
 }
+
+const DOWNLOAD_LINK: VersionLinkCopy = {
+	action: "Download",
+	title: "Download package",
+};
 
 // No `onSubmitText`: unlike package search, only listed versions are valid.
 export function VersionCombobox({
@@ -20,6 +27,7 @@ export function VersionCombobox({
 	onChange,
 	loading = false,
 	downloadUrl,
+	linkCopy = DOWNLOAD_LINK,
 }: VersionComboboxProps) {
 	const [inputValue, setInputValue] = useState(value);
 
@@ -33,8 +41,8 @@ export function VersionCombobox({
 					<a
 						className={styles.download}
 						href={downloadUrl}
-						aria-label={`Download ${value}`}
-						title="Download package"
+						aria-label={`${linkCopy.action} ${value}`}
+						title={linkCopy.title}
 						rel="noopener noreferrer"
 					>
 						<DownloadIcon width="14" height="14" />

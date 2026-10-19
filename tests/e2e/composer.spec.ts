@@ -39,3 +39,19 @@ test("lists the versions the proxy reads from Packagist", async ({ page }) => {
 	await expect(page.getByRole("option", { name: "3.12.0" })).toBeVisible();
 	await expect(page.getByRole("option", { name: "3.11.0" })).toBeVisible();
 });
+
+test("links each version to its Packagist page rather than offering a download", async ({
+	page,
+}) => {
+	await page.goto("/composer/monolog/monolog/3.12.0/3.12.1");
+	await ready(page);
+
+	const link = page.getByRole("link", { name: "Packagist page for 3.12.0" });
+
+	await expect(link).toHaveAttribute(
+		"href",
+		"https://packagist.org/packages/monolog/monolog#3.12.0",
+	);
+	await expect(link).toHaveAttribute("title", "Open on Packagist");
+	await expect(page.getByRole("link", { name: /^Download/ })).toHaveCount(0);
+});
