@@ -1,4 +1,4 @@
-export type RegistryId = "npm" | "crates" | "go" | "pypi";
+export type RegistryId = "npm" | "crates" | "go" | "pypi" | "composer";
 
 export interface SearchResult {
 	name: string;

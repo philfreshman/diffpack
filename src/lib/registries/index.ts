@@ -1,3 +1,4 @@
+import { composerAdapter } from "./composer.ts";
 import { cratesAdapter } from "./crates.ts";
 import { goAdapter } from "./go.ts";
 import { npmAdapter } from "./npm.ts";
@@ -10,6 +11,7 @@ export const registryAdapters: RegistryAdapter[] = [
 	cratesAdapter,
 	goAdapter,
 	pypiAdapter,
+	composerAdapter,
 ];
 
 const byId = new Map<string, RegistryAdapter>(
