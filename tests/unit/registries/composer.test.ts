@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { CodedError } from "#/lib/failure/failure.ts";
 import {
 	composerAdapter,
 	createComposerAdapter,
@@ -79,6 +80,50 @@ describe("composer versions", () => {
 		expect(
 			createComposerAdapter(fetcher).versions("acme/missing"),
 		).rejects.toThrow(/acme\/missing/);
+	});
+});
+
+describe("composer versions when the proxy cannot answer", () => {
+	test("carries the proxy's quota_exhausted code and reset time", async () => {
+		const { fetcher } = stubFetch(() => {
+			const response = json(
+				{
+					error: "quota_exhausted",
+					message: "diffpack's Composer proxy has used today's free allowance.",
+					resetsAt: "2026-10-20T00:00:00Z",
+				},
+				503,
+			);
+			response.headers.set("Diffpack-Proxy-Error", "quota_exhausted");
+			response.headers.set("Retry-After", "3600");
+			return response;
+		});
+
+		const failure = await createComposerAdapter(fetcher)
+			.versions("monolog/monolog")
+			.catch((error: unknown) => error);
+
+		expect(failure).toBeInstanceOf(CodedError);
+		expect(failure).toMatchObject({
+			code: "quota_exhausted",
+			resetsAt: "2026-10-20T00:00:00Z",
+		});
+	});
+
+	test("says the proxy is unreachable when no answer comes back", async () => {
+		const { fetcher } = stubFetch(() => {
+			throw new TypeError("Failed to fetch");
+		});
+
+		const failure = await createComposerAdapter(
+			fetcher,
+			"https://proxy.example",
+		)
+			.versions("monolog/monolog")
+			.catch((error: unknown) => error);
+
+		expect(failure).toBeInstanceOf(CodedError);
+		expect(failure).toMatchObject({ code: "proxy_unreachable" });
 	});
 });
 

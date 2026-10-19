@@ -73,6 +73,7 @@ export function createComposerAdapter(
 				`${proxyOrigin}/v1/composer/p2/${encodedName(name)}.json`,
 				signal,
 				`composer: no versions for ${name}`,
+				proxyOrigin,
 			);
 
 			const releases = P2Response.parse(payload).packages[name] ?? [];
