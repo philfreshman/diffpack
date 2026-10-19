@@ -75,6 +75,8 @@ var width=1;
 if(registry==="npm"){if(parts[0]&&parts[0].charAt(0)==="@")width=2}
 else if(registry==="go"){width=parts.length;
 for(var i=0;i<parts.length;i++)if(GO_VERSION.test(parts[i])){width=i;break}}
+else if(registry==="composer"){width=2;
+for(var j=0;j<width&&j<parts.length;j++)parts[j]=parts[j].toLowerCase()}
 var pkg=parts.slice(0,width).join("/"),from=parts[width],to=parts[width+1];
 if(!pkg||!from||!to)return;
 var comparison={registry:registry,pkg:pkg,from:from,to:to,ignoreWhitespace:${readInHead(IGNORE_WHITESPACE)}};

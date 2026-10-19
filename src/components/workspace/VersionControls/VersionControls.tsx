@@ -57,6 +57,7 @@ export function VersionControls({
 				loading={loading}
 				unavailable={error !== null}
 				downloadUrl={from ? adapter.downloadUrl(slug.package, from) : undefined}
+				linkCopy={adapter.versionLink}
 			/>
 			<VersionCombobox
 				label="To Version"
@@ -68,6 +69,7 @@ export function VersionControls({
 				loading={loading}
 				unavailable={error !== null}
 				downloadUrl={to ? adapter.downloadUrl(slug.package, to) : undefined}
+				linkCopy={adapter.versionLink}
 			/>
 			<Button
 				className={styles.compare}

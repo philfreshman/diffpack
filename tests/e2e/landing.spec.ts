@@ -6,8 +6,14 @@ test("offers every registry diffpack supports", async ({ page }) => {
 
 	const tiles = page.getByTestId("registry-tile");
 
-	await expect(tiles).toHaveCount(4);
-	await expect(tiles).toHaveText([/npm/, /crates\.io/, /Go/, /PyPI/]);
+	await expect(tiles).toHaveCount(5);
+	await expect(tiles).toHaveText([
+		/npm/,
+		/crates\.io/,
+		/Go/,
+		/PyPI/,
+		/Packagist/,
+	]);
 });
 
 test("says what each registry is for, and offers it as one link", async ({

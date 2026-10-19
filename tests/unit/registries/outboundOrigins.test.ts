@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { PROXY_ORIGIN } from "#/lib/proxy/origin.ts";
+import { createComposerAdapter } from "#/lib/registries/composer.ts";
 import { createCratesAdapter } from "#/lib/registries/crates.ts";
 import { createGoAdapter } from "#/lib/registries/go.ts";
 import { createNpmAdapter } from "#/lib/registries/npm.ts";
@@ -16,15 +18,20 @@ const ALLOWED_ORIGINS: Record<string, string[]> = {
 		"https://files.pythonhosted.org",
 	],
 	go: ["https://proxy.golang.org"],
+	composer: ["https://packagist.org", PROXY_ORIGIN],
 };
 
-// The last two are shaped like Go module paths, the only names here that may contain slashes.
+// Go module paths and Composer's vendor/package names may contain slashes, so the rest are shaped like those.
 const HOSTILE_NAMES = [
 	"https://evil.example/pkg",
 	"//evil.example/pkg",
 	"..%2f..%2fevil.example",
 	"evil.example/../../../etc/passwd",
 	"github.com/Evil/../../evil.example",
+	"../x",
+	"evil.example/x",
+	"%2e%2e/x",
+	"@evil/x",
 ];
 
 const ADAPTERS: {
@@ -35,11 +42,16 @@ const ADAPTERS: {
 	{ id: "crates", create: createCratesAdapter },
 	{ id: "pypi", create: createPypiAdapter },
 	{ id: "go", create: createGoAdapter },
+	{ id: "composer", create: createComposerAdapter },
 ];
 
 // Shapes every adapter can parse, so a rejection is never why a URL went unrecorded.
 function answerAnything(url: string): Response {
 	if (url.includes("proxy.golang.org")) return text("v1.0.0\n");
+	if (url.includes("packagist.org")) return json({ results: [] });
+	if (url.startsWith(PROXY_ORIGIN)) {
+		return json({ packages: { "x/x": [{ version: "1.0.0" }] } });
+	}
 	if (url.includes("api.diffpack.io")) return json([]);
 	if (url.includes("deps.dev")) {
 		return json({ versions: [{ versionKey: { version: "1.0.0" } }] });

@@ -1,4 +1,4 @@
-export type RegistryId = "npm" | "crates" | "go" | "pypi";
+export type RegistryId = "npm" | "crates" | "go" | "pypi" | "composer";
 
 export interface SearchResult {
 	name: string;
@@ -23,12 +23,19 @@ export interface RegistryCapabilities {
 	searchHint?: string;
 }
 
+export interface VersionLinkCopy {
+	labelPrefix: string;
+	title: string;
+	opens: "download" | "page";
+}
+
 export interface RegistryAdapter {
 	id: RegistryId;
 	label: string;
 	tagline: string;
 	capabilities: RegistryCapabilities;
 	packagePath: PackagePath;
+	versionLink?: VersionLinkCopy;
 	search(query: string, signal?: AbortSignal): Promise<SearchResult[]>;
 	/** Newest first. */
 	versions(name: string, signal?: AbortSignal): Promise<string[]>;

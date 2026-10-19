@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { composerAdapter } from "#/lib/registries/composer.ts";
 import { cratesAdapter } from "#/lib/registries/crates.ts";
 import { goAdapter } from "#/lib/registries/go.ts";
 import { npmAdapter } from "#/lib/registries/npm.ts";
@@ -14,7 +15,12 @@ describe("capabilities", () => {
 	});
 
 	test("every other registry has keyword search and needs no hint", () => {
-		for (const adapter of [npmAdapter, cratesAdapter, pypiAdapter]) {
+		for (const adapter of [
+			npmAdapter,
+			cratesAdapter,
+			pypiAdapter,
+			composerAdapter,
+		]) {
 			expect(adapter.capabilities.discoverySearch).toBe(true);
 			expect(adapter.capabilities.searchHint).toBeUndefined();
 			expect(adapter.capabilities.searchPlaceholder).toContain("Search");

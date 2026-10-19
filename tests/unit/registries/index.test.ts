@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { composerAdapter } from "#/lib/registries/composer.ts";
 import { cratesAdapter } from "#/lib/registries/crates.ts";
 import { goAdapter } from "#/lib/registries/go.ts";
 import {
@@ -12,7 +13,7 @@ import { pypiAdapter } from "#/lib/registries/pypi.ts";
 
 describe("getAdapter", () => {
 	test("finds each registry by its URL segment", () => {
-		for (const id of ["npm", "crates", "go", "pypi"] as const) {
+		for (const id of ["npm", "crates", "go", "pypi", "composer"] as const) {
 			expect(getAdapter(id)?.id).toBe(id);
 		}
 	});
@@ -33,12 +34,13 @@ describe("isRegistryId", () => {
 });
 
 describe("registryAdapters", () => {
-	test("lists the four registries in landing-page order", () => {
+	test("lists the five registries in landing-page order", () => {
 		expect(registryAdapters.map((adapter) => adapter.id)).toEqual([
 			"npm",
 			"crates",
 			"go",
 			"pypi",
+			"composer",
 		]);
 	});
 
@@ -54,6 +56,7 @@ describe("registryAdapters", () => {
 		expect(cratesAdapter.tagline).toBe("Rust ecosystem packages");
 		expect(goAdapter.tagline).toBe("Go modules & standard ecosystem");
 		expect(pypiAdapter.tagline).toBe("Python packages");
+		expect(composerAdapter.tagline).toBe("PHP packages");
 	});
 });
 
