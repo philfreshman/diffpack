@@ -36,7 +36,9 @@ test("opens a registry from its tile", async ({ page }) => {
 		.click();
 
 	await expect(page).toHaveURL(/\/crates$/);
-	await expect(page).toHaveTitle("diffpack | crates.io");
+	await expect(page).toHaveTitle(
+		"Compare crates.io package versions | diffpack",
+	);
 });
 
 test("gives the Packagist tile PHP's purple, not the default accent", async ({
