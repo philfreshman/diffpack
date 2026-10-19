@@ -105,13 +105,25 @@ export function createEntryLookup({
 	engine,
 	timeoutMs,
 }: EntryLookupOptions) {
+	async function headersWithinTimeout(url: string): Promise<Response> {
+		const answered = new AbortController();
+		const giveUp = setTimeout(() => answered.abort(), timeoutMs);
+		try {
+			return await fetcher(url, {
+				credentials: "omit",
+				referrerPolicy: "no-referrer",
+				signal: answered.signal,
+			});
+		} finally {
+			clearTimeout(giveUp);
+		}
+	}
+
 	async function fetchEntry(comparison: Comparison): Promise<unknown> {
 		const id = await diffId(comparisonDiffKey(comparison, engine));
-		const response = await fetcher(`${origin}/diffs/v${CACHE_SCHEMA}/${id}`, {
-			credentials: "omit",
-			referrerPolicy: "no-referrer",
-			signal: AbortSignal.timeout(timeoutMs),
-		});
+		const response = await headersWithinTimeout(
+			`${origin}/diffs/v${CACHE_SCHEMA}/${id}`,
+		);
 		return response.ok ? response.json() : null;
 	}
 

@@ -90,7 +90,10 @@ var canonical='{"engine":'+j(${text(cache.engine)})+',"from":'+j(from)+',"ignore
 var served=Promise.resolve().then(function(){
 return crypto.subtle.digest("SHA-256",new TextEncoder().encode(canonical))}).then(function(digest){
 var id=Array.prototype.map.call(new Uint8Array(digest),function(b){return(b<16?"0":"")+b.toString(16)}).join("");
-return fetch(${text(cache.origin)}+"/diffs/v${CACHE_SCHEMA}/"+id,{credentials:"omit",referrerPolicy:"no-referrer",signal:AbortSignal.timeout(${cache.timeoutMs})})}).then(function(response){
+var answered=new AbortController();
+var giveUp=setTimeout(function(){answered.abort()},${cache.timeoutMs});
+var settled=function(){clearTimeout(giveUp)};
+return fetch(${text(cache.origin)}+"/diffs/v${CACHE_SCHEMA}/"+id,{credentials:"omit",referrerPolicy:"no-referrer",signal:answered.signal}).then(function(response){settled();return response},function(error){settled();throw error})}).then(function(response){
 return response.ok?response.json():null}).catch(function(){return null}).then(function(body){
 return body||start()});
 window.${ENTRY_BOOT_GLOBAL}={comparison:comparison,served:served};

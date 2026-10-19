@@ -8,6 +8,7 @@ import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
 import vectorFile from "../../../fixtures/cache-key-vectors.json" with {
 	type: "json",
 };
+import { bodyArrivingAfter } from "../cache/slowBody.ts";
 
 const WORKER_URL = "/assets/diff.worker-test.js";
 const CACHE_ORIGIN = "https://cache.example";
@@ -243,6 +244,19 @@ describe("the diff boot script, in front of the server's cache", () => {
 
 			expect(posted).toMatchObject([{ type: "build-tree", pkg: "serde" }]);
 		}
+	});
+
+	test("lets an answer that has begun to arrive finish, and starts no worker", async () => {
+		const slowBody: Fetch = async (_url, init) =>
+			new Response(
+				bodyArrivingAfter(120, JSON.stringify(servedEntry), init?.signal),
+			);
+
+		const { spawned } = await boot("/crates/serde/1.0.0/1.0.1", {
+			fetch: slowBody,
+		});
+
+		expect(spawned).toEqual([]);
 	});
 
 	test("sends only the diff_id, with no cookies and no referrer", async () => {

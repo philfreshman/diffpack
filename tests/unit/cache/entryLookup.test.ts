@@ -5,6 +5,7 @@ import vectorFile from "../../../fixtures/cache-key-vectors.json" with {
 	type: "json",
 };
 import { json, stubFetch } from "../registries/fetchStub.ts";
+import { bodyArrivingAfter } from "./slowBody.ts";
 
 const ORIGIN = "https://cache.example";
 const ENGINE = "0.4.1";
@@ -134,6 +135,20 @@ describe("looking a comparison up in the server's cache", () => {
 		const { lookUp } = lookupAnswering(() =>
 			json(servedEntry({ similarity_threshold: 0.750000001 })),
 		);
+
+		expect(await lookUp(zod)).not.toBeNull();
+	});
+
+	test("lets an entry that has begun to arrive finish, however long it takes", async () => {
+		const lookUp = createEntryLookup({
+			fetcher: async (_url, init) =>
+				new Response(
+					bodyArrivingAfter(60, JSON.stringify(servedEntry()), init?.signal),
+				),
+			origin: ORIGIN,
+			engine: ENGINE,
+			timeoutMs: 20,
+		});
 
 		expect(await lookUp(zod)).not.toBeNull();
 	});
