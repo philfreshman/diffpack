@@ -115,7 +115,7 @@ function answerAsTheProxy(httpStatus: number, body: ProxyErrorBody) {
 
 const QUOTA_EXHAUSTED = answerAsTheProxy(503, {
 	error: "quota_exhausted",
-	message: "diffpack's Composer proxy has used today's free allowance.",
+	message: "diffpack's package proxy has used today's free allowance.",
 	resetsAt: RESETS_AT,
 });
 
