@@ -159,6 +159,11 @@ export function createDiffClient(
 	};
 }
 
+export type DiffClient = Pick<
+	ReturnType<typeof createDiffClient>,
+	"buildTree" | "getFile" | "prefetch"
+>;
+
 export const diffClient = createDiffClient(
 	() =>
 		new Worker(new URL("./diff.worker.ts", import.meta.url), {

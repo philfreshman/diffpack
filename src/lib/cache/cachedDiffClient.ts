@@ -1,5 +1,5 @@
 import { type EntryBoot, readEntryBoot } from "#/lib/worker/bootScript.ts";
-import { diffClient } from "#/lib/worker/diffWorkerClient.ts";
+import { type DiffClient, diffClient } from "#/lib/worker/diffWorkerClient.ts";
 import {
 	type Comparison,
 	comparisonKey,
@@ -13,11 +13,9 @@ import {
 	lookUpEntry,
 } from "./entryLookup.ts";
 
-type DiffClient = Pick<typeof diffClient, "buildTree" | "getFile" | "prefetch">;
-
 type LookUp = (comparison: Comparison) => Promise<CachedEntry | null>;
 
-interface Held {
+interface CachedComparison {
 	key: string;
 	entry: CachedEntry;
 	builtHere: Promise<DiffFileEntry> | null;
@@ -28,7 +26,7 @@ export function createCachedDiffClient(
 	lookUp: LookUp,
 	boot: () => EntryBoot | null = readEntryBoot,
 ) {
-	let held: Held | null = null;
+	let held: CachedComparison | null = null;
 	let bootClaimed = false;
 
 	function claimBoot(comparison: Comparison): EntryBoot | null {
@@ -36,9 +34,16 @@ export function createCachedDiffClient(
 		bootClaimed = true;
 
 		const booted = boot();
-		const isThisComparison =
-			booted && comparisonKey(booted.comparison) === comparisonKey(comparison);
-		return isThisComparison ? booted : null;
+		if (!booted) return null;
+		if (comparisonKey(booted.comparison) === comparisonKey(comparison))
+			return booted;
+
+		booted.abandoned = true;
+		return null;
+	}
+
+	async function bootSettled(): Promise<void> {
+		await boot()?.served.catch(() => null);
 	}
 
 	async function findEntry(
@@ -50,7 +55,10 @@ export function createCachedDiffClient(
 		return lookUp(comparison);
 	}
 
-	function buildHere(comparison: Comparison, cached: Held): Promise<unknown> {
+	function buildHere(
+		comparison: Comparison,
+		cached: CachedComparison,
+	): Promise<unknown> {
 		cached.builtHere ??= local.buildTree(comparison).catch((error: unknown) => {
 			cached.builtHere = null;
 			throw error;
@@ -58,9 +66,9 @@ export function createCachedDiffClient(
 		return cached.builtHere;
 	}
 
-	async function fileOfHeld(
+	async function fileOfCached(
 		comparison: Comparison,
-		cached: Held,
+		cached: CachedComparison,
 		path: string,
 		oldPath: string | undefined,
 	): Promise<FileDiff> {
@@ -89,12 +97,13 @@ export function createCachedDiffClient(
 			oldPath: string | undefined,
 		): Promise<FileDiff> {
 			if (held?.key === comparisonKey(comparison))
-				return fileOfHeld(comparison, held, path, oldPath);
+				return fileOfCached(comparison, held, path, oldPath);
 
 			return local.getFile(comparison, path, oldPath);
 		},
 
-		prefetch(request: DiffRequest): Promise<void> {
+		async prefetch(request: DiffRequest): Promise<void> {
+			await bootSettled();
 			return local.prefetch(request);
 		},
 	};

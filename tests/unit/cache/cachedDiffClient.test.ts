@@ -202,6 +202,7 @@ describe("a diff client adopting the boot script's lookup", () => {
 		const { client, calls, asked } = clientAfterBoot({
 			comparison: zod,
 			served: Promise.resolve(servedFor(zod)),
+			abandoned: false,
 		});
 
 		expect(await client.buildTree(zod)).toEqual(cachedTree);
@@ -216,6 +217,7 @@ describe("a diff client adopting the boot script's lookup", () => {
 		const { client, calls, asked } = clientAfterBoot({
 			comparison: zod,
 			served: Promise.resolve(null),
+			abandoned: false,
 		});
 
 		expect(await client.buildTree(zod)).toEqual(builtTree);
@@ -227,6 +229,7 @@ describe("a diff client adopting the boot script's lookup", () => {
 		const { client, calls } = clientAfterBoot({
 			comparison: zod,
 			served: Promise.resolve({ ...servedFor(zod), package: "Zod" }),
+			abandoned: false,
 		});
 
 		expect(await client.buildTree(zod)).toEqual(builtTree);
@@ -236,7 +239,11 @@ describe("a diff client adopting the boot script's lookup", () => {
 	test("asks for itself about any other comparison", async () => {
 		const other = { ...zod, to: "4.1.0" };
 		const { client, asked } = clientAfterBoot(
-			{ comparison: zod, served: Promise.resolve(servedFor(zod)) },
+			{
+				comparison: zod,
+				served: Promise.resolve(servedFor(zod)),
+				abandoned: false,
+			},
 			entry,
 		);
 
@@ -247,7 +254,11 @@ describe("a diff client adopting the boot script's lookup", () => {
 
 	test("adopts the boot script's answer once", async () => {
 		const { client, asked } = clientAfterBoot(
-			{ comparison: zod, served: Promise.resolve(servedFor(zod)) },
+			{
+				comparison: zod,
+				served: Promise.resolve(servedFor(zod)),
+				abandoned: false,
+			},
 			entry,
 		);
 
@@ -255,5 +266,38 @@ describe("a diff client adopting the boot script's lookup", () => {
 		await client.buildTree(zod);
 
 		expect(asked).toEqual([zod]);
+	});
+
+	test("warms nothing until the boot script's lookup has settled", async () => {
+		let settle: (served: unknown) => void = () => {};
+		const served = new Promise<unknown>((resolve) => {
+			settle = resolve;
+		});
+		const { client, calls } = clientAfterBoot({
+			comparison: zod,
+			served,
+			abandoned: false,
+		});
+
+		const warming = client.prefetch(zod);
+		await Promise.resolve();
+		expect(calls).toEqual([]);
+
+		settle(null);
+		await warming;
+		expect(calls).toEqual(["prefetch zod"]);
+	});
+
+	test("tells the boot script to stand down when another comparison is asked for", async () => {
+		const booted: EntryBoot = {
+			comparison: zod,
+			served: new Promise(() => {}),
+			abandoned: false,
+		};
+		const { client } = clientAfterBoot(booted, null);
+
+		void client.buildTree({ ...zod, to: "4.1.0" });
+
+		expect(booted.abandoned).toBe(true);
 	});
 });

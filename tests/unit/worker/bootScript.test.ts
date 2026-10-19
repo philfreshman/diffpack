@@ -18,6 +18,7 @@ type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 const missing: Fetch = async () => new Response("", { status: 404 });
 
 interface BootOptions {
+	meanwhile?: (window: Record<string, unknown>) => void;
 	stored?: Record<string, string>;
 	store?: unknown;
 	fetch?: Fetch;
@@ -31,6 +32,7 @@ async function boot(
 		store = { getItem: (key: string) => stored[key] ?? null },
 		fetch = missing,
 		engine = "0.4.1",
+		meanwhile = () => {},
 	}: BootOptions = {},
 ) {
 	const posted: unknown[] = [];
@@ -68,6 +70,7 @@ async function boot(
 		}),
 	)(window, { pathname }, store, FakeWorker, recordingFetch);
 
+	meanwhile(window);
 	await (window.__diffpackEntryBoot as EntryBoot | undefined)?.served;
 
 	return { posted, spawned, fetched, window };
@@ -254,6 +257,27 @@ describe("the diff boot script, in front of the server's cache", () => {
 
 		const { spawned } = await boot("/crates/serde/1.0.0/1.0.1", {
 			fetch: slowBody,
+		});
+
+		expect(spawned).toEqual([]);
+	});
+
+	test("starts no worker for a comparison the page has moved on from", async () => {
+		let release: () => void = () => {};
+		const answerLater = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const missingLater: Fetch = async (url, init) => {
+			await answerLater;
+			return missing(url, init);
+		};
+
+		const { spawned } = await boot("/crates/serde/1.0.0/1.0.1", {
+			fetch: missingLater,
+			meanwhile: (window) => {
+				(window.__diffpackEntryBoot as EntryBoot).abandoned = true;
+				release();
+			},
 		});
 
 		expect(spawned).toEqual([]);

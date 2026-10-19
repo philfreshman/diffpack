@@ -24,8 +24,8 @@ export interface DiffBoot {
 
 export interface EntryBoot {
 	comparison: Comparison;
-	/** The cache's answer, unchecked, or `null` once the worker has started. */
 	served: Promise<unknown>;
+	abandoned: boolean;
 }
 
 function readGlobal<T>(name: string): T | null {
@@ -63,10 +63,10 @@ export function buildDiffBootScript(
 	workerUrl: string,
 	cache: BootCache = SERVER_CACHE,
 ): string {
-	const text = JSON.stringify;
+	const asLiteral = JSON.stringify;
 	return `(()=>{try{
-var REGISTRIES=${text(REGISTRY_IDS)};
-var GO_VERSION=new RegExp(${text(MODULE_VERSION.source)});
+var REGISTRIES=${asLiteral(REGISTRY_IDS)};
+var GO_VERSION=new RegExp(${asLiteral(MODULE_VERSION.source)});
 var decode=function(s){try{return decodeURIComponent(s)}catch(e){return s}};
 var parts=location.pathname.split("/").filter(Boolean).map(decode);
 var registry=parts.shift();
@@ -78,24 +78,27 @@ for(var i=0;i<parts.length;i++)if(GO_VERSION.test(parts[i])){width=i;break}}
 var pkg=parts.slice(0,width).join("/"),from=parts[width],to=parts[width+1];
 if(!pkg||!from||!to)return;
 var comparison={registry:registry,pkg:pkg,from:from,to:to,ignoreWhitespace:${readInHead(IGNORE_WHITESPACE)}};
+var entryBoot={comparison:comparison,served:null,abandoned:false};
 var start=function(){
-var worker=new Worker(${text(workerUrl)},{type:"module"});
+if(entryBoot.abandoned)return null;
+var worker=new Worker(${asLiteral(workerUrl)},{type:"module"});
 var boot={worker:worker,id:0,comparison:comparison,replies:[]};
 worker.onmessage=function(event){boot.replies.push(event.data)};
 worker.postMessage(Object.assign({id:boot.id,type:"build-tree"},comparison));
 window.${DIFF_BOOT_GLOBAL}=boot;
 return null};
-var j=JSON.stringify;
-var canonical='{"engine":'+j(${text(cache.engine)})+',"from":'+j(from)+',"ignore_whitespace":'+comparison.ignoreWhitespace+',"package":'+j(pkg)+',"registry":'+j(registry)+',"schema":${CACHE_SCHEMA},"similarity_threshold":'+j(${text(canonicalThreshold(SIMILARITY_THRESHOLD))})+',"to":'+j(to)+'}';
+var jsonString=JSON.stringify;
+var canonical='{"engine":'+jsonString(${asLiteral(cache.engine)})+',"from":'+jsonString(from)+',"ignore_whitespace":'+comparison.ignoreWhitespace+',"package":'+jsonString(pkg)+',"registry":'+jsonString(registry)+',"schema":${CACHE_SCHEMA},"similarity_threshold":'+jsonString(${asLiteral(canonicalThreshold(SIMILARITY_THRESHOLD))})+',"to":'+jsonString(to)+'}';
 var served=Promise.resolve().then(function(){
 return crypto.subtle.digest("SHA-256",new TextEncoder().encode(canonical))}).then(function(digest){
 var id=Array.prototype.map.call(new Uint8Array(digest),function(b){return(b<16?"0":"")+b.toString(16)}).join("");
 var answered=new AbortController();
 var giveUp=setTimeout(function(){answered.abort()},${cache.timeoutMs});
 var settled=function(){clearTimeout(giveUp)};
-return fetch(${text(cache.origin)}+"/diffs/v${CACHE_SCHEMA}/"+id,{credentials:"omit",referrerPolicy:"no-referrer",signal:answered.signal}).then(function(response){settled();return response},function(error){settled();throw error})}).then(function(response){
+return fetch(${asLiteral(cache.origin)}+"/diffs/v${CACHE_SCHEMA}/"+id,{credentials:"omit",referrerPolicy:"no-referrer",signal:answered.signal}).then(function(response){settled();return response},function(error){settled();throw error})}).then(function(response){
 return response.ok?response.json():null}).catch(function(){return null}).then(function(body){
 return body||start()});
-window.${ENTRY_BOOT_GLOBAL}={comparison:comparison,served:served};
+entryBoot.served=served;
+window.${ENTRY_BOOT_GLOBAL}=entryBoot;
 }catch(e){}})();`;
 }

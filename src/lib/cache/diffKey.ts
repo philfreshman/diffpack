@@ -44,13 +44,13 @@ export function canonicalThreshold(threshold: number): string {
 }
 
 export function canonicalString(key: DiffKey): string {
-	const text = JSON.stringify;
+	const jsonString = JSON.stringify;
 	return (
-		`{"engine":${text(key.engine)},"from":${text(key.from)},` +
-		`"ignore_whitespace":${key.ignoreWhitespace},"package":${text(key.package)},` +
-		`"registry":${text(key.registry)},"schema":${key.schema},` +
-		`"similarity_threshold":${text(canonicalThreshold(key.similarityThreshold))},` +
-		`"to":${text(key.to)}}`
+		`{"engine":${jsonString(key.engine)},"from":${jsonString(key.from)},` +
+		`"ignore_whitespace":${key.ignoreWhitespace},"package":${jsonString(key.package)},` +
+		`"registry":${jsonString(key.registry)},"schema":${key.schema},` +
+		`"similarity_threshold":${jsonString(canonicalThreshold(key.similarityThreshold))},` +
+		`"to":${jsonString(key.to)}}`
 	);
 }
 
