@@ -30,10 +30,27 @@
 	color: var(--color-muted);
 }
 
+/* Fills what is left of the pane, so a failure sits in the middle of it. */
+.centered {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	align-items: center;
+	justify-content: center;
+}
+
+/* The same box as ProxyLimitNotice, so every failure reads alike. */
 .error {
+	max-width: 40rem;
 	margin: 0;
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background-color: var(--color-surface);
 	color: var(--color-danger);
 	font-family: var(--font-mono);
+	font-size: var(--text-sm);
+	overflow-wrap: anywhere;
 }
 
 .column,

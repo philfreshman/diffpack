@@ -58,6 +58,12 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	// Unlike `session.key`, this holds still when whitespace is toggled.
 	const comparisonPath = buildPath(adapter, { ...slug, file: "" });
 
+	const failure = workspaceFailure(session, versions.error);
+	// With no diff to show, the failure takes the pane; beside one it sits above it.
+	const failed =
+		failure !== null &&
+		(session.status === "error" || session.status === "idle");
+
 	function openFile(file: string) {
 		navigate({ to: buildPath(adapter, { ...slug, file }) });
 	}
@@ -102,90 +108,87 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />
 				<main className={styles.body}>
-					<WorkspaceFailure session={session} versionsError={versions.error} />
+					{failure && (
+						<FailureNotice
+							{...failure}
+							className={failed ? styles.centered : undefined}
+						/>
+					)}
 
-					<section className={styles.file} data-testid="diff-file">
-						<DiffToolbar
-							path={session.file?.path ?? ""}
-							fileIndex={fileIndex}
-							fileCount={changed.length}
-							onStepFile={stepFile}
-							onClose={closeFile}
-							file={shown}
-							split={split.value}
-							onSplitChange={split.set}
-							ignoreWhitespace={whitespace.value}
-							onIgnoreWhitespaceChange={whitespace.set}
-							highlight={highlight}
-						/>
-						<FilePane
-							file={session.file}
-							highlight={highlight}
-							onClose={closeFile}
-							intro={workspaceIntro(adapter, slug)}
-							sessionStatus={session.status}
-							shown={shown}
-						/>
-					</section>
+					{!failed && (
+						<section className={styles.file} data-testid="diff-file">
+							<DiffToolbar
+								path={session.file?.path ?? ""}
+								fileIndex={fileIndex}
+								fileCount={changed.length}
+								onStepFile={stepFile}
+								onClose={closeFile}
+								file={shown}
+								split={split.value}
+								onSplitChange={split.set}
+								ignoreWhitespace={whitespace.value}
+								onIgnoreWhitespaceChange={whitespace.set}
+								highlight={highlight}
+							/>
+							<FilePane
+								file={session.file}
+								highlight={highlight}
+								onClose={closeFile}
+								intro={workspaceIntro(adapter, slug)}
+								sessionStatus={session.status}
+								shown={shown}
+							/>
+						</section>
+					)}
 				</main>
 			</div>
 		</div>
 	);
 }
 
-interface WorkspaceFailureProps {
-	session: DiffSessionState;
-	versionsError: Error | null;
-}
-
-// A failed build says more than the version list it was started from.
-function WorkspaceFailure({ session, versionsError }: WorkspaceFailureProps) {
-	if (session.status === "error")
-		return (
-			<FailureNotice
-				message={session.error}
-				code={session.errorCode}
-				resetsAt={session.resetsAt}
-				testId="diff-error"
-				className={styles.error}
-			/>
-		);
-	if (!versionsError) return null;
-
-	const { message, code, resetsAt } = failureOf(versionsError);
-	return (
-		<FailureNotice
-			message={message}
-			code={code}
-			resetsAt={resetsAt}
-			testId="versions-error"
-			className={styles.error}
-		/>
-	);
-}
-
-interface FailureNoticeProps {
+interface ShownFailure {
 	message: string | null;
 	code: FailureCode | null | undefined;
 	resetsAt: string | null | undefined;
 	testId: string;
-	className?: string;
 }
 
+// A failed build says more than the version list it was started from.
+function workspaceFailure(
+	session: DiffSessionState,
+	versionsError: Error | null,
+): ShownFailure | null {
+	if (session.status === "error")
+		return {
+			message: session.error,
+			code: session.errorCode,
+			resetsAt: session.resetsAt,
+			testId: "diff-error",
+		};
+	if (!versionsError) return null;
+
+	const { message, code, resetsAt } = failureOf(versionsError);
+	return { message, code, resetsAt, testId: "versions-error" };
+}
+
+/** `className` places the notice; the box itself always looks the same. */
 function FailureNotice({
 	message,
 	code,
 	resetsAt,
 	testId,
 	className,
-}: FailureNoticeProps) {
-	if (isProxyLimit(code))
-		return <ProxyLimitNotice code={code} resetsAt={resetsAt} />;
-
+}: ShownFailure & { className?: string }) {
 	return (
-		<p className={className} role="alert" data-testid={testId}>
-			{message}
-		</p>
+		<div className={className}>
+			{isProxyLimit(code) ? (
+				<ProxyLimitNotice code={code} resetsAt={resetsAt} />
+			) : (
+				<p className={styles.error} role="alert" data-testid={testId}>
+					{message}
+				</p>
+			)}
+		</div>
 	);
 }
 
@@ -246,6 +249,7 @@ function FilePane({
 					code={file.errorCode}
 					resetsAt={file.resetsAt}
 					testId="file-error"
+					className={styles.centered}
 				/>
 			)}
 			{shown && (
