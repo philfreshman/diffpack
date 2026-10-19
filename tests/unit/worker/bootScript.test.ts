@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { composerAdapter } from "#/lib/registries/composer.ts";
+import { parseSlug } from "#/lib/url/slug.ts";
 import {
 	buildDiffBootScript,
 	type DiffBoot,
@@ -143,6 +145,43 @@ describe("the diff boot script", () => {
 				ignoreWhitespace: false,
 			},
 		]);
+	});
+
+	test("reads a composer name as its vendor and package, lowercased", async () => {
+		const { posted } = await boot(
+			"/composer/Monolog/Monolog/3.12.0/3.12.1/src/Monolog/Logger.php",
+		);
+
+		expect(posted).toEqual([
+			{
+				id: 0,
+				type: "build-tree",
+				registry: "composer",
+				pkg: "monolog/monolog",
+				from: "3.12.0",
+				to: "3.12.1",
+				ignoreWhitespace: false,
+			},
+		]);
+	});
+
+	test("agrees with parseSlug on every composer URL", async () => {
+		for (const pathname of [
+			"/composer/monolog/monolog/3.12.0/3.12.1/src/Monolog/Logger.php",
+			"/composer/symfony/console/v7.3.0/v7.3.1",
+			"/composer/Symfony/Console/v7.3.0/v7.3.1/Application.php",
+			"/composer/doctrine/dbal/4.0.0-RC1/4.0.0",
+		]) {
+			const slug = parseSlug(
+				composerAdapter,
+				pathname.replace("/composer/", ""),
+			);
+			const { posted } = await boot(pathname);
+
+			expect(posted).toMatchObject([
+				{ pkg: slug.package, from: slug.from, to: slug.to },
+			]);
+		}
 	});
 
 	test("leaves behind a request the client adopts as the same comparison", async () => {

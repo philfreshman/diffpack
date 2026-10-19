@@ -68,7 +68,8 @@ network, a worker or `localStorage`. Keep new code in that shape.
   `parseSlug(adapter, splat)` from `src/lib/url/slug.ts` and render `DiffWorkspace`.
 - How many segments a package name spans is the adapter's business, through `packagePath`: npm
   takes two for a scoped name, Go takes everything up to the first segment matching
-  `MODULE_VERSION`, crates and PyPI take one (`singleSegmentPath`).
+  `MODULE_VERSION`, Composer takes two (`vendor/package`, lowercased), crates and PyPI take one
+  (`singleSegmentPath`).
 - `buildPath` is the inverse of `parseSlug`, and it keeps `@` unescaped because `/npm/@types/node`
   is the URL that is live and indexed. Build links with `buildPath`, never by concatenating strings.
 - A package plus two versions in the URL *is* the request for a comparison. Nothing else starts
