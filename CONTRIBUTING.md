@@ -50,7 +50,7 @@ The extraction and diffing logic — everything that downloads an archive, unpac
 two versions — is Rust compiled to WebAssembly. It lives in
 **[philfreshman/diffpack-engine](https://github.com/philfreshman/diffpack-engine)** and is consumed
 here as an ordinary dependency, `@philfreshman/diffpack-engine`, pinned in `package.json`. It is a
-`wasm-pack --target web` module: `src/lib/worker/diff.worker.ts` imports its three entry points and
+`wasm-pack --target web` module: `src/lib/worker/diff.worker.ts` imports its four entry points and
 initialises it against the `.wasm` URL Vite fingerprints.
 
 Two consequences worth knowing:
