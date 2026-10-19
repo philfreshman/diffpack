@@ -14,6 +14,15 @@ export interface BuildProgress {
 	diff: StepProgress;
 }
 
+export type StepName = keyof BuildProgress;
+
+export interface StepFailure {
+	step: StepName;
+	failure: Failure;
+}
+
+const STEP_ORDER: StepName[] = ["from", "to", "diff"];
+
 const RUNNING: StepProgress = { state: "running", failure: null };
 const DONE: StepProgress = { state: "done", failure: null };
 const WAITING: StepProgress = { state: "waiting", failure: null };
@@ -63,11 +72,16 @@ function saysTheSame(shown: Failure, next: Failure): boolean {
 	return shown.message === next.message;
 }
 
-export function failuresOf(progress: BuildProgress): Failure[] {
-	const failures: Failure[] = [];
-	for (const { failure } of [progress.from, progress.to, progress.diff]) {
-		if (failure && !failures.some((shown) => saysTheSame(shown, failure)))
-			failures.push(failure);
+function alreadyShown(failures: StepFailure[], next: Failure): boolean {
+	return failures.some((shown) => saysTheSame(shown.failure, next));
+}
+
+export function failuresOf(progress: BuildProgress): StepFailure[] {
+	const failures: StepFailure[] = [];
+	for (const step of STEP_ORDER) {
+		const { failure } = progress[step];
+		if (failure && !alreadyShown(failures, failure))
+			failures.push({ step, failure });
 	}
 	return failures;
 }

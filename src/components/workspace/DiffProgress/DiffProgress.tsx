@@ -1,10 +1,10 @@
 import type { CSSProperties } from "react";
 import { Panel } from "#/components/ui/Panel/Panel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
-import type { Failure } from "#/lib/failure/failure.ts";
 import {
 	type BuildProgress,
 	failuresOf,
+	type StepFailure,
 	type StepState,
 } from "#/lib/session/buildProgress.ts";
 import { FailureMessage } from "../FailureNotice/FailureNotice.tsx";
@@ -92,15 +92,11 @@ function ProgressStep({ id, label, state }: Step) {
 	);
 }
 
-function Failures({ failures }: { failures: Failure[] }) {
+function Failures({ failures }: { failures: StepFailure[] }) {
 	return (
 		<div className={styles.failures}>
-			{failures.map((failure) => (
-				<FailureMessage
-					key={failure.code ?? failure.message}
-					{...failure}
-					testId="diff-error"
-				/>
+			{failures.map(({ step, failure }) => (
+				<FailureMessage key={step} {...failure} testId="diff-error" />
 			))}
 		</div>
 	);
