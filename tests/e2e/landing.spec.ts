@@ -100,7 +100,12 @@ test("points at the repository from the footer", async ({ page }) => {
 test("describes itself for anything that links to it", async ({ request }) => {
 	const html = await (await request.get("/")).text();
 
-	expect(html).toContain("<title>diffpack</title>");
+	expect(html).toContain(
+		"<title>diffpack: compare npm, crates.io, Go, PyPI and Packagist versions</title>",
+	);
+	expect(html).toContain('<link rel="canonical" href="https://diffpack.io/"/>');
+	expect(html).toContain('<script type="application/ld+json">');
+	expect(html).toContain('"@type":"WebSite","name":"diffpack"');
 	expect(html).toContain(
 		'content="Compare package versions across ecosystems. Source-aware dependency review for npm, crates.io, Go, PyPI and Packagist."',
 	);
