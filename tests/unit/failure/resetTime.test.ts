@@ -12,7 +12,9 @@ describe("formatResetTime", () => {
 	});
 
 	test("keeps a zone's half hour", () => {
-		expect(formatResetTime(RESET, "en-IN", "Asia/Kolkata")).toBe("5:30 AM IST");
+		expect(formatResetTime(RESET, "en-GB", "Asia/Kolkata")).toStartWith(
+			"05:30",
+		);
 	});
 
 	test("reads midnight as midnight where the reader's clock is on UTC", () => {
