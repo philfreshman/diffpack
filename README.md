@@ -55,11 +55,13 @@ Before downloading anything, the page asks
 [diffpack-server](https://github.com/philfreshman/diffpack-server) whether it has already worked
 out this comparison for an AI agent. That request carries one thing: a `diff_id`, a SHA-256 of the
 registry, the package, both versions, the engine version and the diff settings. It goes without
-cookies and without a referrer, so it does not name the package, though like any request it shows
-the server your IP address and browser. A hash names a comparison without spelling it out; it does
-not stop someone who guesses the comparison from checking the guess. On a hit, the tree and the
-changed files arrive from the server and nothing is downloaded; on a miss or any failure, the
-browser does the work as above. npm, crates.io and PyPI are looked up; Go is not, yet.
+cookies and without a referrer, so it does not name the package. Like any request, it shows the
+server your IP address and browser, and the server logs the `diff_id` it was asked for. A hash
+names a comparison without spelling it out; it does not stop someone who guesses the comparison
+from checking the guess. On a hit, the file tree and the changed files arrive from the server
+without either archive being downloaded; an unchanged file, or one the server left out for size,
+is still worked out in your browser when you open it. On a miss or any failure, the browser does
+all the work as above.
 
 <br>
 
@@ -157,7 +159,7 @@ reaches the app.
 | `bun run test` | unit tests (`bun test tests/unit`) |
 | `bun run test:e2e` | Playwright — hits the real registries, so slow and online |
 | `bun run test:networked` | the cache key checked against the live diffpack-server's own `diff_id`s |
-| `bun run check:vectors` | `fixtures/cache-key-vectors.json` is byte-identical to the server's at a pinned commit |
+| `bun run check:vectors` | `fixtures/cache-key-vectors.json` is byte-identical to the server's at a pinned commit (`:development` compares with the server's tip) |
 | `bun run screenshots` | recapture the reference set (`scripts/capture-screenshots.mjs`) |
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun run lint` · `format` | Biome |

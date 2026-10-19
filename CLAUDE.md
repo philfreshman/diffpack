@@ -136,10 +136,11 @@ Rules in `diffWorkerClient.ts` that look optional and are not:
 - **A read is refused unless its comparison is the active one** (`active`, cleared when a build
   fails). The engine would otherwise answer from whatever diff it holds.
 - **The boot script gets there first.** `buildDiffBootScript` runs inline in `<head>` and parses
-  the URL before hydration. For npm, crates and PyPI it first asks the server's cache (below) and
-  leaves the answer on `window.__diffpackEntryBoot`; on a miss, a failure or a timeout, and at once
-  for Go, it spawns the worker, posts `build-tree` and leaves that on `window.__diffpackDiffBoot`.
-  The clients adopt either only when the `comparisonKey` matches. Since the script cannot import
+  the URL before hydration. It first asks the server's cache (below) and leaves the answer on
+  `window.__diffpackEntryBoot`; on a miss, a failure or a timeout it spawns the worker, posts
+  `build-tree` and leaves that on `window.__diffpackDiffBoot`, unless the client has marked the
+  lookup `abandoned` by asking for another comparison. The clients adopt either only when the
+  `comparisonKey` matches, and nothing reaches the worker client before the boot lookup settles. Since the script cannot import
   anything, it restates the registry path rules, the `Comparison` fields and the cache key inline.
   `tests/unit/worker/bootScript.test.ts` runs its output against the real client and against the
   cache-key vectors, so update it together with any change to any of them.
@@ -158,7 +159,7 @@ the server reads it); `cachedDiffClient.ts` sits in front of the worker client w
 interface and is what the session talks to.
 
 - **A miss must be invisible.** Every way a lookup can go wrong (404, network error, a body that is
-  not an entry, an entry for another comparison, 1.5 s without an answer) is a miss, and a miss is
+  not an entry, an entry for another comparison, 1.5 s without response headers) is a miss, and a miss is
   the worker, which stays the source of truth. A file a cached entry has no patch for is worked out
   by the worker too.
 - **Only the `diff_id` leaves the page.** No cookies, no referrer: the page URL names the package.
@@ -168,6 +169,8 @@ interface and is what the session talks to.
 - **`fixtures/cache-key-vectors.json` is the server's file, not a copy to edit.** It is byte-identical
   to diffpack-server's at the commit pinned in `scripts/check-cache-key-vectors.ts`, which
   `bun run check:vectors` enforces in CI. To take new vectors, move the pin and re-download.
+  `check:vectors:development` compares with the server's development tip as a non-blocking CI step,
+  so new vectors there show up as a warning.
   `bun run test:networked` compares keys with the live server's directly.
 - The e2e build points the cache at a closed port, so specs other than `cached-diff.spec.ts` always
   miss and keep testing the worker.
