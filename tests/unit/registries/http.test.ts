@@ -23,9 +23,10 @@ function failureOfFetch(
 	answer: (url: string) => Response | Promise<Response>,
 	url = PROXY_URL,
 	signal?: AbortSignal,
+	proxyOrigin = PROXY_ORIGIN,
 ) {
 	const { fetcher } = stubFetch(answer);
-	return getJson(fetcher, url, signal, "Couldn't load versions", PROXY_ORIGIN)
+	return getJson(fetcher, url, signal, "Couldn't load versions", proxyOrigin)
 		.then(() => null)
 		.catch(failureOf);
 }
@@ -62,18 +63,36 @@ describe("a failed answer", () => {
 });
 
 describe("no answer at all", () => {
-	test("from the proxy means the proxy is unreachable", async () => {
-		const offline = () => Promise.reject(new TypeError("Failed to fetch"));
+	const offline = () => Promise.reject(new TypeError("Failed to fetch"));
 
+	test("from the proxy means the proxy is unreachable", async () => {
 		expect(await failureOfFetch(offline)).toEqual({
 			message: "Couldn't load versions (proxy unreachable)",
 			code: "proxy_unreachable",
 		});
 	});
 
-	test("from another host is the network error itself", async () => {
-		const offline = () => Promise.reject(new TypeError("Failed to fetch"));
+	test("from the proxy is recognised when its origin is configured with a trailing slash", async () => {
+		expect(
+			await failureOfFetch(offline, PROXY_URL, undefined, `${PROXY_ORIGIN}/`),
+		).toMatchObject({ code: "proxy_unreachable" });
+	});
 
+	test("from a host that only begins like the proxy's is not the proxy", async () => {
+		const lookalike = `${PROXY_ORIGIN}.example.com/v1/status`;
+
+		expect(await failureOfFetch(offline, lookalike)).toEqual({
+			message: "Failed to fetch",
+		});
+	});
+
+	test("with a proxy origin that is not a URL is the network error itself", async () => {
+		expect(
+			await failureOfFetch(offline, PROXY_URL, undefined, "not a url"),
+		).toEqual({ message: "Failed to fetch" });
+	});
+
+	test("from another host is the network error itself", async () => {
 		expect(await failureOfFetch(offline, REGISTRY_URL)).toEqual({
 			message: "Failed to fetch",
 		});

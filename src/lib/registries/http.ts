@@ -3,8 +3,18 @@ import type { Fetcher } from "./types.ts";
 
 const PROXY_ERROR_HEADER = "Diffpack-Proxy-Error";
 
+function originOf(url: string): string | null {
+	try {
+		return new URL(url).origin;
+	} catch {
+		return null;
+	}
+}
+
 function isProxyUrl(url: string, proxyOrigin: string | undefined): boolean {
-	return proxyOrigin !== undefined && url.startsWith(`${proxyOrigin}/`);
+	if (proxyOrigin === undefined) return false;
+	const proxy = originOf(proxyOrigin);
+	return proxy !== null && originOf(url) === proxy;
 }
 
 async function answerTo(
