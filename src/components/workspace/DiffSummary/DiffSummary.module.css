@@ -1,0 +1,72 @@
+.box {
+	display: flex;
+	width: min(28rem, 100%);
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.stats {
+	display: flex;
+	gap: var(--space-8);
+	margin: 0;
+}
+
+.stat {
+	display: flex;
+	flex-direction: column-reverse;
+	gap: var(--space-1);
+}
+
+.label {
+	color: var(--color-muted);
+}
+
+.value {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: var(--text-xl);
+	font-variant-numeric: tabular-nums;
+}
+
+.value[data-kind="added"] {
+	color: var(--color-added);
+}
+
+.value[data-kind="removed"] {
+	color: var(--color-removed);
+}
+
+.bar {
+	display: flex;
+	height: var(--space-2);
+	gap: 2px;
+	overflow: hidden;
+	border-radius: var(--radius-full);
+}
+
+.added,
+.removed {
+	flex-basis: 0;
+	min-width: var(--space-1);
+}
+
+.added {
+	background-color: var(--color-added);
+}
+
+.removed {
+	background-color: var(--color-removed);
+}
+
+.files,
+.hint {
+	margin: 0;
+}
+
+.files {
+	color: var(--color-foreground);
+}
+
+.hint {
+	color: var(--color-muted);
+}

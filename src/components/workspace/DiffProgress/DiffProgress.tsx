@@ -8,6 +8,7 @@ import {
 	type StepState,
 } from "#/lib/session/buildProgress.ts";
 import { FailureMessage } from "../FailureNotice/FailureNotice.tsx";
+import { ViewportCenter } from "../ViewportCenter/ViewportCenter.tsx";
 import styles from "./DiffProgress.module.css";
 
 interface Step {
@@ -53,16 +54,18 @@ export function DiffProgress({
 	const stepCount = { "--step-count": steps.length } as CSSProperties;
 
 	return (
-		<div className={styles.stage} style={stepCount}>
-			<Panel className={styles.box} data-testid="diff-progress">
-				<ol className={styles.steps}>
-					{steps.map((step) => (
-						<ProgressStep key={step.id} {...step} />
-					))}
-				</ol>
-				{failures.length > 0 && <Failures failures={failures} />}
-			</Panel>
-		</div>
+		<ViewportCenter>
+			<div className={styles.frame} style={stepCount}>
+				<Panel className={styles.box} data-testid="diff-progress">
+					<ol className={styles.steps}>
+						{steps.map((step) => (
+							<ProgressStep key={step.id} {...step} />
+						))}
+					</ol>
+					{failures.length > 0 && <Failures failures={failures} />}
+				</Panel>
+			</div>
+		</ViewportCenter>
 	);
 }
 

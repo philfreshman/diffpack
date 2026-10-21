@@ -1,0 +1,24 @@
+.stage {
+	--window-middle-to-stage-bottom: calc(50dvh - var(--workspace-inset));
+	--below-mirrored-half: max(
+		0px,
+		2 *
+		var(--window-middle-to-stage-bottom) -
+		100%
+	);
+
+	display: grid;
+	flex: 1;
+	min-height: 0;
+	grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) var(--below-mirrored-half);
+	overflow: auto;
+}
+
+.slot {
+	display: grid;
+	grid-row: 1 / 3;
+	min-width: 0;
+	min-height: 0;
+	align-items: safe center;
+	justify-items: center;
+}
