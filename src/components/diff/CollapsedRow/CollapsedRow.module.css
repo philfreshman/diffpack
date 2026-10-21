@@ -9,12 +9,15 @@
 	display: flex;
 	flex: 0 0 calc(2 * var(--gutter-width));
 	width: calc(2 * var(--gutter-width));
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
+	align-items: stretch;
 	background: var(--color-fold-gutter);
 	border-right: 1px solid var(--color-fold-gutter-border);
 	padding: 0;
+}
+
+[data-layout="split"] .expanders {
+	flex-basis: var(--gutter-width);
+	width: var(--gutter-width);
 }
 
 .label {
@@ -23,19 +26,29 @@
 	min-width: 0;
 	align-items: center;
 	padding: 0;
-	gap: var(--space-2);
+	gap: 0;
 	font-style: italic;
 	white-space: nowrap;
 	overflow: hidden;
 }
 
 .expander {
-	height: 100%;
-	width: 100%;
+	flex: 1 1 var(--gutter-width);
+	min-width: 0;
 	min-height: 0;
-	padding: 0 var(--space-1);
+	padding: 0;
 	color: inherit;
 	border-radius: 0;
+}
+
+.label > .expander {
+	flex: 0 0 var(--gutter-width);
+	align-self: stretch;
+	/* padding-left: calc((var(--gutter-width) - 14px) / 2); */
+}
+
+.text {
+	margin-left: var(--space-5);
 }
 
 .expander:hover,

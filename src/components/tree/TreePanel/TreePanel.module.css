@@ -60,16 +60,6 @@
 	margin-bottom: calc(var(--space-3) - var(--space-2));
 }
 
-.foot {
-	display: flex;
-	align-items: center;
-	gap: var(--space-2);
-	margin-top: auto;
-	padding: var(--space-2) 0 0 var(--space-2);
-	border-top: 1px solid var(--color-border);
-	font-size: var(--text-sm);
-}
-
 /* Centred on the border so the collapse button sits across the rule. */
 .edge {
 	position: absolute;

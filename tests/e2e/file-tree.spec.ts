@@ -15,7 +15,7 @@ const row = (page: Page, name: string | RegExp) =>
 	page.getByRole("treeitem").filter({ hasText: name });
 
 async function ready(page: Page) {
-	await expect(page.getByTestId("diff-status")).toHaveAttribute(
+	await expect(page.getByTestId("workspace")).toHaveAttribute(
 		"data-state",
 		"ready",
 		ENGINE,

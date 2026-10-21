@@ -25,6 +25,7 @@ export interface ParsedFile {
 
 export interface FileModel extends ParsedFile {
 	rows: DiffRow[] | SplitRow[];
+	split: boolean;
 	differences: number;
 	expandAll: boolean;
 	scrollTop: number;
@@ -51,6 +52,7 @@ export function fileModel(
 	return {
 		...file,
 		rows,
+		split,
 		// Counted from the stops so the number and the arrows cannot disagree.
 		differences: stops.length,
 		expandAll: view.expandAll,

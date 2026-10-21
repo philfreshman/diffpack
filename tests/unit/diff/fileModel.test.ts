@@ -155,7 +155,6 @@ describe("opening a fold", () => {
 		if (fold?.kind !== "collapsed") throw new Error("no fold to open");
 
 		const memory = withRevealed(emptyMemory(), PATH, {
-			direction: "all",
 			start: fold.start,
 			end: fold.end,
 		});

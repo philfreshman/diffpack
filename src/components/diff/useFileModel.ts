@@ -1,5 +1,5 @@
 import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
-import type { Expander } from "#/lib/diff/computeVisibility.ts";
+import type { LineRange } from "#/lib/diff/computeVisibility.ts";
 import { type FileModel, fileModel, parseFile } from "#/lib/diff/fileModel.ts";
 import {
 	emptyMemory,
@@ -20,7 +20,7 @@ export interface DiffViewHandle {
 export interface FileModelControls extends FileModel {
 	stepDifference(direction: 1 | -1): void;
 	setExpandAll(expandAll: boolean): void;
-	reveal(expander: Expander): void;
+	reveal(range: LineRange): void;
 	rememberScroll(scrollTop: number): void;
 	viewport: RefObject<DiffViewHandle | null>;
 }
@@ -105,7 +105,7 @@ function useFileMemory(comparisonKey: string | null, path: string) {
 	return {
 		view: fileView(held.memory, path),
 		reveal: useCallback(
-			(expander: Expander) => change((it) => withRevealed(it, path, expander)),
+			(range: LineRange) => change((it) => withRevealed(it, path, range)),
 			[change, path],
 		),
 		setExpandAll: useCallback(

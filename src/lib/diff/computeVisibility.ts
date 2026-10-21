@@ -10,10 +10,13 @@ export type DiffRow =
 			expanders: Expander[];
 	  };
 
-export interface Expander {
-	direction: "up" | "down" | "all";
+export interface LineRange {
 	start: number;
 	end: number;
+}
+
+export interface Expander extends LineRange {
+	direction: "up" | "down" | "all";
 }
 
 export interface DiffView {
@@ -21,7 +24,7 @@ export interface DiffView {
 	expandAll: boolean;
 }
 
-const CONTEXT_LINES = 3;
+export const CONTEXT_LINES = 3;
 
 const EXPAND_STEP = 20;
 

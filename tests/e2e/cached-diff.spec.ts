@@ -58,7 +58,7 @@ const cachedEntry = {
 
 const ANY_ORIGIN = { "access-control-allow-origin": "*" };
 
-const status = (page: Page) => page.getByTestId("diff-status");
+const status = (page: Page) => page.getByTestId("workspace");
 const row = (page: Page, name: string) =>
 	page.getByRole("treeitem").filter({ hasText: name });
 

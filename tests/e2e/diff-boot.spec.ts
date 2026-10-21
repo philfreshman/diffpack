@@ -5,7 +5,7 @@ const NODE = "/npm/node/26.6.0/26.7.0";
 
 const ENGINE = { timeout: 90_000 };
 
-const status = (page: Page) => page.getByTestId("diff-status");
+const status = (page: Page) => page.getByTestId("workspace");
 
 // Installed before the head script runs, so the boot's own request is recorded too.
 async function recordWorkerRequests(page: Page) {

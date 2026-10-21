@@ -14,10 +14,6 @@
 	padding: var(--workspace-inset);
 }
 
-.status {
-	flex: 1;
-}
-
 .intro {
 	position: absolute;
 	width: 1px;
@@ -37,6 +33,11 @@
 	min-width: 0;
 	min-height: 0;
 	flex-direction: column;
+}
+
+.file {
+	position: relative;
+	isolation: isolate;
 }
 
 .column {
