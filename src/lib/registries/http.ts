@@ -20,14 +20,14 @@ function isProxyUrl(url: string, proxyOrigin: string | undefined): boolean {
 async function answerTo(
 	fetcher: Fetcher,
 	url: string,
-	signal: AbortSignal | undefined,
+	init: RequestInit,
 	whatFailed: string,
 	proxyOrigin: string | undefined,
 ): Promise<Response> {
 	try {
-		return await fetcher(url, { signal });
+		return await fetcher(url, init);
 	} catch (error) {
-		if (signal?.aborted || !isProxyUrl(url, proxyOrigin)) throw error;
+		if (init.signal?.aborted || !isProxyUrl(url, proxyOrigin)) throw error;
 		throw new CodedError({
 			message: `${whatFailed} (proxy unreachable)`,
 			code: "proxy_unreachable",
@@ -56,11 +56,11 @@ async function proxyFailure(
 async function request(
 	fetcher: Fetcher,
 	url: string,
-	signal: AbortSignal | undefined,
+	init: RequestInit,
 	whatFailed: string,
 	proxyOrigin: string | undefined,
 ): Promise<Response> {
-	const res = await answerTo(fetcher, url, signal, whatFailed, proxyOrigin);
+	const res = await answerTo(fetcher, url, init, whatFailed, proxyOrigin);
 	if (res.ok) return res;
 	if (res.headers.has(PROXY_ERROR_HEADER))
 		throw await proxyFailure(res, whatFailed);
@@ -74,7 +74,7 @@ export async function getJson<T>(
 	whatFailed: string,
 	proxyOrigin?: string,
 ): Promise<T> {
-	const res = await request(fetcher, url, signal, whatFailed, proxyOrigin);
+	const res = await request(fetcher, url, { signal }, whatFailed, proxyOrigin);
 	return res.json() as Promise<T>;
 }
 
@@ -85,6 +85,18 @@ export async function getText(
 	whatFailed: string,
 	proxyOrigin?: string,
 ): Promise<string> {
-	const res = await request(fetcher, url, signal, whatFailed, proxyOrigin);
+	const res = await request(fetcher, url, { signal }, whatFailed, proxyOrigin);
 	return res.text();
+}
+
+export async function postJson<T>(
+	fetcher: Fetcher,
+	url: string,
+	body: unknown,
+	signal: AbortSignal | undefined,
+	whatFailed: string,
+): Promise<T> {
+	const init = { method: "POST", body: JSON.stringify(body), signal };
+	const res = await request(fetcher, url, init, whatFailed, undefined);
+	return res.json() as Promise<T>;
 }
