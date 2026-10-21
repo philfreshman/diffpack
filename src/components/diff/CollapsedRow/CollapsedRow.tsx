@@ -11,6 +11,8 @@ import styles from "./CollapsedRow.module.css";
 
 type Fold = Extract<DiffRow, { kind: "collapsed" }>;
 
+const STEPPED_ORDER = ["up", "down"] as const;
+
 export function CollapsedRow({
 	fold,
 	onReveal,
@@ -18,8 +20,11 @@ export function CollapsedRow({
 	style,
 	ref,
 }: VirtualRowProps & { fold: Fold; onReveal(expander: Expander): void }) {
-	const stepped = fold.expanders.filter((it) => it.direction !== "all");
+	const stepped = STEPPED_ORDER.flatMap((direction) =>
+		fold.expanders.filter((it) => it.direction === direction),
+	);
 	const whole = fold.expanders.find((it) => it.direction === "all");
+	const hasBothWaysExpander = stepped.length > 0 && whole !== undefined;
 
 	return (
 		<tr
@@ -50,10 +55,12 @@ export function CollapsedRow({
 				)}
 			</td>
 			<td className={styles.label}>
-				{stepped.length > 0 && whole && (
+				{hasBothWaysExpander && (
 					<ExpandButton expander={whole} onReveal={onReveal} />
 				)}
-				<span>{`@@ Collapsed ${fold.count} lines @@`}</span>
+				<span
+					className={hasBothWaysExpander ? undefined : styles.text}
+				>{`@@ Collapsed ${fold.count} lines @@`}</span>
 			</td>
 		</tr>
 	);
@@ -81,7 +88,6 @@ function ExpandButton({
 			}
 			className={styles.expander}
 			onClick={() => onReveal(expander)}
-			style={expander.direction === "all" ? { width: 30 } : undefined}
 		>
 			<Arrow height="14" width="14" />
 		</IconButton>

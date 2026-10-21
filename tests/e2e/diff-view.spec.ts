@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { SPLIT_VIEW } from "#/lib/storage/settings.ts";
 
 const MANIFEST = "/npm/express/4.18.2/5.1.0/package.json";
@@ -86,7 +86,7 @@ test("opens a fold twenty lines at a time", async ({ page }) => {
 	await stepped.getByRole("button", { name: "Expand 20 lines down" }).click();
 	// The rest of the fold is now below the window, and only rows near it are drawn.
 	await page.getByTestId("diff-scroller").evaluate((node) => {
-		node.scrollTop += 20 * 24;
+		node.scrollTop += 20 * 23;
 	});
 
 	const left = folds(page).and(page.locator(`[data-start="${start + 20}"]`));
@@ -103,6 +103,85 @@ test("opens a fold whole", async ({ page }) => {
 	await expect(
 		folds(page).and(page.locator(`[data-start="${start}"]`)),
 	).toHaveCount(0);
+});
+
+const boxOf = async (target: Locator) => {
+	const box = await target.boundingBox();
+	if (!box) throw new Error("the element is not drawn");
+	return box;
+};
+
+const GUTTER_BORDER = 1;
+
+const expectWidth = (box: { width: number }, width: number) =>
+	expect(Math.abs(box.width - width)).toBeLessThanOrEqual(GUTTER_BORDER);
+
+const LINE_HEIGHT = 23;
+
+const MIN_GUTTER_WIDTH = 50;
+
+test("draws one-line rows at the line height, beside a gutter of at least the minimum width", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	const gutter = await boxOf(
+		page.getByTestId("diff-view").getByTestId("old-number").first(),
+	);
+	const row = await boxOf(lines(page, "unchanged").first());
+
+	expect(gutter.width).toBe(MIN_GUTTER_WIDTH);
+	expect(row.height).toBe(LINE_HEIGHT);
+});
+
+test("a fold's arrows line up with the unified gutters", async ({ page }) => {
+	await open(page, LODASH);
+
+	const gutter = await boxOf(
+		page.getByTestId("diff-view").getByTestId("old-number").first(),
+	);
+	const edge = await boxOf(folds(page).first().getByRole("button").first());
+	expectWidth(edge, 2 * gutter.width);
+
+	const stepped = folds(page)
+		.filter({ has: page.getByRole("button", { name: /lines down$/ }) })
+		.first();
+	const up = await boxOf(stepped.getByRole("button", { name: /lines up$/ }));
+	const down = await boxOf(
+		stepped.getByRole("button", { name: /lines down$/ }),
+	);
+	expectWidth(up, gutter.width);
+	expectWidth(down, gutter.width);
+	expect(down.y).toBe(up.y);
+	expect(down.x).toBeGreaterThan(up.x);
+});
+
+test("a fold's arrows share the one gutter of the split view", async ({
+	page,
+}) => {
+	await page.addInitScript(
+		(key) => localStorage.setItem(key, "true"),
+		SPLIT_VIEW.key,
+	);
+	await open(page, LODASH);
+
+	const gutter = await boxOf(
+		page
+			.getByTestId("diff-view")
+			.locator('td[data-side="left"] > span')
+			.first(),
+	);
+	const stepped = folds(page)
+		.filter({ has: page.getByRole("button", { name: /lines down$/ }) })
+		.first();
+	const up = await boxOf(stepped.getByRole("button", { name: /lines up$/ }));
+	const down = await boxOf(
+		stepped.getByRole("button", { name: /lines down$/ }),
+	);
+
+	expectWidth({ width: up.width + down.width }, gutter.width);
+	expectWidth(up, gutter.width / 2);
+	expect(down.y).toBe(up.y);
 });
 
 test("draws only the rows on screen, however long the file", async ({
@@ -230,7 +309,7 @@ test("remembers what was opened in a file, and where it was left", async ({
 		opened ?? "",
 	);
 	const back = await scroller.evaluate((node) => node.scrollTop);
-	expect(Math.abs(back - 900)).toBeLessThan(24);
+	expect(Math.abs(back - 900)).toBeLessThan(23);
 });
 
 test("a new comparison is a new file, opened at the top", async ({ page }) => {

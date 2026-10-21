@@ -22,7 +22,7 @@ export interface DiffViewProps {
 }
 
 /** Must match `--diff-line-height` in pixels. */
-const ROW_HEIGHT = 24;
+const ROW_HEIGHT = 23;
 export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 	const { path, lines, language, rows } = file;
 
@@ -65,11 +65,12 @@ export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 			data-pending={pending ? "" : undefined}
 			data-rows={rows.length}
 			data-language={language ?? ""}
+			data-layout={file.split ? "split" : "unified"}
 			// Washes and gutters follow the syntax theme's ground, not the page theme (#139).
 			data-syntax={syntax ?? undefined}
 			style={
 				{
-					"--gutter-width": `calc(${gutterChars(lines)}ch + var(--space-4))`,
+					"--gutter-width": `max(var(--gutter-min-width), calc(${gutterChars(lines)}ch + var(--space-4)))`,
 				} as CSSProperties
 			}
 		>
@@ -92,7 +93,6 @@ export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 								ref: virtualizer.measureElement,
 								style: { transform: `translateY(${item.start}px)` },
 							};
-
 							if (row.kind === "pair") {
 								return (
 									<SplitDiffRow
