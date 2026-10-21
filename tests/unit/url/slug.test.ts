@@ -3,7 +3,7 @@ import { composerAdapter } from "#/lib/registries/composer.ts";
 import { cratesAdapter } from "#/lib/registries/crates.ts";
 import { goAdapter } from "#/lib/registries/go.ts";
 import { npmAdapter } from "#/lib/registries/npm.ts";
-import { buildPath, parseSlug } from "#/lib/url/slug.ts";
+import { buildPath, namesComparison, parseSlug } from "#/lib/url/slug.ts";
 
 describe("parseSlug", () => {
 	test("reads package, versions and file out of a deep link", () => {
@@ -242,4 +242,18 @@ describe("a URL built by diffpack", () => {
 			});
 		});
 	}
+});
+
+describe("namesComparison", () => {
+	test("holds when the slug names a package and both versions", () => {
+		expect(namesComparison(parseSlug(npmAdapter, "express/4.18.2/5.1.0"))).toBe(
+			true,
+		);
+	});
+
+	test("does not hold while a part is missing", () => {
+		for (const splat of ["", "express", "express/4.18.2"]) {
+			expect(namesComparison(parseSlug(npmAdapter, splat))).toBe(false);
+		}
+	});
 });

@@ -18,8 +18,9 @@ import {
 	summarizeTree,
 	type TreeSummary,
 } from "#/lib/session/tree.ts";
-import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
+import { buildPath, type DiffSlug, namesComparison } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
+import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import { AsciiTrail } from "../AsciiTrail/AsciiTrail.tsx";
 import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
 import { DiffSummary } from "../DiffSummary/DiffSummary.tsx";
@@ -29,6 +30,12 @@ import { useDiffSession } from "../useDiffSession.ts";
 import { type LineLink, useLineLink } from "../useLineLink.ts";
 import { useVersions } from "../useVersions.ts";
 import { useViewerSettings } from "../useViewerSettings.ts";
+import {
+	useVulnerabilityFindings,
+	type VulnerabilityFindings,
+} from "../useVulnerabilities.ts";
+import { VulnerabilityNotice } from "../VulnerabilityNotice/VulnerabilityNotice.tsx";
+import { VulnerabilityReport } from "../VulnerabilityReport/VulnerabilityReport.tsx";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
 
@@ -53,6 +60,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 
 	// The header's list, shared through the query cache: no second request.
 	const versions = useVersions(adapter, slug.package);
+	const vulnerabilities = useVulnerabilityFindings(slug, readyTree(session));
 
 	const lineLink = useLineLink(adapter, slug);
 	// What is on screen, not what was last asked for: it lags while the blur shows.
@@ -65,8 +73,12 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const summary = shownSummary(session);
 	const pane = paneOf(session.status, progress, versionsFailure !== null);
 
+	function fileLink(file: string): string {
+		return buildPath(adapter, { ...slug, file });
+	}
+
 	function openFile(file: string) {
-		navigate({ to: buildPath(adapter, { ...slug, file }) });
+		navigate({ to: fileLink(file) });
 	}
 
 	function closeFile() {
@@ -144,6 +156,8 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								lineLink={lineLink}
 								onClose={closeFile}
 								shown={shown}
+								vulnerabilities={vulnerabilities}
+								fileLink={fileLink}
 							/>
 						</section>
 					)}
@@ -154,10 +168,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 }
 
 type Pane = "progress" | "versions-failure" | "file";
-
-function namesComparison(slug: DiffSlug): boolean {
-	return Boolean(slug.package && slug.from && slug.to);
-}
 
 function showsIntro(status: DiffSessionState["status"]): boolean {
 	return status === "idle" || status === "loading";
@@ -183,6 +193,10 @@ function shownProgress(
 	return null;
 }
 
+function readyTree(session: DiffSessionState): DiffFileEntry | null {
+	return session.status === "ready" ? session.tree : null;
+}
+
 function shownSummary(session: DiffSessionState): TreeSummary | null {
 	if (session.status !== "ready" || session.file) return null;
 	return summarizeTree(session.tree);
@@ -203,14 +217,17 @@ interface ComparisonPaneProps extends FilePaneProps {
 	slug: DiffSlug;
 	progress: BuildProgress | null;
 	summary: TreeSummary | null;
+	fileLink(path: string): string;
 }
 
 function ComparisonPane({
 	slug,
 	progress,
 	summary,
+	fileLink,
 	...filePane
 }: ComparisonPaneProps) {
+	const { scan, affected } = filePane.vulnerabilities;
 	if (progress)
 		return (
 			<DiffProgress
@@ -218,9 +235,21 @@ function ComparisonPane({
 				from={slug.from}
 				to={slug.to}
 				progress={progress}
+				osv={scan.status}
 			/>
 		);
-	if (summary) return <DiffSummary summary={summary} />;
+	if (summary)
+		return (
+			<DiffSummary summary={summary}>
+				<VulnerabilityReport
+					scan={scan}
+					affected={affected}
+					from={slug.from}
+					to={slug.to}
+					fileLink={fileLink}
+				/>
+			</DiffSummary>
+		);
 	return <FilePane {...filePane} />;
 }
 
@@ -231,6 +260,7 @@ interface FilePaneProps {
 	highlight: HighlightThemeControls;
 	showSigns: boolean;
 	lineLink: LineLink;
+	vulnerabilities: VulnerabilityFindings;
 }
 
 function FilePane({
@@ -240,6 +270,7 @@ function FilePane({
 	highlight,
 	showSigns,
 	lineLink,
+	vulnerabilities,
 }: FilePaneProps) {
 	return (
 		<>
@@ -257,17 +288,26 @@ function FilePane({
 				/>
 			)}
 			{shown && (
-				// Keyed by path, so restoring scroll is a plain mount effect.
-				<DiffView
-					file={shown}
-					key={shown.path}
-					onClose={onClose}
-					pending={file?.status === "loading"}
-					showSigns={showSigns}
-					anchor={lineLink.anchorIn(shown.path)}
-					onSelectLine={lineLink.select}
-					syntax={highlight.appearance}
-				/>
+				<>
+					{/* Keyed by path, so restoring scroll is a plain mount effect. */}
+					<DiffView
+						file={shown}
+						key={shown.path}
+						onClose={onClose}
+						pending={file?.status === "loading"}
+						showSigns={showSigns}
+						anchor={lineLink.anchorIn(shown.path)}
+						onSelectLine={lineLink.select}
+						syntax={highlight.appearance}
+					/>
+					<VulnerabilityNotice
+						path={shown.path}
+						lines={shown.lines}
+						affected={vulnerabilities.affected}
+						report={vulnerabilities.scan.report}
+						onSelectLine={lineLink.select}
+					/>
+				</>
 			)}
 		</>
 	);

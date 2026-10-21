@@ -1,0 +1,93 @@
+{
+	"id": "GHSA-462w-v97r-4m45",
+	"summary": "Jinja2 sandbox escape via string formatting",
+	"aliases": ["CVE-2019-10906", "PYSEC-2019-217"],
+	"modified": "2024-09-24T21:03:59.802687Z",
+	"published": "2019-04-10T14:30:24Z",
+	"database_specific": {
+		"github_reviewed": true,
+		"github_reviewed_at": "2020-06-16T20:57:35Z",
+		"nvd_published_at": "2019-04-07T00:29:00Z",
+		"cwe_ids": ["CWE-693"],
+		"severity": "HIGH"
+	},
+	"references": [
+		{
+			"type": "ADVISORY",
+			"url": "https://nvd.nist.gov/vuln/detail/CVE-2019-10906"
+		},
+		{
+			"type": "PACKAGE",
+			"url": "https://github.com/pallets/jinja"
+		}
+	],
+	"affected": [
+		{
+			"package": {
+				"name": "jinja2",
+				"ecosystem": "PyPI",
+				"purl": "pkg:pypi/jinja2"
+			},
+			"ranges": [
+				{
+					"type": "ECOSYSTEM",
+					"events": [
+						{
+							"introduced": "0"
+						},
+						{
+							"fixed": "2.10.1"
+						}
+					]
+				}
+			],
+			"versions": [
+				"2.0",
+				"2.0rc1",
+				"2.1",
+				"2.1.1",
+				"2.10",
+				"2.2",
+				"2.2.1",
+				"2.3",
+				"2.3.1",
+				"2.4",
+				"2.4.1",
+				"2.5",
+				"2.5.1",
+				"2.5.2",
+				"2.5.3",
+				"2.5.4",
+				"2.5.5",
+				"2.6",
+				"2.7",
+				"2.7.1",
+				"2.7.2",
+				"2.7.3",
+				"2.8",
+				"2.8.1",
+				"2.9",
+				"2.9.1",
+				"2.9.2",
+				"2.9.3",
+				"2.9.4",
+				"2.9.5",
+				"2.9.6"
+			],
+			"database_specific": {
+				"source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2019/04/GHSA-462w-v97r-4m45/GHSA-462w-v97r-4m45.json"
+			}
+		}
+	],
+	"schema_version": "1.9.0",
+	"severity": [
+		{
+			"type": "CVSS_V3",
+			"score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N"
+		},
+		{
+			"type": "CVSS_V4",
+			"score": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N"
+		}
+	]
+}
