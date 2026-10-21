@@ -11,7 +11,7 @@ import {
 
 const ENGINE = { timeout: 90_000 };
 
-const status = (page: Page) => page.getByTestId("diff-status");
+const status = (page: Page) => page.getByTestId("workspace");
 const files = (page: Page) =>
 	page.getByRole("treeitem").and(page.locator("[data-type='file']"));
 

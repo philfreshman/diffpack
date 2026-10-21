@@ -1,4 +1,6 @@
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
+import { ThemeSwitch } from "#/components/theme/ThemeSwitch/ThemeSwitch.tsx";
+import { useThemeSelection } from "#/components/theme/useThemeSelection.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
 import {
@@ -24,6 +26,10 @@ export function SettingsMenu({
 	onShowSignsChange,
 	highlight,
 }: SettingsMenuProps) {
+	// Called here, not in the menu's content: the content unmounts when the menu shuts,
+	// and the system selection must keep following the operating system.
+	const themeSelection = useThemeSelection();
+
 	return (
 		<NavigationMenu.Root className={styles.root} orientation="vertical">
 			<NavigationMenu.List className={styles.list}>
@@ -111,6 +117,10 @@ export function SettingsMenu({
 										</NavigationMenu.Positioner>
 									</NavigationMenu.Portal>
 								</NavigationMenu.Root>
+							</li>
+
+							<li className={styles.switchRow}>
+								<ThemeSwitch {...themeSelection} />
 							</li>
 						</ul>
 					</NavigationMenu.Content>

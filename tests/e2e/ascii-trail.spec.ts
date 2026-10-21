@@ -88,7 +88,7 @@ test("keeps the empty workspace still for reduced motion", async ({ page }) => {
 
 test("gives way once the URL names a comparison", async ({ page }) => {
 	await page.goto("/npm/node/26.6.0/26.7.0");
-	await expect(page.getByTestId("diff-status")).toHaveAttribute(
+	await expect(page.getByTestId("workspace")).toHaveAttribute(
 		"data-state",
 		"ready",
 		ENGINE,

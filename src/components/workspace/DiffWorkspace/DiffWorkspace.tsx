@@ -7,7 +7,6 @@ import {
 } from "#/components/diff/useFileModel.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { useHighlightTheme } from "#/components/diff/useHighlightTheme.ts";
-import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
 import { failureOf } from "#/lib/failure/failure.ts";
@@ -80,10 +79,11 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	}
 
 	return (
-		// The routing e2e suite reads the parsed URL from these attributes.
+		// The e2e suites read the parsed URL and the session state from these attributes.
 		<div
 			className={styles.workspace}
 			data-testid="workspace"
+			data-state={session.status}
 			data-package={slug.package}
 			data-from={slug.from}
 			data-to={slug.to}
@@ -95,12 +95,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 				selectedPath={slug.file}
 				onOpenFile={openFile}
 				header={<RegistrySwitcher adapter={adapter} />}
-				footer={
-					<>
-						<TreeStatus status={session.status} />
-						<ThemeToggle />
-					</>
-				}
 			/>
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />
@@ -195,17 +189,6 @@ function paneOf(
 	if (progress) return "progress";
 	if (status === "idle" && versionsFailed) return "versions-failure";
 	return "file";
-}
-
-// Empty: tests read the state off `data-state`.
-function TreeStatus({ status }: { status: DiffSessionState["status"] }) {
-	return (
-		<span
-			className={styles.status}
-			data-testid="diff-status"
-			data-state={status}
-		/>
-	);
 }
 
 interface ComparisonPaneProps extends FilePaneProps {

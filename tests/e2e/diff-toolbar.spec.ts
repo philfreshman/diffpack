@@ -23,7 +23,7 @@ const EXPRESS = "/npm/express/4.18.2/5.1.0";
 
 test("stands whether or not a file is open", async ({ page }) => {
 	await page.goto(EXPRESS);
-	await expect(page.getByTestId("diff-status")).toHaveAttribute(
+	await expect(page.getByTestId("workspace")).toHaveAttribute(
 		"data-state",
 		"ready",
 		ENGINE,
@@ -152,7 +152,7 @@ test("ignoring whitespace takes a reformatted line out of the diff", async ({
 
 	await openSettings(page);
 	await ignoreWhitespace(page).click();
-	await expect(page.getByTestId("diff-status")).toHaveAttribute(
+	await expect(page.getByTestId("workspace")).toHaveAttribute(
 		"data-state",
 		"ready",
 		ENGINE,
@@ -415,4 +415,24 @@ test("colours the code by what the tokens are", async ({ page }) => {
 	await expect(
 		page.getByTestId("diff-view").locator("span.hljs-attr").first(),
 	).toBeVisible();
+});
+
+test("switches the color mode from the last item of the settings menu", async ({
+	page,
+}) => {
+	await open(page, `${EXPRESS}/package.json`);
+	await openSettings(page);
+
+	const modeSwitch = page.getByTestId("theme-switch");
+	const html = page.locator("html");
+	await expect(
+		modeSwitch.getByRole("button", { name: "Dark" }),
+	).toHaveAttribute("aria-pressed", "true");
+
+	await modeSwitch.getByRole("button", { name: "Light" }).click();
+	await expect(html).toHaveAttribute("data-theme", "light");
+	await expect(html).toHaveAttribute("data-theme-selection", "light");
+
+	await modeSwitch.getByRole("button", { name: "System" }).click();
+	await expect(html).toHaveAttribute("data-theme-selection", "system");
 });

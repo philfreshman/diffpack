@@ -5,7 +5,7 @@ const NODE = "/npm/node/26.6.0/26.7.0";
 
 const ENGINE = { timeout: 90_000 };
 
-const status = (page: Page) => page.getByTestId("diff-status");
+const status = (page: Page) => page.getByTestId("workspace");
 const files = (page: Page) =>
 	page.getByRole("treeitem").and(page.locator("[data-type='file']"));
 
@@ -143,7 +143,6 @@ test("nothing to compare, nothing started", async ({ page }) => {
 
 	await expect(status(page)).toHaveAttribute("data-state", "idle");
 	await expect(page.getByRole("treeitem")).toHaveCount(0);
-	await expect(status(page)).toBeEmpty();
 });
 
 test("extracts a Go module and strips its versioned root", async ({ page }) => {

@@ -17,7 +17,7 @@ function Home() {
 		<>
 			<div className={styles.cosmos} aria-hidden="true" data-testid="cosmos" />
 			<StarField />
-			<ThemeToggle floating />
+			<ThemeToggle />
 			<main className={styles.page}>
 				<header className={styles.intro}>
 					<h1 className={styles.title}>diffpack</h1>
