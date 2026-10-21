@@ -13,15 +13,18 @@ export function sameVulnerability(a: Advisory, b: Advisory): boolean {
 }
 
 export function collapseAliases(advisories: Advisory[]): Advisory[] {
-	const collapsed: Advisory[] = [];
-	for (const advisory of advisories) {
-		const index = collapsed.findIndex((kept) =>
-			sameVulnerability(kept, advisory),
-		);
-		if (index === -1) collapsed.push(advisory);
-		else collapsed[index] = merged(collapsed[index] as Advisory, advisory);
-	}
-	return collapsed;
+	return advisories.reduce(withAdvisory, []);
+}
+
+function withAdvisory(collapsed: Advisory[], advisory: Advisory): Advisory[] {
+	const isSame = (kept: Advisory) => sameVulnerability(kept, advisory);
+	const first = collapsed.findIndex(isSame);
+	if (first === -1) return [...collapsed, advisory];
+	const joined = [...collapsed.filter(isSame), advisory].reduce(merged);
+	return collapsed.flatMap((kept, index) => {
+		if (index === first) return [joined];
+		return isSame(kept) ? [] : [kept];
+	});
 }
 
 function merged(kept: Advisory, duplicate: Advisory): Advisory {
