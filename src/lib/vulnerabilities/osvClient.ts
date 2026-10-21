@@ -62,7 +62,7 @@ export function createOsvClient(fetcher: Fetcher = fetch): OsvClient {
 				if (!pageToken) break;
 			}
 			return collapseAliases(
-				records.map((record) => advisoryFrom(record, name)),
+				records.map((record) => advisoryFrom(record, question.package)),
 			);
 		},
 	};

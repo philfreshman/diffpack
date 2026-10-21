@@ -2,6 +2,11 @@ import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
 
 export type OsvEcosystem = "npm" | "crates.io" | "Go" | "PyPI" | "Packagist";
 
+export interface OsvPackage {
+	name: string;
+	ecosystem: OsvEcosystem;
+}
+
 export type Severity = "critical" | "high" | "moderate" | "low" | "unknown";
 
 export interface FixCommit {

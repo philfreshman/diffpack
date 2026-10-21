@@ -11,7 +11,7 @@ import {
 	uniqueBy,
 } from "./json.ts";
 import { severityOf } from "./severity.ts";
-import type { Advisory, FixCommit, GoImport } from "./types.ts";
+import type { Advisory, FixCommit, GoImport, OsvPackage } from "./types.ts";
 
 const OSV_VULNERABILITY_URL = "https://osv.dev/vulnerability";
 const VERSION_RANGE_TYPES = new Set(["SEMVER", "ECOSYSTEM"]);
@@ -19,10 +19,10 @@ const SUMMARY_LIMIT = 200;
 const PYPI_ECOSYSTEM = "PyPI";
 const PYPI_NAME_SEPARATORS = /[-_.]+/g;
 
-export function advisoryFrom(record: unknown, packageName: string): Advisory {
+export function advisoryFrom(record: unknown, queried: OsvPackage): Advisory {
 	const fields = objectOf(record);
 	const id = stringOf(fields.id);
-	const affected = affectedEntriesFor(fields.affected, packageName);
+	const affected = affectedEntriesFor(fields.affected, queried);
 
 	return {
 		id,
@@ -47,16 +47,16 @@ function comparableName(name: string, ecosystem: string): string {
 
 function affectedEntriesFor(
 	affected: unknown,
-	packageName: string,
+	queried: OsvPackage,
 ): JsonObject[] {
 	return arrayOf(affected)
 		.map(objectOf)
 		.filter((entry) => {
 			const target = objectOf(entry.package);
-			const ecosystem = stringOf(target.ecosystem);
 			return (
-				comparableName(stringOf(target.name), ecosystem) ===
-				comparableName(packageName, ecosystem)
+				stringOf(target.ecosystem) === queried.ecosystem &&
+				comparableName(stringOf(target.name), queried.ecosystem) ===
+					comparableName(queried.name, queried.ecosystem)
 			);
 		});
 }
