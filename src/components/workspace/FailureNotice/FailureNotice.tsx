@@ -1,6 +1,7 @@
 import { Panel } from "#/components/ui/Panel/Panel.tsx";
 import { type FailureCode, isProxyLimit } from "#/lib/failure/failure.ts";
 import { ProxyLimitNotice } from "../ProxyLimitNotice/ProxyLimitNotice.tsx";
+import { ViewportCenter } from "../ViewportCenter/ViewportCenter.tsx";
 import styles from "./FailureNotice.module.css";
 
 export interface ShownFailure {
@@ -30,11 +31,11 @@ export function FailureNotice({
 	centered = false,
 	...failure
 }: ShownFailure & { centered?: boolean }) {
-	return (
-		<div className={centered ? styles.centered : undefined}>
-			<Panel>
-				<FailureMessage {...failure} />
-			</Panel>
-		</div>
+	const notice = (
+		<Panel>
+			<FailureMessage {...failure} />
+		</Panel>
 	);
+
+	return centered ? <ViewportCenter>{notice}</ViewportCenter> : notice;
 }

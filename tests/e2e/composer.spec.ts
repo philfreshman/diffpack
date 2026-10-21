@@ -122,13 +122,17 @@ const QUOTA_EXHAUSTED = answerAsTheProxy(503, {
 test("compares two monolog releases through the proxy", async ({ page }) => {
 	await page.goto(`${MONOLOG}/src/Monolog/Logger.php`);
 
-	await expect(status(page)).toHaveText("129 files, 6 changed", ENGINE);
 	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
 	await expect(treeRow(page, "Logger.php").getByTestId("added")).toHaveText(
 		"+7",
 	);
 	await expect(treeRow(page, "Logger.php").getByTestId("removed")).toHaveText(
 		"-7",
+	);
+
+	await page.getByRole("button", { name: "Close file" }).click();
+	await expect(page.getByTestId("summary-files")).toHaveText(
+		"129 files, 6 changed",
 	);
 });
 

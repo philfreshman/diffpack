@@ -15,12 +15,17 @@ import { failureOf } from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
 import { type BuildProgress, FETCHING } from "#/lib/session/buildProgress.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
-import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
+import {
+	changedFiles,
+	summarizeTree,
+	type TreeSummary,
+} from "#/lib/session/tree.ts";
 import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
 import { AsciiTrail } from "../AsciiTrail/AsciiTrail.tsx";
 import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
+import { DiffSummary } from "../DiffSummary/DiffSummary.tsx";
 import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
@@ -40,7 +45,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 		slug,
 		whitespace.known ? whitespace.value : null,
 	);
-	const files = flattenFiles(session.tree);
 	// The arrows skip unchanged files, which the tree hides by default.
 	const changed = changedFiles(session.tree);
 	// From the session, not the URL: a file is open only once its tree is ready.
@@ -59,6 +63,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 
 	const versionsFailure = versions.error && failureOf(versions.error);
 	const progress = shownProgress(session, slug);
+	const summary = shownSummary(session);
 	const pane = paneOf(session.status, progress, versionsFailure !== null);
 
 	function openFile(file: string) {
@@ -92,11 +97,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 				header={<RegistrySwitcher adapter={adapter} />}
 				footer={
 					<>
-						<TreeStatus
-							changedCount={changed.length}
-							fileCount={files.length}
-							status={session.status}
-						/>
+						<TreeStatus status={session.status} />
 						<ThemeToggle />
 					</>
 				}
@@ -128,26 +129,20 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								highlight={highlight}
 							/>
 							{showsIntro(session.status) && (
-								<p className={styles.empty} data-testid="workspace-intro">
+								<p className={styles.intro} data-testid="workspace-intro">
 									{workspaceIntro(adapter, slug)}
 								</p>
 							)}
 							{isEmpty(session.status, slug) && <AsciiTrail />}
-							{progress ? (
-								<DiffProgress
-									packageName={slug.package}
-									from={slug.from}
-									to={slug.to}
-									progress={progress}
-								/>
-							) : (
-								<FilePane
-									file={session.file}
-									highlight={highlight}
-									onClose={closeFile}
-									shown={shown}
-								/>
-							)}
+							<ComparisonPane
+								slug={slug}
+								progress={progress}
+								summary={summary}
+								file={session.file}
+								highlight={highlight}
+								onClose={closeFile}
+								shown={shown}
+							/>
 						</section>
 					)}
 				</main>
@@ -180,6 +175,11 @@ function shownProgress(
 	return null;
 }
 
+function shownSummary(session: DiffSessionState): TreeSummary | null {
+	if (session.status !== "ready" || session.file) return null;
+	return summarizeTree(session.tree);
+}
+
 // A comparison in progress, or one that failed, says more than its version list.
 function paneOf(
 	status: DiffSessionState["status"],
@@ -191,20 +191,40 @@ function paneOf(
 	return "file";
 }
 
-interface TreeStatusProps {
-	status: DiffSessionState["status"];
-	fileCount: number;
-	changedCount: number;
+// Empty: tests read the state off `data-state`.
+function TreeStatus({ status }: { status: DiffSessionState["status"] }) {
+	return (
+		<span
+			className={styles.status}
+			data-testid="diff-status"
+			data-state={status}
+		/>
+	);
 }
 
-// Rendered even when empty: tests read the state off `data-state`.
-function TreeStatus({ status, fileCount, changedCount }: TreeStatusProps) {
-	return (
-		<p className={styles.status} data-testid="diff-status" data-state={status}>
-			{status === "ready" &&
-				`${fileCount} ${fileCount === 1 ? "file" : "files"}, ${changedCount} changed`}
-		</p>
-	);
+interface ComparisonPaneProps extends FilePaneProps {
+	slug: DiffSlug;
+	progress: BuildProgress | null;
+	summary: TreeSummary | null;
+}
+
+function ComparisonPane({
+	slug,
+	progress,
+	summary,
+	...filePane
+}: ComparisonPaneProps) {
+	if (progress)
+		return (
+			<DiffProgress
+				packageName={slug.package}
+				from={slug.from}
+				to={slug.to}
+				progress={progress}
+			/>
+		);
+	if (summary) return <DiffSummary summary={summary} />;
+	return <FilePane {...filePane} />;
 }
 
 interface FilePaneProps {

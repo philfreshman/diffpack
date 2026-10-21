@@ -3,6 +3,7 @@ import {
 	countChangedFiles,
 	findFile,
 	flattenFiles,
+	summarizeTree,
 } from "#/lib/session/tree.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 
@@ -109,5 +110,53 @@ describe("countChangedFiles", () => {
 
 	test("a comparison with nothing in it counts nothing", () => {
 		expect(countChangedFiles(null)).toBe(0);
+	});
+});
+
+describe("summarizeTree", () => {
+	const tree: DiffFileEntry = {
+		path: "",
+		type: "directory",
+		status: "modified",
+		added: 99,
+		removed: 99,
+		children: [
+			{ path: "README.md", type: "file", status: "unchanged" },
+			{
+				path: "package.json",
+				type: "file",
+				status: "modified",
+				added: 2,
+				removed: 1,
+			},
+			{
+				path: "src",
+				type: "directory",
+				status: "modified",
+				added: 99,
+				children: [
+					{ path: "src/index.js", type: "file", status: "added", added: 40 },
+					{ path: "logo.png", type: "file", status: "removed" },
+				],
+			},
+		],
+	};
+
+	test("adds up the lines of the files, not of the folders that hold them", () => {
+		expect(summarizeTree(tree)).toEqual({
+			fileCount: 4,
+			changedCount: 3,
+			addedLines: 42,
+			removedLines: 1,
+		});
+	});
+
+	test("a comparison with nothing in it sums to nothing", () => {
+		expect(summarizeTree(null)).toEqual({
+			fileCount: 0,
+			changedCount: 0,
+			addedLines: 0,
+			removedLines: 0,
+		});
 	});
 });
