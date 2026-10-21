@@ -68,6 +68,27 @@ describe("the OSV.dev client", () => {
 		expect(bodyOf(calls[0]?.init)).not.toHaveProperty("page_token");
 	});
 
+	test("sends the signal with every page", async () => {
+		const pages = [{ next_page_token: "second" }, {}];
+		const { fetcher, calls } = stubFetch(() => json(pages[calls.length - 1]));
+		const signal = new AbortController().signal;
+
+		await createOsvClient(fetcher).query("npm", "x", "1.0.0", signal);
+
+		expect(calls.map((call) => call.signal)).toEqual([signal, signal]);
+	});
+
+	test("fails rather than answering a partial list when the pages never end", async () => {
+		const { fetcher, calls } = stubFetch(() =>
+			json({ vulns: [goHtml], next_page_token: "more" }),
+		);
+
+		await expect(
+			createOsvClient(fetcher).query("go", "golang.org/x/net", "0.12.0"),
+		).rejects.toThrow("OSV.dev");
+		expect(calls).toHaveLength(20);
+	});
+
 	test("answers an empty list when nothing is known", async () => {
 		const { fetcher } = stubFetch(() => json({}));
 		expect(await createOsvClient(fetcher).query("npm", "x", "1.0.0")).toEqual(

@@ -9,6 +9,7 @@ import type { Advisory } from "./types.ts";
 const OSV_API_ORIGIN = "https://api.osv.dev";
 const QUERY_URL = `${OSV_API_ORIGIN}/v1/query`;
 const MAX_PAGES = 20;
+const TOO_MANY_PAGES = `OSV.dev: more than ${MAX_PAGES} pages of results`;
 
 export interface OsvClient {
 	query(
@@ -59,11 +60,12 @@ export function createOsvClient(fetcher: Fetcher = fetch): OsvClient {
 				const answer = await page(body, signal);
 				records.push(...answer.records);
 				pageToken = answer.nextPageToken;
-				if (!pageToken) break;
+				if (!pageToken)
+					return collapseAliases(
+						records.map((record) => advisoryFrom(record, question.package)),
+					);
 			}
-			return collapseAliases(
-				records.map((record) => advisoryFrom(record, question.package)),
-			);
+			throw new Error(TOO_MANY_PAGES);
 		},
 	};
 }
