@@ -8,11 +8,12 @@ import {
 	type StepState,
 } from "#/lib/session/buildProgress.ts";
 import { FailureMessage } from "../FailureNotice/FailureNotice.tsx";
+import type { ScanStatus } from "../useVulnerabilities.ts";
 import { ViewportCenter } from "../ViewportCenter/ViewportCenter.tsx";
 import styles from "./DiffProgress.module.css";
 
 interface Step {
-	id: "from" | "to" | "diff";
+	id: "from" | "to" | "diff" | "osv";
 	label: string;
 	state: StepState;
 }
@@ -24,11 +25,19 @@ const STATE_NAMES: Record<StepState, string> = {
 	failed: "Failed",
 };
 
+const OSV_STATES: Record<ScanStatus, StepState> = {
+	idle: "waiting",
+	loading: "running",
+	ready: "done",
+	error: "failed",
+};
+
 interface DiffProgressProps {
 	packageName: string;
 	from: string;
 	to: string;
 	progress: BuildProgress;
+	osv: ScanStatus;
 }
 
 export function DiffProgress({
@@ -36,6 +45,7 @@ export function DiffProgress({
 	from,
 	to,
 	progress,
+	osv,
 }: DiffProgressProps) {
 	const steps: Step[] = [
 		{
@@ -49,6 +59,11 @@ export function DiffProgress({
 			state: progress.to.state,
 		},
 		{ id: "diff", label: "Diffing", state: progress.diff.state },
+		{
+			id: "osv",
+			label: `Querying OSV.dev for ${packageName} ${from}, ${to}`,
+			state: OSV_STATES[osv],
+		},
 	];
 	const failures = failuresOf(progress);
 	const stepCount = { "--step-count": steps.length } as CSSProperties;

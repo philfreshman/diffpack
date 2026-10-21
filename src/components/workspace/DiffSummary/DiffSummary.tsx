@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Panel } from "#/components/ui/Panel/Panel.tsx";
 import type { TreeSummary } from "#/lib/session/tree.ts";
 import { ViewportCenter } from "../ViewportCenter/ViewportCenter.tsx";
@@ -5,7 +6,12 @@ import styles from "./DiffSummary.module.css";
 
 const LINE_COUNT = new Intl.NumberFormat("en-US");
 
-export function DiffSummary({ summary }: { summary: TreeSummary }) {
+interface DiffSummaryProps {
+	summary: TreeSummary;
+	children: ReactNode;
+}
+
+export function DiffSummary({ summary, children }: DiffSummaryProps) {
 	const { addedLines, removedLines, changedCount } = summary;
 
 	return (
@@ -32,6 +38,7 @@ export function DiffSummary({ summary }: { summary: TreeSummary }) {
 						? "Pick a file in the tree to see its diff."
 						: "Nothing changed between these versions."}
 				</p>
+				{children}
 			</Panel>
 		</ViewportCenter>
 	);
