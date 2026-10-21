@@ -8,6 +8,10 @@ export interface DiffSlug {
 	file: string;
 }
 
+export function namesComparison(slug: DiffSlug): boolean {
+	return Boolean(slug.package && slug.from && slug.to);
+}
+
 // `decodeURIComponent` throws on a mis-encoded segment, such as a bare "%".
 function decodeSegment(segment: string): string {
 	try {

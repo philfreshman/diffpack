@@ -86,6 +86,13 @@ without either archive being downloaded; an unchanged file, or one the server le
 is still worked out in your browser when you open it. On a miss or any failure, the browser does
 all the work as above.
 
+To list known vulnerabilities, the page sends the package name, its registry and each of the two
+versions to [OSV.dev](https://osv.dev)'s API at `api.osv.dev`, straight from your browser. Package
+contents never go there. When an advisory links the GitHub commit that fixed it, the page reads
+which files and lines that commit changed from `api.github.com`, without signing in, to point at
+the affected files in the diff. A failed lookup only leaves the vulnerability list or those
+pointers out; the diff works the same.
+
 <br>
 
 ### Registries

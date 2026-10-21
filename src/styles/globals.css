@@ -70,6 +70,11 @@
 	--color-renamed: #d97706;
 	--color-renamed-surface: #fef3c7;
 	--color-selected-surface: rgb(0 0 0 / 0.08);
+	--color-severity-critical: #9f1239;
+	--color-severity-high: #c2410c;
+	--color-severity-moderate: #a16207;
+	--color-severity-low: #1d4ed8;
+	--color-severity-unknown: var(--gray-light-900);
 
 	/* Ported to GLSL in `src/lib/starfield/cosmos.ts`; keep the two identical. */
 	--cosmic-backdrop: none;
@@ -162,6 +167,11 @@
 	--color-renamed: #fbbf24;
 	--color-renamed-surface: rgb(120 53 15 / 0.3);
 	--color-selected-surface: rgb(255 255 255 / 0.09);
+	--color-severity-critical: #fb7185;
+	--color-severity-high: #fb923c;
+	--color-severity-moderate: #facc15;
+	--color-severity-low: #60a5fa;
+	--color-severity-unknown: var(--gray-dark-900);
 
 	--cosmic-backdrop:
 		radial-gradient(

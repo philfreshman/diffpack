@@ -1,7 +1,7 @@
 .frame {
 	--step-height: 1.75rem;
 	--steps-gap: var(--space-1);
-	--summary-height: 9.5rem;
+	--summary-height: 13.75rem;
 	--steps-height: max(
 		var(--summary-height),
 		calc(

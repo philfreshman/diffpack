@@ -210,6 +210,40 @@ interface and is what the session talks to.
 - The e2e build points the cache at a closed port, so specs other than `cached-diff.spec.ts` always
   miss and keep testing the worker.
 
+## Vulnerabilities (OSV.dev)
+
+`src/lib/vulnerabilities/`. The workspace asks OSV.dev about both versions while the engine builds,
+and a failure there never fails the diff. Shared types are in `types.ts`.
+
+- **`osvClient`** (`createOsvClient(fetcher)`): `POST https://api.osv.dev/v1/query` through
+  `postJson` in `src/lib/registries/http.ts`, following `next_page_token`. The name and version
+  travel only in the JSON body; the URL is a constant. `osvEcosystemOf` (`ecosystem.ts`) maps a
+  `RegistryId` to OSV's ecosystem name.
+- **`advisoryFrom`** (`advisory.ts`) turns an untrusted record into an `Advisory`. It reads every
+  field defensively (`json.ts`), takes `fixedIn` and the hints only from the `affected` entry for
+  this package (PyPI names compared normalized), and reads severity from
+  `database_specific.severity`. OSV answers one vulnerability under several ids (a `PYSEC-` and
+  its `GHSA-`), so `collapseAliases` (`aliases.ts`) folds records that share an id or alias into
+  the most severe one.
+- **`compareAdvisories`** (`report.ts`) matches the two sides by id and aliases: only in `to` is
+  `introduced`, in both `remaining`, only in `from` `fixed`. Entries are ordered by that, then
+  severity, then id.
+- **Fix commits.** `fixCommitOf` (`fixCommitReference.ts`) accepts only
+  `https://github.com/<owner>/<repo>/commit/<sha>` and `…/pull/<n>/commits/<sha>`, with
+  `[A-Za-z0-9_.-]+` names that are not all dots and a lowercase hex sha. `fixCommitClient` checks a
+  commit again with `isFixCommit` before `GET https://api.github.com/repos/<o>/<r>/commits/<sha>`
+  (segments encoded), and splits each file's `patch` into removed and added lines. GitHub allows 60
+  unauthenticated requests an hour, so `fixCommitsToLookUp` caps a report at `MAX_FIX_COMMITS`.
+  `outboundOrigins.test.ts`'s rule holds here too: a name never builds a URL by resolution.
+- **`affectedFiles`** points advisories at tree paths: a Go import's package directory (its `.go`
+  files, not `_test.go`), a crate function's module file (`src/<mod>.rs`, `src/<mod>/mod.rs`, or
+  the files in `src/<mod>/`, trying shorter module paths), and fix-commit files matched on whole
+  trailing path segments. Commit files arrive in a map keyed by `commitKey`; manifests, lockfiles,
+  docs and tests are skipped (`isIncidentalFile`). `markLines` (`lineMarks.ts`) finds the lines in a
+  file's `DiffLine[]`: definitions of the hinted symbols, and lines equal, whitespace collapsed, to
+  a fix commit's removed (old side) or added (new side) lines, as `LineAnchor`s. A snippet only
+  counts when it matches at most two lines on its side, and a changed line wins over context.
+
 ## The diff pipeline
 
 From the engine's text to rows on screen, all pure functions in `src/lib/diff/`:

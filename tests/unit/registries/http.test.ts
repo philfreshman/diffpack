@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { failureOf } from "#/lib/failure/failure.ts";
-import { getJson } from "#/lib/registries/http.ts";
+import { getJson, postJson } from "#/lib/registries/http.ts";
 import { json, stubFetch, text } from "./fetchStub.ts";
 
 const PROXY_ORIGIN = "https://diffpack-proxy.example.workers.dev";
@@ -107,5 +107,37 @@ describe("no answer at all", () => {
 		expect(
 			await failureOfFetch(cancelled, PROXY_URL, controller.signal),
 		).toEqual({ message: "Aborted" });
+	});
+});
+
+describe("postJson", () => {
+	const QUERY_URL = "https://api.osv.dev/v1/query";
+
+	test("posts the body as JSON without a content type, so no preflight is needed", async () => {
+		const { fetcher, calls } = stubFetch(() => json({ ok: true }));
+
+		const answer = await postJson(
+			fetcher,
+			QUERY_URL,
+			{ a: 1 },
+			undefined,
+			"Lookup failed",
+		);
+
+		expect(answer).toEqual({ ok: true });
+		expect(calls[0]?.init?.method).toBe("POST");
+		expect(calls[0]?.init?.body).toBe('{"a":1}');
+		expect(calls[0]?.init?.headers).toBeUndefined();
+	});
+
+	test("passes a network failure on unchanged", async () => {
+		const offline = new TypeError("Failed to fetch");
+		const fetcher = async (): Promise<Response> => {
+			throw offline;
+		};
+
+		await expect(
+			postJson(fetcher, QUERY_URL, {}, undefined, "Lookup failed"),
+		).rejects.toBe(offline);
 	});
 });
