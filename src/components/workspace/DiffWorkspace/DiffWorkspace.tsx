@@ -19,6 +19,7 @@ import { changedFiles, flattenFiles } from "#/lib/session/tree.ts";
 import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
+import { AsciiTrail } from "../AsciiTrail/AsciiTrail.tsx";
 import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
 import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
@@ -131,6 +132,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 									{workspaceIntro(adapter, slug)}
 								</p>
 							)}
+							{isEmpty(session.status, slug) && <AsciiTrail />}
 							{progress ? (
 								<DiffProgress
 									packageName={slug.package}
@@ -162,6 +164,10 @@ function namesComparison(slug: DiffSlug): boolean {
 
 function showsIntro(status: DiffSessionState["status"]): boolean {
 	return status === "idle" || status === "loading";
+}
+
+function isEmpty(status: DiffSessionState["status"], slug: DiffSlug): boolean {
+	return status === "idle" && !namesComparison(slug);
 }
 
 function shownProgress(
