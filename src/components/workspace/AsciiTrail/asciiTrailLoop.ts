@@ -14,19 +14,19 @@ import {
 	glyphFor,
 } from "#/lib/asciiTrail/glyphs.ts";
 
-const FRAME_INTERVAL_MS = 1000 / 30;
+const FRAME_INTERVAL_MS = 1000 / 12;
 const MAX_PIXEL_RATIO = 2;
 const FONT_SIZE_PX = 9;
 const CELL_PADDING_X = 1;
 const CELL_PADDING_Y = 2;
 const FALLBACK_CELL_ASPECT = 5 / 3;
 const GLYPH_WIDTH_FILL = 0.92;
-const FLUID_RESOLUTION = 0.8;
+const FLUID_RESOLUTION = 1.5;
 const HOVER_RADIUS_PX = 28;
 const FORCE_SCALE = 0.5;
-const INK_STRENGTH = 0.9;
+const INK_STRENGTH = 0.3;
 const SHORTEST_GAP_SECONDS = 0.001;
-const LONGEST_GAP_SECONDS = 0.05;
+const LONGEST_GAP_SECONDS = 0.5;
 const FIRST_GAP_SECONDS = 0.016;
 const DRAG_THRESHOLD_PX = 6;
 const DRAG_BOOST_SCALE = 0.03;
@@ -37,7 +37,7 @@ const TRAIL_FLUID: FluidSettings = {
 	diffusionIterations: 5,
 	projectionIterations: 10,
 	velocityFadePerSecond: 0.1,
-	densityFadePerSecond: 0.1,
+	densityFadePerSecond: 0.5,
 };
 
 interface CellLayout {
