@@ -1,4 +1,4 @@
-.stage {
+.frame {
 	--step-height: 1.75rem;
 	--steps-gap: var(--space-1);
 	--steps-height: calc(
@@ -11,11 +11,10 @@
 	);
 
 	display: grid;
-	flex: 1;
+	place-self: stretch;
 	min-height: 0;
 	grid-template-rows: minmax(0, 1fr) var(--steps-height) minmax(0, 1fr);
 	justify-items: center;
-	overflow: auto;
 }
 
 .box {
