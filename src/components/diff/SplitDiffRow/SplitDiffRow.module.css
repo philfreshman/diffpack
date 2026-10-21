@@ -4,6 +4,7 @@
 	width: 50%;
 	min-width: 0;
 	align-items: stretch;
+	padding: 0;
 }
 
 .half[data-side="left"] {

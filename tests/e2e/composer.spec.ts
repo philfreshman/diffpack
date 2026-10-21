@@ -61,7 +61,7 @@ const PROXY = "https://diffpack-proxy.philipswiezak.workers.dev";
 const ENGINE = { timeout: 90_000 };
 const RESETS_AT = "2026-10-20T05:30:00Z";
 
-const status = (page: Page) => page.getByTestId("diff-status");
+const status = (page: Page) => page.getByTestId("workspace");
 const notice = (page: Page) => page.getByTestId("proxy-limit-notice");
 const treeRow = (page: Page, name: string) =>
 	page

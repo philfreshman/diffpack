@@ -105,7 +105,9 @@
 	--space-2: 0.5rem;
 	--space-3: 0.75rem;
 	--space-4: 1rem;
+	--space-5: 1.25rem;
 	--space-6: 1.5rem;
+	--space-7: 1.75rem;
 	--space-8: 2rem;
 	--space-12: 3rem;
 	--space-16: 4rem;
@@ -189,6 +191,8 @@
 	--color-fold-surface: var(--gray-light-bg-200);
 	--color-fold-gutter: var(--gray-light-100);
 	--color-fold-gutter-border: var(--gray-light-200);
+	--color-line-selected: rgb(251 146 60 / 0.28);
+	--color-line-selected-edge: #f97316;
 }
 
 :root[data-theme="dark"],
@@ -202,6 +206,8 @@
 	--color-fold-surface: var(--gray-dark-100);
 	--color-fold-gutter: var(--gray-dark-200);
 	--color-fold-gutter-border: var(--gray-dark-400);
+	--color-line-selected: rgb(251 146 60 / 0.22);
+	--color-line-selected-edge: #fb923c;
 }
 
 /* The viewer's frame follows the syntax theme too. The status colours are here

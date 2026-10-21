@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { SPLIT_VIEW } from "#/lib/storage/settings.ts";
 
 const MANIFEST = "/npm/express/4.18.2/5.1.0/package.json";
@@ -26,6 +26,43 @@ test("shows the file as numbered lines, marked by what happened to them", async 
 	const removed = lines(page, "removed").first();
 	await expect(removed.getByTestId("old-number")).toHaveText(/^\d+$/);
 	await expect(removed.getByTestId("new-number")).toHaveText("");
+});
+
+const markerOf = (row: Locator) =>
+	row
+		.locator("td")
+		.last()
+		.evaluate((cell) => getComputedStyle(cell, "::before").content);
+
+test("marks changed lines with a sign that a copy leaves out", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	const added = lines(page, "added").first();
+	const removed = lines(page, "removed").first();
+	expect(await markerOf(added)).toBe('"+"');
+	expect(await markerOf(removed)).toBe('"-"');
+	expect(await markerOf(lines(page, "unchanged").first())).toBe("none");
+
+	await added.locator("td").last().selectText();
+	const selected = await page.evaluate(() => getSelection()?.toString() ?? "");
+	expect(selected).not.toBe("");
+	expect(selected.trimStart()).not.toMatch(/^\+/);
+});
+
+test("the settings menu turns the signs off, and remembers it", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	await page.getByRole("button", { name: "Settings" }).click();
+	await page.getByRole("button", { name: "Show +/- signs" }).click();
+	expect(await markerOf(lines(page, "added").first())).toBe("none");
+
+	await page.reload();
+	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
+	expect(await markerOf(lines(page, "added").first())).toBe("none");
 });
 
 // A handful of changes in a 17 000-line file: what folding and virtualisation are for.
@@ -86,7 +123,7 @@ test("opens a fold twenty lines at a time", async ({ page }) => {
 	await stepped.getByRole("button", { name: "Expand 20 lines down" }).click();
 	// The rest of the fold is now below the window, and only rows near it are drawn.
 	await page.getByTestId("diff-scroller").evaluate((node) => {
-		node.scrollTop += 20 * 24;
+		node.scrollTop += 20 * 23;
 	});
 
 	const left = folds(page).and(page.locator(`[data-start="${start + 20}"]`));
@@ -103,6 +140,138 @@ test("opens a fold whole", async ({ page }) => {
 	await expect(
 		folds(page).and(page.locator(`[data-start="${start}"]`)),
 	).toHaveCount(0);
+});
+
+const selectedRows = (page: Page) =>
+	page.getByTestId("diff-view").locator("tr[data-selected]");
+
+test("a line number selects its row and names it in the URL", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	const added = lines(page, "added").first();
+	const number = await added.getByTestId("new-number").innerText();
+	await added.getByTestId("new-number").getByRole("link").click();
+
+	await expect(page).toHaveURL(new RegExp(`#${number}$`));
+	await expect(selectedRows(page)).toHaveCount(1);
+	await expect(selectedRows(page).getByTestId("new-number")).toHaveText(number);
+
+	const removed = lines(page, "removed").first();
+	const old = await removed.getByTestId("old-number").innerText();
+	await removed.getByTestId("old-number").getByRole("link").click();
+
+	await expect(page).toHaveURL(new RegExp(`#-${old}$`));
+	await expect(selectedRows(page)).toHaveCount(1);
+	await expect(selectedRows(page).getByTestId("old-number")).toHaveText(old);
+});
+
+test("a link to a folded line opens the fold and scrolls to it", async ({
+	page,
+}) => {
+	await open(page, `${LODASH}#15000`);
+
+	const selected = selectedRows(page);
+	await expect(selected.getByTestId("new-number")).toHaveText("15000");
+	await expect(selected).toBeInViewport();
+});
+
+test("a link to a line already shown scrolls down to it", async ({ page }) => {
+	await open(page, `${LODASH}#15030`);
+
+	const selected = selectedRows(page);
+	await expect(selected.getByTestId("new-number")).toHaveText("15030");
+	await expect(selected).toBeInViewport();
+});
+
+test("a link to a removed line selects it by its old number", async ({
+	page,
+}) => {
+	await open(page, `${LODASH}#-155`);
+
+	const selected = selectedRows(page);
+	await expect(selected).toHaveAttribute("data-type", "removed");
+	await expect(selected.getByTestId("old-number")).toHaveText("155");
+});
+
+const boxOf = async (target: Locator) => {
+	const box = await target.boundingBox();
+	if (!box) throw new Error("the element is not drawn");
+	return box;
+};
+
+const GUTTER_BORDER = 1;
+
+const expectWidth = (box: { width: number }, width: number) =>
+	expect(Math.abs(box.width - width)).toBeLessThanOrEqual(GUTTER_BORDER);
+
+const LINE_HEIGHT = 23;
+
+const MIN_GUTTER_WIDTH = 50;
+
+test("draws one-line rows at the line height, beside a gutter of at least the minimum width", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	const gutter = await boxOf(
+		page.getByTestId("diff-view").getByTestId("old-number").first(),
+	);
+	const row = await boxOf(lines(page, "unchanged").first());
+
+	expect(gutter.width).toBe(MIN_GUTTER_WIDTH);
+	expect(row.height).toBe(LINE_HEIGHT);
+});
+
+test("a fold's arrows line up with the unified gutters", async ({ page }) => {
+	await open(page, LODASH);
+
+	const gutter = await boxOf(
+		page.getByTestId("diff-view").getByTestId("old-number").first(),
+	);
+	const edge = await boxOf(folds(page).first().getByRole("button").first());
+	expectWidth(edge, 2 * gutter.width);
+
+	const stepped = folds(page)
+		.filter({ has: page.getByRole("button", { name: /lines down$/ }) })
+		.first();
+	const up = await boxOf(stepped.getByRole("button", { name: /lines up$/ }));
+	const down = await boxOf(
+		stepped.getByRole("button", { name: /lines down$/ }),
+	);
+	expectWidth(up, gutter.width);
+	expectWidth(down, gutter.width);
+	expect(down.y).toBe(up.y);
+	expect(down.x).toBeGreaterThan(up.x);
+});
+
+test("a fold's arrows share the one gutter of the split view", async ({
+	page,
+}) => {
+	await page.addInitScript(
+		(key) => localStorage.setItem(key, "true"),
+		SPLIT_VIEW.key,
+	);
+	await open(page, LODASH);
+
+	const gutter = await boxOf(
+		page
+			.getByTestId("diff-view")
+			.locator('td[data-side="left"] > span')
+			.first(),
+	);
+	const stepped = folds(page)
+		.filter({ has: page.getByRole("button", { name: /lines down$/ }) })
+		.first();
+	const up = await boxOf(stepped.getByRole("button", { name: /lines up$/ }));
+	const down = await boxOf(
+		stepped.getByRole("button", { name: /lines down$/ }),
+	);
+
+	expectWidth({ width: up.width + down.width }, gutter.width);
+	expectWidth(up, gutter.width / 2);
+	expect(down.y).toBe(up.y);
 });
 
 test("draws only the rows on screen, however long the file", async ({
@@ -139,7 +308,7 @@ test("keeps a text cursor over the whole file while it is scrolled", async ({
 	const cursors = await scroller.evaluate((node) => {
 		const seen = new Set<string>();
 		for (const element of [node, ...node.querySelectorAll("*")]) {
-			if (element.closest("button")) continue;
+			if (element.closest("button, a")) continue;
 			seen.add(getComputedStyle(element).cursor);
 		}
 		return [...seen];
@@ -230,7 +399,7 @@ test("remembers what was opened in a file, and where it was left", async ({
 		opened ?? "",
 	);
 	const back = await scroller.evaluate((node) => node.scrollTop);
-	expect(Math.abs(back - 900)).toBeLessThan(24);
+	expect(Math.abs(back - 900)).toBeLessThan(23);
 });
 
 test("a new comparison is a new file, opened at the top", async ({ page }) => {

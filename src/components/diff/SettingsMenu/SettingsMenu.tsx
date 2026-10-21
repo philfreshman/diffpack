@@ -1,4 +1,6 @@
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
+import { ThemeSwitch } from "#/components/theme/ThemeSwitch/ThemeSwitch.tsx";
+import { useThemeSelection } from "#/components/theme/useThemeSelection.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
 import {
@@ -12,14 +14,22 @@ import styles from "./SettingsMenu.module.css";
 export interface SettingsMenuProps {
 	ignoreWhitespace: boolean;
 	onIgnoreWhitespaceChange(ignore: boolean): void;
+	showSigns: boolean;
+	onShowSignsChange(show: boolean): void;
 	/** Passed in, not called here: the viewer must read the same hook instance. */
 	highlight: HighlightThemeControls;
 }
 export function SettingsMenu({
 	ignoreWhitespace,
 	onIgnoreWhitespaceChange,
+	showSigns,
+	onShowSignsChange,
 	highlight,
 }: SettingsMenuProps) {
+	// Called here, not in the menu's content: the content unmounts when the menu shuts,
+	// and the system selection must keep following the operating system.
+	const themeSelection = useThemeSelection();
+
 	return (
 		<NavigationMenu.Root className={styles.root} orientation="vertical">
 			<NavigationMenu.List className={styles.list}>
@@ -34,23 +44,16 @@ export function SettingsMenu({
 
 					<NavigationMenu.Content className={styles.content}>
 						<ul className={styles.options}>
-							<li>
-								<button
-									className={styles.option}
-									aria-pressed={ignoreWhitespace}
-									onClick={() => onIgnoreWhitespaceChange(!ignoreWhitespace)}
-									type="button"
-								>
-									Ignore whitespaces
-									{ignoreWhitespace && (
-										<CheckIcon
-											className={styles.chosen}
-											width="14"
-											height="14"
-										/>
-									)}
-								</button>
-							</li>
+							<ToggleOption
+								label="Ignore whitespaces"
+								on={ignoreWhitespace}
+								onChange={onIgnoreWhitespaceChange}
+							/>
+							<ToggleOption
+								label="Show +/- signs"
+								on={showSigns}
+								onChange={onShowSignsChange}
+							/>
 
 							<li>
 								<NavigationMenu.Root orientation="vertical">
@@ -115,6 +118,10 @@ export function SettingsMenu({
 									</NavigationMenu.Portal>
 								</NavigationMenu.Root>
 							</li>
+
+							<li className={styles.switchRow}>
+								<ThemeSwitch {...themeSelection} />
+							</li>
 						</ul>
 					</NavigationMenu.Content>
 				</NavigationMenu.Item>
@@ -132,6 +139,30 @@ export function SettingsMenu({
 				</NavigationMenu.Positioner>
 			</NavigationMenu.Portal>
 		</NavigationMenu.Root>
+	);
+}
+
+function ToggleOption({
+	label,
+	on,
+	onChange,
+}: {
+	label: string;
+	on: boolean;
+	onChange(on: boolean): void;
+}) {
+	return (
+		<li>
+			<button
+				className={styles.option}
+				aria-pressed={on}
+				onClick={() => onChange(!on)}
+				type="button"
+			>
+				{label}
+				{on && <CheckIcon className={styles.chosen} width="14" height="14" />}
+			</button>
+		</li>
 	);
 }
 

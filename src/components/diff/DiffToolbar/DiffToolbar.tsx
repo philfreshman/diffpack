@@ -1,6 +1,8 @@
-import { SettingsMenu } from "#/components/diff/SettingsMenu/SettingsMenu.tsx";
+import {
+	SettingsMenu,
+	type SettingsMenuProps,
+} from "#/components/diff/SettingsMenu/SettingsMenu.tsx";
 import type { FileModelControls } from "#/components/diff/useFileModel.ts";
-import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import {
 	ArrowDownIcon,
@@ -28,9 +30,7 @@ export interface DiffToolbarProps {
 	> | null;
 	split: boolean;
 	onSplitChange(split: boolean): void;
-	ignoreWhitespace: boolean;
-	onIgnoreWhitespaceChange(ignore: boolean): void;
-	highlight: HighlightThemeControls;
+	settings: SettingsMenuProps;
 }
 
 export function DiffToolbar({
@@ -42,9 +42,7 @@ export function DiffToolbar({
 	file,
 	split,
 	onSplitChange,
-	ignoreWhitespace,
-	onIgnoreWhitespaceChange,
-	highlight,
+	settings,
 }: DiffToolbarProps) {
 	const open = path !== "";
 
@@ -110,11 +108,7 @@ export function DiffToolbar({
 
 			<ViewControls file={file} onSplitChange={onSplitChange} split={split} />
 
-			<SettingsMenu
-				highlight={highlight}
-				ignoreWhitespace={ignoreWhitespace}
-				onIgnoreWhitespaceChange={onIgnoreWhitespaceChange}
-			/>
+			<SettingsMenu {...settings} />
 		</div>
 	);
 }

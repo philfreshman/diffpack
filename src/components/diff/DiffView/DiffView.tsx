@@ -8,7 +8,9 @@ import { SplitDiffRow } from "#/components/diff/SplitDiffRow/SplitDiffRow.tsx";
 import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import { gutterChars } from "#/lib/diff/gutter.ts";
 import type { HighlightAppearance } from "#/lib/diff/highlightThemes.ts";
+import { isAnchoredRow, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import styles from "./DiffView.module.css";
+import { useAnchorSeek } from "./useAnchorSeek.ts";
 import { useCloseOnEscape } from "./useCloseOnEscape.ts";
 import { useOneSidedSelection } from "./useOneSidedSelection.ts";
 import { useScrollMemory } from "./useScrollMemory.ts";
@@ -17,13 +19,24 @@ export interface DiffViewProps {
 	file: FileModelControls;
 	onClose(): void;
 	pending?: boolean;
+	showSigns: boolean;
+	anchor: LineAnchor | null;
+	onSelectLine(anchor: LineAnchor): void;
 	/** `null` until the stored theme has been read. */
 	syntax: HighlightAppearance | null;
 }
 
 /** Must match `--diff-line-height` in pixels. */
-const ROW_HEIGHT = 24;
-export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
+const ROW_HEIGHT = 23;
+export function DiffView({
+	file,
+	onClose,
+	pending,
+	showSigns,
+	anchor,
+	onSelectLine,
+	syntax,
+}: DiffViewProps) {
 	const { path, lines, language, rows } = file;
 
 	const scroller = useRef<HTMLDivElement>(null);
@@ -53,6 +66,7 @@ export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 		[virtualizer],
 	);
 
+	useAnchorSeek(file, anchor, virtualizer);
 	const at = useScrollMemory(file.scrollTop, file.rememberScroll);
 	useCloseOnEscape(onClose);
 	useOneSidedSelection(scroller);
@@ -65,11 +79,13 @@ export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 			data-pending={pending ? "" : undefined}
 			data-rows={rows.length}
 			data-language={language ?? ""}
+			data-layout={file.split ? "split" : "unified"}
+			data-signs={showSigns ? "" : undefined}
 			// Washes and gutters follow the syntax theme's ground, not the page theme (#139).
 			data-syntax={syntax ?? undefined}
 			style={
 				{
-					"--gutter-width": `calc(${gutterChars(lines)}ch + var(--space-4))`,
+					"--gutter-width": `max(var(--gutter-min-width), calc(${gutterChars(lines)}ch + var(--space-4)))`,
 				} as CSSProperties
 			}
 		>
@@ -92,6 +108,10 @@ export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 								ref: virtualizer.measureElement,
 								style: { transform: `translateY(${item.start}px)` },
 							};
+							const selection = {
+								selected: anchor !== null && isAnchoredRow(row, anchor),
+								onSelectLine,
+							};
 
 							if (row.kind === "pair") {
 								return (
@@ -101,6 +121,7 @@ export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 										left={row.left}
 										right={row.right}
 										{...placement}
+										{...selection}
 									/>
 								);
 							}
@@ -111,6 +132,7 @@ export function DiffView({ file, onClose, pending, syntax }: DiffViewProps) {
 									language={language}
 									line={row.line}
 									{...placement}
+									{...selection}
 								/>
 							) : (
 								<CollapsedRow

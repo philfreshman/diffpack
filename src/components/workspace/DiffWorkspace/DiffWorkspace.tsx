@@ -7,8 +7,6 @@ import {
 } from "#/components/diff/useFileModel.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { useHighlightTheme } from "#/components/diff/useHighlightTheme.ts";
-import { useSetting } from "#/components/storage/useSetting.ts";
-import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
 import { failureOf } from "#/lib/failure/failure.ts";
@@ -20,7 +18,6 @@ import {
 	summarizeTree,
 	type TreeSummary,
 } from "#/lib/session/tree.ts";
-import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
 import { AsciiTrail } from "../AsciiTrail/AsciiTrail.tsx";
@@ -29,14 +26,16 @@ import { DiffSummary } from "../DiffSummary/DiffSummary.tsx";
 import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
+import { type LineLink, useLineLink } from "../useLineLink.ts";
 import { useVersions } from "../useVersions.ts";
+import { useViewerSettings } from "../useViewerSettings.ts";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
 
 export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const adapter = requireAdapter(slug.registry);
 	const navigate = useNavigate();
-	const whitespace = useSetting(IGNORE_WHITESPACE);
+	const { whitespace, split, signs } = useViewerSettings();
 	// One instance for the toolbar and the viewer; a second would be a second answer.
 	const highlight = useHighlightTheme();
 	// null until the stored value is read, or a deep link would build a
@@ -55,7 +54,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	// The header's list, shared through the query cache: no second request.
 	const versions = useVersions(adapter, slug.package);
 
-	const split = useSetting(SPLIT_VIEW);
+	const lineLink = useLineLink(adapter, slug);
 	// What is on screen, not what was last asked for: it lags while the blur shows.
 	const shown = useFileModel(session.key, session.file, split.value);
 	// Unlike `session.key`, this holds still when whitespace is toggled.
@@ -80,10 +79,11 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	}
 
 	return (
-		// The routing e2e suite reads the parsed URL from these attributes.
+		// The e2e suites read the parsed URL and the session state from these attributes.
 		<div
 			className={styles.workspace}
 			data-testid="workspace"
+			data-state={session.status}
 			data-package={slug.package}
 			data-from={slug.from}
 			data-to={slug.to}
@@ -95,12 +95,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 				selectedPath={slug.file}
 				onOpenFile={openFile}
 				header={<RegistrySwitcher adapter={adapter} />}
-				footer={
-					<>
-						<TreeStatus status={session.status} />
-						<ThemeToggle />
-					</>
-				}
 			/>
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />
@@ -124,22 +118,30 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								file={shown}
 								split={split.value}
 								onSplitChange={split.set}
-								ignoreWhitespace={whitespace.value}
-								onIgnoreWhitespaceChange={whitespace.set}
-								highlight={highlight}
+								settings={{
+									ignoreWhitespace: whitespace.value,
+									onIgnoreWhitespaceChange: whitespace.set,
+									showSigns: signs.value,
+									onShowSignsChange: signs.set,
+									highlight,
+								}}
 							/>
 							{showsIntro(session.status) && (
 								<p className={styles.intro} data-testid="workspace-intro">
 									{workspaceIntro(adapter, slug)}
 								</p>
 							)}
-							{isEmpty(session.status, slug) && <AsciiTrail />}
+							{showsTrail(session.status, slug, progress, summary) && (
+								<AsciiTrail />
+							)}
 							<ComparisonPane
 								slug={slug}
 								progress={progress}
 								summary={summary}
 								file={session.file}
 								highlight={highlight}
+								showSigns={signs.value}
+								lineLink={lineLink}
 								onClose={closeFile}
 								shown={shown}
 							/>
@@ -161,8 +163,14 @@ function showsIntro(status: DiffSessionState["status"]): boolean {
 	return status === "idle" || status === "loading";
 }
 
-function isEmpty(status: DiffSessionState["status"], slug: DiffSlug): boolean {
-	return status === "idle" && !namesComparison(slug);
+function showsTrail(
+	status: DiffSessionState["status"],
+	slug: DiffSlug,
+	progress: BuildProgress | null,
+	summary: TreeSummary | null,
+): boolean {
+	const isEmpty = status === "idle" && !namesComparison(slug);
+	return isEmpty || progress !== null || summary !== null;
 }
 
 function shownProgress(
@@ -189,17 +197,6 @@ function paneOf(
 	if (progress) return "progress";
 	if (status === "idle" && versionsFailed) return "versions-failure";
 	return "file";
-}
-
-// Empty: tests read the state off `data-state`.
-function TreeStatus({ status }: { status: DiffSessionState["status"] }) {
-	return (
-		<span
-			className={styles.status}
-			data-testid="diff-status"
-			data-state={status}
-		/>
-	);
 }
 
 interface ComparisonPaneProps extends FilePaneProps {
@@ -232,9 +229,18 @@ interface FilePaneProps {
 	shown: FileModelControls | null;
 	onClose(): void;
 	highlight: HighlightThemeControls;
+	showSigns: boolean;
+	lineLink: LineLink;
 }
 
-function FilePane({ file, shown, onClose, highlight }: FilePaneProps) {
+function FilePane({
+	file,
+	shown,
+	onClose,
+	highlight,
+	showSigns,
+	lineLink,
+}: FilePaneProps) {
 	return (
 		<>
 			{/* Only the first file: later ones keep the previous file blurred instead. */}
@@ -257,6 +263,9 @@ function FilePane({ file, shown, onClose, highlight }: FilePaneProps) {
 					key={shown.path}
 					onClose={onClose}
 					pending={file?.status === "loading"}
+					showSigns={showSigns}
+					anchor={lineLink.anchorIn(shown.path)}
+					onSelectLine={lineLink.select}
 					syntax={highlight.appearance}
 				/>
 			)}

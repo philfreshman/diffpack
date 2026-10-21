@@ -5,7 +5,7 @@ import styles from "./NotFound.module.css";
 export function NotFound() {
 	return (
 		<main className={styles.notFound} data-testid="not-found">
-			<ThemeToggle floating />
+			<ThemeToggle />
 			<h1 className={styles.heading}>Nothing here</h1>
 			<p className={styles.message}>
 				diffpack compares packages on npm, crates.io, Go, PyPI and Packagist.

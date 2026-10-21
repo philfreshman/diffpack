@@ -18,7 +18,6 @@ export interface TreePanelProps {
 	selectedPath: string;
 	onOpenFile(path: string): void;
 	header?: ReactNode;
-	footer?: ReactNode;
 }
 export function TreePanel({
 	tree,
@@ -26,7 +25,6 @@ export function TreePanel({
 	selectedPath,
 	onOpenFile,
 	header,
-	footer,
 }: TreePanelProps) {
 	const [filter, setFilter] = useState("");
 	const { value: onlyModified, set: setOnlyModified } =
@@ -75,7 +73,6 @@ export function TreePanel({
 					onOpenFile={onOpenFile}
 					onToggleFolder={toggleFolder}
 				/>
-				{footer && <div className={styles.foot}>{footer}</div>}
 			</div>
 			<div className={styles.edge}>
 				{/* biome-ignore lint/a11y/useSemanticElements: an <hr> cannot be dragged */}
