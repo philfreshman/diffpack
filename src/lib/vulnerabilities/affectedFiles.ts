@@ -15,6 +15,7 @@ const GO_SOURCE_SUFFIX = ".go";
 const GO_TEST_SUFFIX = "_test.go";
 const RUST_SOURCE_SUFFIX = ".rs";
 const CRATE_ROOT = "src/lib.rs";
+const RUST_TYPE_NAME = /^\p{Lu}/u;
 const UNAMBIGUOUS_SEGMENTS = 2;
 
 interface Tree {
@@ -113,11 +114,18 @@ function crateFiles(advisory: Advisory, tree: Tree): AffectedFile[] {
 	return advisory.hints.functions.flatMap((name) => {
 		const segments = name.split(RUST_PATH_SEPARATOR);
 		const symbol = segments.at(-1) ?? "";
-		const modules = segments.slice(1, -1);
-		return moduleFilesFor(modules, tree).map((path) =>
+		return moduleFilesFor(modulesOf(segments), tree).map((path) =>
 			affected(path, advisory, { symbols: [symbol] }),
 		);
 	});
+}
+
+function modulesOf(segments: string[]): string[] {
+	const enclosing = segments.slice(1, -1);
+	const firstType = enclosing.findIndex((segment) =>
+		RUST_TYPE_NAME.test(segment),
+	);
+	return firstType === -1 ? enclosing : enclosing.slice(0, firstType);
 }
 
 function moduleFilesFor(modules: string[], tree: Tree): string[] {

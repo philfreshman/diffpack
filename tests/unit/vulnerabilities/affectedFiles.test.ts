@@ -116,6 +116,16 @@ describe("crate functions", () => {
 		expect(paths(filesFor("tokio::spawn"))).toEqual(["src/lib.rs"]);
 	});
 
+	test("land in the crate root for a method of a type defined there", () => {
+		expect(paths(filesFor("tokio::Runtime::block_on"))).toEqual(["src/lib.rs"]);
+	});
+
+	test("land in the module of the type a method belongs to", () => {
+		expect(paths(filesFor("tokio::task::JoinSet::spawn"))).toEqual([
+			"src/task/mod.rs",
+		]);
+	});
+
 	test("land nowhere when no module matches", () => {
 		expect(filesFor("tokio::net::TcpStream::connect")).toEqual([]);
 	});
