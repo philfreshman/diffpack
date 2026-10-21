@@ -7,9 +7,15 @@ const MIN_SNIPPET_LENGTH = 8;
 const MAX_SNIPPET_MATCHES = 2;
 const HAS_WORD_CHARACTER = /[\p{L}\p{N}]/u;
 const WHITESPACE_RUN = /\s+/g;
-const REGEX_SPECIALS = /[.*+?^${}()|[\]\\]/g;
-const METHOD_MODIFIERS =
-	"(?:(?:public|private|protected|static|async|abstract|final|override|readonly|export|default|get|set|pub(?:\\([^)]*\\))?)\\s+)*";
+const QUALIFIER_SEPARATOR = ".";
+const DEFINITION_PATTERNS = [
+	/\bfunc\s+(?:\([^)]*\)\s*)?(?<name>[\p{L}\p{N}_$]+)\s*[([]/gu,
+	/\bfn\s+(?<name>[\p{L}\p{N}_$]+)\s*[<(]/gu,
+	/\bfunction\s*\*?\s*&?\s*(?<name>[\p{L}\p{N}_$]+)\s*[<(]/gu,
+	/\bdef\s+(?<name>[\p{L}\p{N}_$]+)\s*[([]/gu,
+	/\b(?:const|let|var)\s+(?<name>[\p{L}\p{N}_$]+)\s*=\s*(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[\w$]+\s*=>)/gu,
+	/^\s*(?:(?:public|private|protected|static|async|abstract|final|override|readonly|export|default|get|set|pub(?:\([^)]*\))?)\s+)*\*?(?<name>[\p{L}\p{N}_$]+)\s*\([^)]*\)\s*(?::[^;{]+)?\{\s*$/gu,
+];
 
 interface DiffSide {
 	holds(line: DiffLine): boolean;
@@ -26,20 +32,14 @@ const NEW_SIDE: DiffSide = {
 	change: "added",
 };
 
-function definitionPatternsOf(name: string): RegExp[] {
-	const symbol = name.replace(REGEX_SPECIALS, "\\$&");
-	return [
-		new RegExp(`\\bfunc\\s+(?:\\([^)]*\\)\\s*)?${symbol}\\s*[([]`),
-		new RegExp(`\\bfn\\s+${symbol}\\s*[<(]`),
-		new RegExp(`\\bfunction\\s*\\*?\\s*&?\\s*${symbol}\\s*[<(]`),
-		new RegExp(`\\bdef\\s+${symbol}\\s*[([]`),
-		new RegExp(
-			`\\b(?:const|let|var)\\s+${symbol}\\s*=\\s*(?:async\\s+)?(?:function\\b|\\([^)]*\\)\\s*=>|[\\w$]+\\s*=>)`,
-		),
-		new RegExp(
-			`^\\s*${METHOD_MODIFIERS}\\*?${symbol}\\s*\\([^)]*\\)\\s*(?::[^;{]+)?\\{\\s*$`,
-		),
-	];
+function definedNamesOf(content: string): string[] {
+	return DEFINITION_PATTERNS.flatMap((pattern) =>
+		[...content.matchAll(pattern)].map((match) => match.groups?.name ?? ""),
+	);
+}
+
+function unqualified(symbol: string): string {
+	return symbol.slice(symbol.lastIndexOf(QUALIFIER_SEPARATOR) + 1);
 }
 
 function normalized(text: string): string {
@@ -77,14 +77,15 @@ export function markLines(
 	lines: DiffLine[],
 	affected: AffectedFile,
 ): LineMark[] {
-	const definitions = affected.symbols.flatMap(definitionPatternsOf);
+	const symbols = new Set(affected.symbols.map(unqualified));
 	const marked = new Set([
 		...snippetLines(lines, affected.removedLines, OLD_SIDE),
 		...snippetLines(lines, affected.addedLines, NEW_SIDE),
 	]);
 	const isMarked = (line: DiffLine) =>
 		marked.has(line) ||
-		definitions.some((pattern) => pattern.test(line.content));
+		(symbols.size > 0 &&
+			definedNamesOf(line.content).some((name) => symbols.has(name)));
 
 	return mergedMarks(lines.filter(isMarked), affected.advisoryIds);
 }

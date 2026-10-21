@@ -29,6 +29,11 @@ describe("a symbol", () => {
 	test.each([
 		["Go function", "func Render(w io.Writer, n *Node) error {", "Render"],
 		["Go method", "func (p *parser) render1(w writer) error {", "render1"],
+		[
+			"Go method named by its type",
+			"func (z *Tokenizer) Next() TokenType {",
+			"Tokenizer.Next",
+		],
 		["Go generic", "func Map[T any](s []T) {", "Map"],
 		["Rust function", "    pub fn abort(&self) {", "abort"],
 		["Rust generic", "pub(crate) fn close<T>(self) {", "close"],
