@@ -29,6 +29,7 @@ import { DiffSummary } from "../DiffSummary/DiffSummary.tsx";
 import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
 import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
+import { type LineLink, useLineLink } from "../useLineLink.ts";
 import { useVersions } from "../useVersions.ts";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
@@ -55,6 +56,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	// The header's list, shared through the query cache: no second request.
 	const versions = useVersions(adapter, slug.package);
 
+	const lineLink = useLineLink(adapter, slug);
 	const split = useSetting(SPLIT_VIEW);
 	// What is on screen, not what was last asked for: it lags while the blur shows.
 	const shown = useFileModel(session.key, session.file, split.value);
@@ -140,6 +142,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								summary={summary}
 								file={session.file}
 								highlight={highlight}
+								lineLink={lineLink}
 								onClose={closeFile}
 								shown={shown}
 							/>
@@ -232,9 +235,16 @@ interface FilePaneProps {
 	shown: FileModelControls | null;
 	onClose(): void;
 	highlight: HighlightThemeControls;
+	lineLink: LineLink;
 }
 
-function FilePane({ file, shown, onClose, highlight }: FilePaneProps) {
+function FilePane({
+	file,
+	shown,
+	onClose,
+	highlight,
+	lineLink,
+}: FilePaneProps) {
 	return (
 		<>
 			{/* Only the first file: later ones keep the previous file blurred instead. */}
@@ -257,6 +267,8 @@ function FilePane({ file, shown, onClose, highlight }: FilePaneProps) {
 					key={shown.path}
 					onClose={onClose}
 					pending={file?.status === "loading"}
+					anchor={lineLink.anchorIn(shown.path)}
+					onSelectLine={lineLink.select}
 					syntax={highlight.appearance}
 				/>
 			)}

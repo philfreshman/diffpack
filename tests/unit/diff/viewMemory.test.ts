@@ -31,7 +31,6 @@ describe("viewMemory", () => {
 describe("opening a fold", () => {
 	test("reveals exactly the range the expander offered", () => {
 		const memory = withRevealed(emptyMemory(), "index.js", {
-			direction: "down",
 			start: 4,
 			end: 23,
 		});
@@ -45,12 +44,10 @@ describe("opening a fold", () => {
 
 	test("keeps what an earlier click opened", () => {
 		const once = withRevealed(emptyMemory(), "index.js", {
-			direction: "down",
 			start: 4,
 			end: 23,
 		});
 		const twice = withRevealed(once, "index.js", {
-			direction: "down",
 			start: 24,
 			end: 43,
 		});
@@ -61,7 +58,6 @@ describe("opening a fold", () => {
 
 	test("opens folds in one file without opening them in another", () => {
 		const memory = withRevealed(emptyMemory(), "index.js", {
-			direction: "all",
 			start: 4,
 			end: 59,
 		});
@@ -84,7 +80,6 @@ describe("expanding and folding a whole file", () => {
 
 	test("folding takes back what was opened by hand too", () => {
 		const opened = withRevealed(emptyMemory(), "index.js", {
-			direction: "all",
 			start: 4,
 			end: 59,
 		});

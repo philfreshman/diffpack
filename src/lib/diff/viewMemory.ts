@@ -1,4 +1,4 @@
-import type { DiffView, Expander } from "#/lib/diff/computeVisibility.ts";
+import type { DiffView, LineRange } from "#/lib/diff/computeVisibility.ts";
 
 export interface FileView extends DiffView {
 	scrollTop: number;
@@ -23,11 +23,11 @@ export function fileView(memory: ViewMemory, path: string): FileView {
 export function withRevealed(
 	memory: ViewMemory,
 	path: string,
-	expander: Expander,
+	range: LineRange,
 ): ViewMemory {
 	const view = fileView(memory, path);
 	const expanded = new Set(view.expanded);
-	for (let index = expander.start; index <= expander.end; index++) {
+	for (let index = range.start; index <= range.end; index++) {
 		expanded.add(index);
 	}
 

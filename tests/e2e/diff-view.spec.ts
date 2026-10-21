@@ -105,6 +105,59 @@ test("opens a fold whole", async ({ page }) => {
 	).toHaveCount(0);
 });
 
+const selectedRows = (page: Page) =>
+	page.getByTestId("diff-view").locator("tr[data-selected]");
+
+test("a line number selects its row and names it in the URL", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	const added = lines(page, "added").first();
+	const number = await added.getByTestId("new-number").innerText();
+	await added.getByTestId("new-number").getByRole("link").click();
+
+	await expect(page).toHaveURL(new RegExp(`#${number}$`));
+	await expect(selectedRows(page)).toHaveCount(1);
+	await expect(selectedRows(page).getByTestId("new-number")).toHaveText(number);
+
+	const removed = lines(page, "removed").first();
+	const old = await removed.getByTestId("old-number").innerText();
+	await removed.getByTestId("old-number").getByRole("link").click();
+
+	await expect(page).toHaveURL(new RegExp(`#-${old}$`));
+	await expect(selectedRows(page)).toHaveCount(1);
+	await expect(selectedRows(page).getByTestId("old-number")).toHaveText(old);
+});
+
+test("a link to a folded line opens the fold and scrolls to it", async ({
+	page,
+}) => {
+	await open(page, `${LODASH}#15000`);
+
+	const selected = selectedRows(page);
+	await expect(selected.getByTestId("new-number")).toHaveText("15000");
+	await expect(selected).toBeInViewport();
+});
+
+test("a link to a line already shown scrolls down to it", async ({ page }) => {
+	await open(page, `${LODASH}#15030`);
+
+	const selected = selectedRows(page);
+	await expect(selected.getByTestId("new-number")).toHaveText("15030");
+	await expect(selected).toBeInViewport();
+});
+
+test("a link to a removed line selects it by its old number", async ({
+	page,
+}) => {
+	await open(page, `${LODASH}#-155`);
+
+	const selected = selectedRows(page);
+	await expect(selected).toHaveAttribute("data-type", "removed");
+	await expect(selected.getByTestId("old-number")).toHaveText("155");
+});
+
 const boxOf = async (target: Locator) => {
 	const box = await target.boundingBox();
 	if (!box) throw new Error("the element is not drawn");
@@ -218,7 +271,7 @@ test("keeps a text cursor over the whole file while it is scrolled", async ({
 	const cursors = await scroller.evaluate((node) => {
 		const seen = new Set<string>();
 		for (const element of [node, ...node.querySelectorAll("*")]) {
-			if (element.closest("button")) continue;
+			if (element.closest("button, a")) continue;
 			seen.add(getComputedStyle(element).cursor);
 		}
 		return [...seen];

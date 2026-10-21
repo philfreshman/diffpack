@@ -54,3 +54,12 @@
 	background: var(--color-removed-gutter);
 	border-right-color: var(--color-removed-gutter-border);
 }
+
+.row[data-selected]::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: var(--color-line-selected);
+	box-shadow: inset 3px 0 var(--color-line-selected-edge);
+	pointer-events: none;
+}
