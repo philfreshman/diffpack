@@ -80,6 +80,7 @@ function Half({
 			</span>
 			<span
 				className={rowStyles.content}
+				data-change={line?.type}
 				data-testid={`${side}-content`}
 				// Escaped by the highlighter either way; see `DiffRow`.
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: the highlighter's output is markup by definition

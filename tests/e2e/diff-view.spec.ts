@@ -28,6 +28,43 @@ test("shows the file as numbered lines, marked by what happened to them", async 
 	await expect(removed.getByTestId("new-number")).toHaveText("");
 });
 
+const markerOf = (row: Locator) =>
+	row
+		.locator("td")
+		.last()
+		.evaluate((cell) => getComputedStyle(cell, "::before").content);
+
+test("marks changed lines with a sign that a copy leaves out", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	const added = lines(page, "added").first();
+	const removed = lines(page, "removed").first();
+	expect(await markerOf(added)).toBe('"+"');
+	expect(await markerOf(removed)).toBe('"-"');
+	expect(await markerOf(lines(page, "unchanged").first())).toBe("none");
+
+	await added.locator("td").last().selectText();
+	const selected = await page.evaluate(() => getSelection()?.toString() ?? "");
+	expect(selected).not.toBe("");
+	expect(selected.trimStart()).not.toMatch(/^\+/);
+});
+
+test("the settings menu turns the signs off, and remembers it", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	await page.getByRole("button", { name: "Settings" }).click();
+	await page.getByRole("button", { name: "Show +/- signs" }).click();
+	expect(await markerOf(lines(page, "added").first())).toBe("none");
+
+	await page.reload();
+	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
+	expect(await markerOf(lines(page, "added").first())).toBe("none");
+});
+
 // A handful of changes in a 17 000-line file: what folding and virtualisation are for.
 const LODASH = "/npm/lodash/4.17.20/4.17.21/lodash.js";
 

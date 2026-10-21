@@ -55,6 +55,31 @@
 	border-right-color: var(--color-removed-gutter-border);
 }
 
+[data-signs] {
+	--sign-added: "+";
+	--sign-removed: "-";
+}
+
+[data-signs] .content {
+	position: relative;
+	padding-left: var(--space-8);
+}
+
+.content::before {
+	position: absolute;
+	left: var(--space-2);
+	color: var(--color-muted);
+	user-select: none;
+}
+
+.content[data-change="added"]::before {
+	content: var(--sign-added, none);
+}
+
+.content[data-change="removed"]::before {
+	content: var(--sign-removed, none);
+}
+
 .row[data-selected]::after {
 	content: "";
 	position: absolute;

@@ -7,7 +7,6 @@ import {
 } from "#/components/diff/useFileModel.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { useHighlightTheme } from "#/components/diff/useHighlightTheme.ts";
-import { useSetting } from "#/components/storage/useSetting.ts";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
@@ -20,7 +19,6 @@ import {
 	summarizeTree,
 	type TreeSummary,
 } from "#/lib/session/tree.ts";
-import { IGNORE_WHITESPACE, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
 import { AsciiTrail } from "../AsciiTrail/AsciiTrail.tsx";
@@ -31,13 +29,14 @@ import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
 import { type LineLink, useLineLink } from "../useLineLink.ts";
 import { useVersions } from "../useVersions.ts";
+import { useViewerSettings } from "../useViewerSettings.ts";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
 
 export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const adapter = requireAdapter(slug.registry);
 	const navigate = useNavigate();
-	const whitespace = useSetting(IGNORE_WHITESPACE);
+	const { whitespace, split, signs } = useViewerSettings();
 	// One instance for the toolbar and the viewer; a second would be a second answer.
 	const highlight = useHighlightTheme();
 	// null until the stored value is read, or a deep link would build a
@@ -57,7 +56,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const versions = useVersions(adapter, slug.package);
 
 	const lineLink = useLineLink(adapter, slug);
-	const split = useSetting(SPLIT_VIEW);
 	// What is on screen, not what was last asked for: it lags while the blur shows.
 	const shown = useFileModel(session.key, session.file, split.value);
 	// Unlike `session.key`, this holds still when whitespace is toggled.
@@ -126,9 +124,13 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								file={shown}
 								split={split.value}
 								onSplitChange={split.set}
-								ignoreWhitespace={whitespace.value}
-								onIgnoreWhitespaceChange={whitespace.set}
-								highlight={highlight}
+								settings={{
+									ignoreWhitespace: whitespace.value,
+									onIgnoreWhitespaceChange: whitespace.set,
+									showSigns: signs.value,
+									onShowSignsChange: signs.set,
+									highlight,
+								}}
 							/>
 							{showsIntro(session.status) && (
 								<p className={styles.intro} data-testid="workspace-intro">
@@ -142,6 +144,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								summary={summary}
 								file={session.file}
 								highlight={highlight}
+								showSigns={signs.value}
 								lineLink={lineLink}
 								onClose={closeFile}
 								shown={shown}
@@ -235,6 +238,7 @@ interface FilePaneProps {
 	shown: FileModelControls | null;
 	onClose(): void;
 	highlight: HighlightThemeControls;
+	showSigns: boolean;
 	lineLink: LineLink;
 }
 
@@ -243,6 +247,7 @@ function FilePane({
 	shown,
 	onClose,
 	highlight,
+	showSigns,
 	lineLink,
 }: FilePaneProps) {
 	return (
@@ -267,6 +272,7 @@ function FilePane({
 					key={shown.path}
 					onClose={onClose}
 					pending={file?.status === "loading"}
+					showSigns={showSigns}
 					anchor={lineLink.anchorIn(shown.path)}
 					onSelectLine={lineLink.select}
 					syntax={highlight.appearance}

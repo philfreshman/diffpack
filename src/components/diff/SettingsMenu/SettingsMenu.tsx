@@ -12,12 +12,16 @@ import styles from "./SettingsMenu.module.css";
 export interface SettingsMenuProps {
 	ignoreWhitespace: boolean;
 	onIgnoreWhitespaceChange(ignore: boolean): void;
+	showSigns: boolean;
+	onShowSignsChange(show: boolean): void;
 	/** Passed in, not called here: the viewer must read the same hook instance. */
 	highlight: HighlightThemeControls;
 }
 export function SettingsMenu({
 	ignoreWhitespace,
 	onIgnoreWhitespaceChange,
+	showSigns,
+	onShowSignsChange,
 	highlight,
 }: SettingsMenuProps) {
 	return (
@@ -34,23 +38,16 @@ export function SettingsMenu({
 
 					<NavigationMenu.Content className={styles.content}>
 						<ul className={styles.options}>
-							<li>
-								<button
-									className={styles.option}
-									aria-pressed={ignoreWhitespace}
-									onClick={() => onIgnoreWhitespaceChange(!ignoreWhitespace)}
-									type="button"
-								>
-									Ignore whitespaces
-									{ignoreWhitespace && (
-										<CheckIcon
-											className={styles.chosen}
-											width="14"
-											height="14"
-										/>
-									)}
-								</button>
-							</li>
+							<ToggleOption
+								label="Ignore whitespaces"
+								on={ignoreWhitespace}
+								onChange={onIgnoreWhitespaceChange}
+							/>
+							<ToggleOption
+								label="Show +/- signs"
+								on={showSigns}
+								onChange={onShowSignsChange}
+							/>
 
 							<li>
 								<NavigationMenu.Root orientation="vertical">
@@ -132,6 +129,30 @@ export function SettingsMenu({
 				</NavigationMenu.Positioner>
 			</NavigationMenu.Portal>
 		</NavigationMenu.Root>
+	);
+}
+
+function ToggleOption({
+	label,
+	on,
+	onChange,
+}: {
+	label: string;
+	on: boolean;
+	onChange(on: boolean): void;
+}) {
+	return (
+		<li>
+			<button
+				className={styles.option}
+				aria-pressed={on}
+				onClick={() => onChange(!on)}
+				type="button"
+			>
+				{label}
+				{on && <CheckIcon className={styles.chosen} width="14" height="14" />}
+			</button>
+		</li>
 	);
 }
 

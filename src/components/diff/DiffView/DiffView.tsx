@@ -19,6 +19,7 @@ export interface DiffViewProps {
 	file: FileModelControls;
 	onClose(): void;
 	pending?: boolean;
+	showSigns: boolean;
 	anchor: LineAnchor | null;
 	onSelectLine(anchor: LineAnchor): void;
 	/** `null` until the stored theme has been read. */
@@ -31,6 +32,7 @@ export function DiffView({
 	file,
 	onClose,
 	pending,
+	showSigns,
 	anchor,
 	onSelectLine,
 	syntax,
@@ -78,6 +80,7 @@ export function DiffView({
 			data-rows={rows.length}
 			data-language={language ?? ""}
 			data-layout={file.split ? "split" : "unified"}
+			data-signs={showSigns ? "" : undefined}
 			// Washes and gutters follow the syntax theme's ground, not the page theme (#139).
 			data-syntax={syntax ?? undefined}
 			style={

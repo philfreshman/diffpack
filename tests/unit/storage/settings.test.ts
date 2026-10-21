@@ -5,6 +5,7 @@ import {
 	HIGHLIGHT_THEME,
 	IGNORE_WHITESPACE,
 	ONLY_MODIFIED,
+	SHOW_SIGNS,
 	SPLIT_VIEW,
 	searchHistory,
 	THEME_SELECTION,
@@ -72,6 +73,18 @@ const CASES: Case[] = [
 		[
 			["1", false],
 			["", false],
+		],
+	),
+	reading(
+		SHOW_SIGNS,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["no", true],
+			["FALSE", true],
+			["", true],
 		],
 	),
 	reading(
