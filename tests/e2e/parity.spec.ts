@@ -67,7 +67,9 @@ test("counts the whole comparison, and how much of it changed", async ({
 	// Three files, two changed: the tree shows only the two, so "3 files" alone reads as a miscount.
 	await ready(page, "/npm/node/26.6.0/26.7.0");
 
-	await expect(status(page)).toHaveText("3 files, 2 changed");
+	await expect(page.getByTestId("summary-files")).toHaveText(
+		"3 files, 2 changed",
+	);
 	await expect(files(page)).toHaveCount(2);
 });
 

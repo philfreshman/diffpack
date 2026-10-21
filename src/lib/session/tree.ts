@@ -24,3 +24,28 @@ export function changedFiles(tree: DiffFileEntry | null): DiffFileEntry[] {
 export function countChangedFiles(tree: DiffFileEntry | null): number {
 	return changedFiles(tree).length;
 }
+
+export interface TreeSummary {
+	fileCount: number;
+	changedCount: number;
+	addedLines: number;
+	removedLines: number;
+}
+
+export function summarizeTree(tree: DiffFileEntry | null): TreeSummary {
+	const files = flattenFiles(tree);
+
+	return {
+		fileCount: files.length,
+		changedCount: changedFiles(tree).length,
+		addedLines: sumOf(files, (entry) => entry.added),
+		removedLines: sumOf(files, (entry) => entry.removed),
+	};
+}
+
+function sumOf(
+	files: DiffFileEntry[],
+	count: (entry: DiffFileEntry) => number | undefined,
+): number {
+	return files.reduce((total, entry) => total + (count(entry) ?? 0), 0);
+}

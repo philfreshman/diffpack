@@ -216,7 +216,7 @@ test("a new comparison starts with no folders chosen, and opens its only folder"
 	await expect(page).toHaveURL(`/npm/${MADE_UP}/2.0.0/4.0.0`);
 
 	// The count proves this is the new tree; `src`, shut in the last one, must not stay shut.
-	await expect(page.getByTestId("diff-status")).toHaveText(
+	await expect(page.getByTestId("summary-files")).toHaveText(
 		"2 files, 2 changed",
 		ENGINE,
 	);
@@ -397,19 +397,40 @@ test("Enter opens the focused file", async ({ page }) => {
 	);
 });
 
-test("counts the comparison at the foot of the panel it describes", async ({
+test("sums up the comparison in a box centred on the window, inside the diff area", async ({
 	page,
 }) => {
 	await page.goto(EXPRESS);
 	await ready(page);
 
-	const panel = page.getByTestId("tree-panel");
-	const status = panel.getByTestId("diff-status");
-	await expect(status).toHaveText(/^\d+ files, \d+ changed$/);
+	const summary = page.getByTestId("diff-summary");
+	await expect(summary.getByTestId("summary-files")).toHaveText(
+		/^\d+ files, \d+ changed$/,
+	);
+	await expect(summary.getByTestId("summary-added")).toHaveText(/^\+[\d,]+$/);
+	await expect(summary.getByTestId("summary-removed")).toHaveText(/^-[\d,]+$/);
 
-	const rows = (await tree(page).boundingBox()) ?? { y: 0, height: 0 };
-	const foot = (await status.boundingBox()) ?? { y: 0, height: 0 };
-	expect(foot.y).toBeGreaterThanOrEqual(rows.y + rows.height);
+	const box = (await summary.boundingBox()) ?? {
+		x: 0,
+		y: 0,
+		width: 0,
+		height: 0,
+	};
+	const area = (await page.getByRole("main").boundingBox()) ?? {
+		x: 0,
+		y: 0,
+		width: 0,
+		height: 0,
+	};
+	const window = page.viewportSize() ?? { width: 0, height: 0 };
+	expect(Math.abs(box.y + box.height / 2 - window.height / 2)).toBeLessThan(2);
+	expect(
+		Math.abs(box.x + box.width / 2 - (area.x + area.width / 2)),
+	).toBeLessThan(2);
+	expect(box.y).toBeGreaterThanOrEqual(area.y);
+
+	await row(page, "package.json").click();
+	await expect(summary).toHaveCount(0);
 });
 
 test("the panel is resizable, within limits, and stays where it was put", async ({
