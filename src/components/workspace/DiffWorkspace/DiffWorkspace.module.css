@@ -35,6 +35,11 @@
 	flex-direction: column;
 }
 
+.file {
+	position: relative;
+	isolation: isolate;
+}
+
 .column {
 	margin-top: 10px;
 }

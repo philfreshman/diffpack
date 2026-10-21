@@ -86,13 +86,22 @@ test("keeps the empty workspace still for reduced motion", async ({ page }) => {
 	expect(await litPixels(page)).toBe(0);
 });
 
-test("gives way once the URL names a comparison", async ({ page }) => {
+test("stays behind the summary, and gives way once a file is open", async ({
+	page,
+}) => {
 	await page.goto("/npm/node/26.6.0/26.7.0");
 	await expect(page.getByTestId("workspace")).toHaveAttribute(
 		"data-state",
 		"ready",
 		ENGINE,
 	);
+	await expect(trail(page)).toBeVisible();
+
+	await page
+		.getByRole("treeitem")
+		.and(page.locator("[data-type='file']"))
+		.first()
+		.click();
 
 	await expect(trail(page)).toHaveCount(0);
 });

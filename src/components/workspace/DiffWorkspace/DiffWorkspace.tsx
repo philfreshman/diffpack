@@ -131,7 +131,9 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 									{workspaceIntro(adapter, slug)}
 								</p>
 							)}
-							{isEmpty(session.status, slug) && <AsciiTrail />}
+							{showsTrail(session.status, slug, progress, summary) && (
+								<AsciiTrail />
+							)}
 							<ComparisonPane
 								slug={slug}
 								progress={progress}
@@ -161,8 +163,14 @@ function showsIntro(status: DiffSessionState["status"]): boolean {
 	return status === "idle" || status === "loading";
 }
 
-function isEmpty(status: DiffSessionState["status"], slug: DiffSlug): boolean {
-	return status === "idle" && !namesComparison(slug);
+function showsTrail(
+	status: DiffSessionState["status"],
+	slug: DiffSlug,
+	progress: BuildProgress | null,
+	summary: TreeSummary | null,
+): boolean {
+	const isEmpty = status === "idle" && !namesComparison(slug);
+	return isEmpty || progress !== null || summary !== null;
 }
 
 function shownProgress(
