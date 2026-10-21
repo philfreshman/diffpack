@@ -1,0 +1,11 @@
+.trail {
+	display: block;
+	flex: 1;
+	width: 100%;
+	min-height: 0;
+	pointer-events: none;
+	font-family: var(--font-mono);
+	color: var(--color-foreground);
+	opacity: 0.8;
+	mask-image: linear-gradient(to bottom, transparent, black var(--space-8));
+}
