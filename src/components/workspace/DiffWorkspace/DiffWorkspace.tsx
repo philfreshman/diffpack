@@ -128,7 +128,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								highlight={highlight}
 							/>
 							{showsIntro(session.status) && (
-								<p className={styles.empty} data-testid="workspace-intro">
+								<p className={styles.intro} data-testid="workspace-intro">
 									{workspaceIntro(adapter, slug)}
 								</p>
 							)}
