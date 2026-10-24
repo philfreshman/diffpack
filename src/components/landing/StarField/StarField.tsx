@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useResolvedTheme } from "#/components/theme/useResolvedTheme.ts";
 import { CLOUD_GLSL } from "#/lib/starfield/clouds.ts";
@@ -122,7 +122,6 @@ interface Streak {
 export function StarField() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const theme = useResolvedTheme();
-	const [webglFailed, setWebglFailed] = useState(false);
 
 	useEffect(() => {
 		if (theme !== "dark") return;
@@ -141,7 +140,8 @@ export function StarField() {
 				preserveDrawingBuffer: still,
 			});
 		} catch {
-			setWebglFailed(true);
+			// Without WebGL the CSS `--cosmic-backdrop` is the fallback sky.
+			canvas.hidden = true;
 			return;
 		}
 
@@ -442,8 +442,7 @@ export function StarField() {
 		};
 	}, [theme]);
 
-	// Without WebGL the CSS `--cosmic-backdrop` is the fallback sky.
-	if (theme !== "dark" || webglFailed) return null;
+	if (theme !== "dark") return null;
 
 	return (
 		<canvas
