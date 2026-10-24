@@ -1,0 +1,26 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+	"categories": {
+		"correctness": "error"
+	},
+	"env": {
+		"browser": true,
+		"builtin": true
+	},
+	"rules": {
+		"jsx-a11y/control-has-associated-label": "off",
+		"jsx-a11y/prefer-tag-over-role": "off",
+		"react/button-has-type": "error",
+		"react/immutability": "off",
+		"react/incompatible-library": "off",
+		"react/no-array-index-key": "error",
+		"react/no-danger": "error",
+		"react/preserve-manual-memoization": "off",
+		"react/refs": "off",
+		"react/rules-of-hooks": "error",
+		"react/set-state-in-effect": "off",
+		"unicorn/no-new-array": "off"
+	},
+	"ignorePatterns": ["src/routeTree.gen.ts"]
+}

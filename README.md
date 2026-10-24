@@ -201,7 +201,7 @@ time), so a change that crosses a boundary crosses a release: see
 | `bun run check:vectors` | `fixtures/cache-key-vectors.json` is byte-identical to the server's at a pinned commit (`:development` compares with the server's tip) |
 | `bun run screenshots` | recapture the reference set (`scripts/capture-screenshots.mjs`) |
 | `bun run typecheck` | `tsc --noEmit` |
-| `bun run lint` · `format` | Biome |
+| `bun run lint` · `format` | oxlint · oxfmt (check only; `bunx oxfmt` writes) |
 
 <br>
 
@@ -213,7 +213,7 @@ time), so a change that crosses a boundary crosses a release: see
 | **State** | [Query](https://tanstack.com/query) for registry calls, [Store](https://tanstack.com/store) for the diff session |
 | **UI** | [Base UI](https://base-ui.com) primitives wrapped in `src/components/ui`, CSS Modules over a custom-property token layer — no Tailwind |
 | **Engine** | Rust → WebAssembly for extraction and diffing, in its own repo: [diffpack-engine](https://github.com/philfreshman/diffpack-engine) |
-| **Tooling** | [Biome](https://biomejs.dev), [fallow](https://fallow.tools) |
+| **Tooling** | [oxlint and oxfmt](https://oxc.rs), [fallow](https://fallow.tools) |
 
 <br>
 

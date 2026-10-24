@@ -1,0 +1,20 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"useTabs": true,
+	"printWidth": 80,
+	"singleQuote": false,
+	"trailingComma": "all",
+	"ignorePatterns": [
+		"**/*.md",
+		".claude/",
+		".github/",
+		"docs/",
+		"fixtures/",
+		"public/",
+		"rule-packs/",
+		".fallowrc.jsonc",
+		".mcp.json",
+		"renovate.json",
+		"src/routeTree.gen.ts"
+	]
+}

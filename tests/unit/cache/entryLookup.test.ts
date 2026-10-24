@@ -1,9 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createEntryLookup } from "#/lib/cache/entryLookup.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
-import vectorFile from "../../../fixtures/cache-key-vectors.json" with {
-	type: "json",
-};
+import vectorFile from "../../../fixtures/cache-key-vectors.json" with { type: "json" };
 import { json, stubFetch } from "../registries/fetchStub.ts";
 import { bodyArrivingAfter } from "./slowBody.ts";
 

@@ -1,7 +1,9 @@
 import type { TreeView } from "./visibility.ts";
 
-export interface FolderState
-	extends Pick<TreeView, "expandedKeys" | "collapsedKeys"> {
+export interface FolderState extends Pick<
+	TreeView,
+	"expandedKeys" | "collapsedKeys"
+> {
 	comparison: string;
 }
 

@@ -446,7 +446,6 @@ export function StarField() {
 	if (theme !== "dark" || webglFailed) return null;
 
 	return (
-		// biome-ignore lint/a11y/noAriaHiddenOnFocusable: a canvas carries no tabindex, so it is not focusable
 		<canvas
 			ref={canvasRef}
 			className={styles.starField}

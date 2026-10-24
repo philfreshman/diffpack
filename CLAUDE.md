@@ -20,8 +20,8 @@ Bun only. No Rust toolchain: the engine arrives prebuilt as `@philfreshman/diffp
 bun install
 bun run dev              # Vite on :4321
 bun run typecheck        # tsc --noEmit
-bun run lint             # biome lint .
-bun run format           # biome format . (tabs, double quotes)
+bun run lint             # oxlint, unused disable comments fail too
+bun run format           # oxfmt --check (tabs, double quotes); bunx oxfmt writes
 bun run test             # unit: bun test tests/unit, no network, ~1s
 bun run test:e2e         # Playwright: production build + real registries, slow and online
 bun run generate-routes  # tsr generate, after adding or renaming a file in src/routes/
@@ -307,8 +307,9 @@ is `data-tree-collapsed`, both on `<html>` and moved without a render (`src/lib/
   until it does not. The why behind a change goes in the commit message or the PR description.
 - Existing comments, the doc comments in `src/lib/` among them: keep them true when you change the
   code they describe, and delete them once the code makes them redundant.
-- The one exception is a reason a tool requires: the explanation after a `biome-ignore` or
-  `fallow-ignore`, and the comment beside an entry in `.fallowrc.jsonc` (see `AGENTS.md`).
+- The one exception is a reason a tool requires: the explanation after an
+  `oxlint-disable-next-line` or `fallow-ignore`, and the comment beside an entry in
+  `.fallowrc.jsonc` (see `AGENTS.md`).
 
 ## CSS conventions
 

@@ -254,10 +254,11 @@ The same grade, with the per-threshold detail behind it, is also written to the 
 ## Development Workflow
 
 - **Branching**: Create a feature branch for your changes.
-- **Code Style**: We use [Biome](https://biomejs.dev) for linting and formatting — tabs, double
-  quotes. Run it with:
+- **Code Style**: We lint with [oxlint](https://oxc.rs/docs/guide/usage/linter) and format with
+  [oxfmt](https://oxc.rs/docs/guide/usage/formatter) — tabs, double quotes. `bun run lint` and
+  `bun run format` only check; to rewrite files in place, run:
   ```bash
-  bun run format
+  bunx oxfmt
   ```
 - **Styling**: CSS Modules, no Tailwind. A component that has a stylesheet lives in its own folder
   with it (`components/ui/Button/{Button.tsx,Button.module.css}`), so the pair moves as a unit.

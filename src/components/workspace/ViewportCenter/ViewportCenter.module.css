@@ -2,9 +2,7 @@
 	--window-middle-to-stage-bottom: calc(50dvh - var(--workspace-inset));
 	--below-mirrored-half: max(
 		0px,
-		2 *
-		var(--window-middle-to-stage-bottom) -
-		100%
+		2 * var(--window-middle-to-stage-bottom) - 100%
 	);
 
 	display: grid;

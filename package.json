@@ -1,8 +1,8 @@
 {
 	"name": "diffpack",
+	"version": "0.0.1",
 	"private": true,
 	"type": "module",
-	"version": "0.0.1",
 	"imports": {
 		"#/*": "./src/*"
 	},
@@ -16,8 +16,8 @@
 		"test:e2e": "playwright test",
 		"test:networked": "bun test tests/networked",
 		"screenshots": "bun scripts/capture-screenshots.mjs",
-		"lint": "biome lint .",
-		"format": "biome format .",
+		"lint": "oxlint --deny-warnings --report-unused-disable-directives",
+		"format": "oxfmt --check",
 		"typecheck": "tsc --noEmit",
 		"badge": "fallow health --format badge > .github/badges/fallow-health.svg",
 		"check:badge": "fallow health --format badge | diff -u .github/badges/fallow-health.svg -",
@@ -42,7 +42,6 @@
 		"zod": "4.4.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.15",
 		"@playwright/test": "1.62.1",
 		"@tanstack/react-router-devtools": "1.167.1",
 		"@tanstack/router-cli": "1.167.40",
@@ -54,6 +53,8 @@
 		"fallow": "3.21.0",
 		"husky": "9.1.7",
 		"nitro": "3.0.260610-beta",
+		"oxfmt": "0.74.0",
+		"oxlint": "1.89.0",
 		"typescript": "6.0.3",
 		"vite": "8.2.2"
 	}

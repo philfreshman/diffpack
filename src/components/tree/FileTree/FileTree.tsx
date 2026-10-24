@@ -65,6 +65,7 @@ export function FileTree({
 	}
 
 	return (
+		// oxlint-disable-next-line jsx-a11y/interactive-supports-focus -- focus moves between the treeitems, which carry the tabindex
 		<div
 			className={styles.tree}
 			role="tree"
@@ -116,7 +117,7 @@ function FileTreeRow({
 	const [delay] = useState(() => Math.min(position, STAGGER_CAP) * STAGGER_MS);
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: the tree owns the keyboard, per the ARIA practices guide
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- the tree owns the keyboard, per the ARIA practices guide
 		<div
 			role="treeitem"
 			className={styles.row}

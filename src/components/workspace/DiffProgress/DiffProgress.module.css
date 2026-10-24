@@ -5,12 +5,8 @@
 	--steps-height: max(
 		var(--summary-height),
 		calc(
-			var(--step-count) *
-			var(--step-height) +
-			(var(--step-count) - 1) *
-			var(--steps-gap) +
-			2 *
-			var(--space-3)
+			var(--step-count) * var(--step-height) + (var(--step-count) - 1) *
+				var(--steps-gap) + 2 * var(--space-3)
 		)
 	);
 

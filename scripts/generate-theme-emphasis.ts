@@ -20,4 +20,4 @@ await Bun.write(
 > = ${JSON.stringify(Object.fromEntries(entries))};
 `,
 );
-await Bun.spawn(["bunx", "biome", "format", "--write", OUTPUT]).exited;
+await Bun.spawn(["bunx", "oxfmt", OUTPUT]).exited;

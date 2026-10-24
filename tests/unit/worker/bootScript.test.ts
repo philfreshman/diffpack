@@ -7,9 +7,7 @@ import {
 	type EntryBoot,
 } from "#/lib/worker/bootScript.ts";
 import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";
-import vectorFile from "../../../fixtures/cache-key-vectors.json" with {
-	type: "json",
-};
+import vectorFile from "../../../fixtures/cache-key-vectors.json" with { type: "json" };
 import { bodyArrivingAfter } from "../cache/slowBody.ts";
 
 const WORKER_URL = "/assets/diff.worker-test.js";
