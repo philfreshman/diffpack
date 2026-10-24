@@ -211,7 +211,7 @@ time), so a change that crosses a boundary crosses a release: see
 | :-- | :-- |
 | **App** | [TanStack Start](https://tanstack.com/start) + [Router](https://tanstack.com/router) on Vite — the shell is SSR'd whole, the diff engine stays strictly client-side; only Composer's downloads and Go keyword search pass through the proxy |
 | **State** | [Query](https://tanstack.com/query) for registry calls, [Store](https://tanstack.com/store) for the diff session |
-| **UI** | [Base UI](https://base-ui.com) primitives wrapped in `src/components/ui`, CSS Modules over a custom-property token layer — no Tailwind |
+| **UI** | [Base UI](https://base-ui.com) primitives wrapped in `src/components/ui`, CSS Modules over a custom-property token layer — no Tailwind; [React Compiler](https://react.dev/learn/react-compiler) (its Rust port) memoizes at build time |
 | **Engine** | Rust → WebAssembly for extraction and diffing, in its own repo: [diffpack-engine](https://github.com/philfreshman/diffpack-engine) |
 | **Tooling** | [oxlint and oxfmt](https://oxc.rs), [fallow](https://fallow.tools) |
 
