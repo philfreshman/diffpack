@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useHydrated } from "#/components/lifecycle/useHydrated.ts";
 import {
 	readSetting,
 	type StoredSetting,
@@ -7,20 +8,19 @@ import {
 
 export interface SettingControls<T> {
 	value: T;
-	/** False on the server and in the first client render, while `value` is the fallback. */
+	/** False on the server and while hydrating, while `value` is the fallback. */
 	known: boolean;
 	set(value: T): void;
 }
 
-/** Read after mount: reading during render would mismatch the server's fallback. */
+/** Read after hydration: reading during it would mismatch the server's fallback. */
 export function useSetting<T>(setting: StoredSetting<T>): SettingControls<T> {
+	const hydrated = useHydrated();
 	// Held with its setting, so switching settings never shows the old value under the new one.
 	const [held, setHeld] = useState<{
 		setting: StoredSetting<T>;
 		value: T;
 	} | null>(null);
-
-	useEffect(() => setHeld({ setting, value: readSetting(setting) }), [setting]);
 
 	const set = useCallback(
 		(value: T) => {
@@ -30,11 +30,13 @@ export function useSetting<T>(setting: StoredSetting<T>): SettingControls<T> {
 		[setting],
 	);
 
-	const current = held?.setting === setting ? held : null;
+	if (held?.setting === setting) {
+		return { value: held.value, known: true, set };
+	}
 
 	return {
-		value: current ? current.value : setting.fallback,
-		known: current !== null,
+		value: hydrated ? readSetting(setting) : setting.fallback,
+		known: hydrated,
 		set,
 	};
 }

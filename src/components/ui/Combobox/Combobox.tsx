@@ -1,5 +1,6 @@
 import { Combobox as Base } from "@base-ui/react/combobox";
-import { type ReactNode, type Ref, useEffect, useRef, useState } from "react";
+import { type ReactNode, type Ref, useRef, useState } from "react";
+import { useHydrated } from "#/components/lifecycle/useHydrated.ts";
 import styles from "./Combobox.module.css";
 
 export interface ComboboxProps<T> {
@@ -67,8 +68,7 @@ export function Combobox<T>({
 	// Controlled so focus opens the list: Base UI ignores the click that focuses an input.
 	const [open, setOpen] = useState(false);
 	// `data-ready` marks hydration; input before it hits a dead field, so tests wait on it.
-	const [ready, setReady] = useState(false);
-	useEffect(() => setReady(true), []);
+	const ready = useHydrated();
 
 	return (
 		<Base.Root
