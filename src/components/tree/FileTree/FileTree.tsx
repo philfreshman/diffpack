@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import {
 	ChevronDownIcon,
 	ChevronRightIcon,
@@ -79,7 +79,7 @@ export function FileTree({
 					onActivate={activate}
 					onFocus={setFocusedKey}
 					position={position}
-					register={elements.current}
+					register={elements}
 					row={row}
 					selected={isSelected(row, selectedPath)}
 				/>
@@ -100,7 +100,7 @@ interface FileTreeRowProps {
 	onFocus(key: string): void;
 	/** Read only at mount, for the fade-in delay. */
 	position: number;
-	register: Map<string, HTMLElement>;
+	register: RefObject<Map<string, HTMLElement>>;
 }
 function FileTreeRow({
 	row,
@@ -122,8 +122,8 @@ function FileTreeRow({
 			role="treeitem"
 			className={styles.row}
 			ref={(element) => {
-				if (element) register.set(key, element);
-				else register.delete(key);
+				if (element) register.current.set(key, element);
+				else register.current.delete(key);
 			}}
 			tabIndex={active ? 0 : -1}
 			onFocus={() => onFocus(key)}
