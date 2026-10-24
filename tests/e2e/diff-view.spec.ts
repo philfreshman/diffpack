@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { SPLIT_VIEW } from "#/lib/storage/settings.ts";
+import { HIGHLIGHT_THEME, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 
 const MANIFEST = "/npm/express/4.18.2/5.1.0/package.json";
 
@@ -410,6 +410,34 @@ test("picks out the changed part on both sides of the split view", async ({
 		half("right"),
 		"5.1.0",
 	);
+});
+
+async function removedEmphasisUnder(page: Page, theme: string) {
+	await page.addInitScript(
+		({ key, value }) => localStorage.setItem(key, value),
+		{ key: HIGHLIGHT_THEME.key, value: theme },
+	);
+	await open(page, MANIFEST);
+
+	return lines(page, "removed")
+		.first()
+		.locator("mark")
+		.evaluate((mark) => getComputedStyle(mark).backgroundColor);
+}
+
+test("takes the emphasis colour from the syntax theme's own diff colours", async ({
+	browser,
+}) => {
+	const under = async (theme: string) => {
+		const page = await browser.newPage();
+		const colour = await removedEmphasisUnder(page, theme);
+		await page.close();
+		return colour;
+	};
+
+	const greyDeletionsFallBack = await under("monokai");
+	expect(greyDeletionsFallBack).toBe("rgb(113, 50, 57)");
+	expect(await under("atom-one-dark")).toBe("rgb(99, 58, 62)");
 });
 
 const treeRow = (page: Page, path: string) =>
