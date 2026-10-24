@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { Button } from "#/components/ui/Button/Button.tsx";
 import type { RegistryAdapter } from "#/lib/registries/types.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
@@ -20,14 +20,11 @@ export function VersionControls({
 }) {
 	const navigate = useNavigate();
 	const { list, loading, error } = useVersions(adapter, slug.package);
-	const [selection, setSelection] = useState(() =>
-		resolveSelection(list, slug),
-	);
-
 	// A selection made here lasts until the URL or the list changes.
-	useEffect(() => {
-		setSelection(resolveSelection(list, { from: slug.from, to: slug.to }));
-	}, [list, slug.from, slug.to]);
+	const [selection, setSelection] = useStateResetOn(
+		() => resolveSelection(list, { from: slug.from, to: slug.to }),
+		[list, slug.from, slug.to],
+	);
 
 	const { from, to } = selection;
 	const ready = Boolean(slug.package && from && to);
