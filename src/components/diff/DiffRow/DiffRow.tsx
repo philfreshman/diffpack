@@ -61,7 +61,7 @@ export function DiffRow({
 				className={styles.content}
 				data-change={line.type}
 				// highlightLine escapes everything it does not highlight.
-				// biome-ignore lint/security/noDangerouslySetInnerHtml: the highlighter's output is markup by definition
+				// oxlint-disable-next-line react/no-danger -- the highlighter's output is markup by definition
 				dangerouslySetInnerHTML={{
 					__html: highlightLine(line.content, language, change) || " ",
 				}}
