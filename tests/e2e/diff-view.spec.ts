@@ -1,5 +1,11 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
-import { SPLIT_VIEW } from "#/lib/storage/settings.ts";
+import {
+	type Browser,
+	expect,
+	type Locator,
+	type Page,
+	test,
+} from "@playwright/test";
+import { HIGHLIGHT_THEME, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 
 const MANIFEST = "/npm/express/4.18.2/5.1.0/package.json";
 
@@ -410,6 +416,33 @@ test("picks out the changed part on both sides of the split view", async ({
 		half("right"),
 		"5.1.0",
 	);
+});
+
+async function expectRemovedEmphasisUnder(
+	browser: Browser,
+	theme: string,
+	colour: string,
+) {
+	const page = await browser.newPage();
+	await page.addInitScript(
+		({ key, value }) => localStorage.setItem(key, value),
+		{ key: HIGHLIGHT_THEME.key, value: theme },
+	);
+	await open(page, MANIFEST);
+
+	await expect(lines(page, "removed").first().locator("mark")).toHaveCSS(
+		"background-color",
+		colour,
+	);
+	await page.close();
+}
+
+test("takes the emphasis colour from the syntax theme's own diff colours", async ({
+	browser,
+}) => {
+	const todaysRemovedEmphasis = "rgb(113, 50, 57)";
+	await expectRemovedEmphasisUnder(browser, "monokai", todaysRemovedEmphasis);
+	await expectRemovedEmphasisUnder(browser, "atom-one-dark", "rgb(99, 58, 62)");
 });
 
 const treeRow = (page: Page, path: string) =>

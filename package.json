@@ -11,6 +11,7 @@
 		"build": "vite build",
 		"preview": "vite preview --port 4321 --strictPort",
 		"generate-routes": "tsr generate",
+		"generate-emphasis": "bun scripts/generate-theme-emphasis.ts",
 		"test": "bun test tests/unit",
 		"test:e2e": "playwright test",
 		"test:networked": "bun test tests/networked",

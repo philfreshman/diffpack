@@ -25,6 +25,7 @@ bun run format           # biome format . (tabs, double quotes)
 bun run test             # unit: bun test tests/unit, no network, ~1s
 bun run test:e2e         # Playwright: production build + real registries, slow and online
 bun run generate-routes  # tsr generate, after adding or renaming a file in src/routes/
+bun run generate-emphasis # rewrite themeEmphasis.gen.ts, after a highlight.js upgrade or a theme change
 bun run badge            # regenerate .github/badges/fallow-health.svg when the score moves
 ```
 
@@ -37,7 +38,8 @@ bun run badge            # regenerate .github/badges/fallow-health.svg when the 
   `https://diffpack-proxy.philipswiezak.workers.dev`, and so does every e2e run.
 - The pre-commit hook runs typecheck, lint, format, test, then `fallow audit` against the branch's
   upstream. Run those before committing rather than finding out from the hook.
-- `src/routeTree.gen.ts` is generated and committed. Do not edit it by hand.
+- `src/routeTree.gen.ts` and `src/lib/diff/themeEmphasis.gen.ts` are generated and committed. Do
+  not edit them by hand; `themeEmphasis.test.ts` fails when the second is out of date.
 
 ## Layout and boundaries
 
@@ -267,7 +269,10 @@ Supporting modules: `highlight.ts` (cached per line, and a line over 10 000 char
 plain), `inlineChange.ts` (the part of a changed line that differs from its partner: the line
 minus the start and end the two share, for the pairs `pairSplitRows` sets opposite each other,
 worked out once per file in `parseFile`), `markRange.ts` (wraps that part in `<mark>` inside
-highlighted HTML, closing and reopening it around highlight.js's `<span>`s), `highlightThemes.ts` (the offered themes; their stylesheets are resolved in
+highlighted HTML, closing and reopening it around highlight.js's `<span>`s), `themeEmphasis.ts`
+(each syntax theme's `<mark>` colours: its `.hljs-addition` / `.hljs-deletion` colour read by
+`themeColours.ts`, mixed over the row by `emphasis.ts` only as far as no token ends up less readable
+than on the default mark, set on the viewer as `--color-*-emphasis`), `highlightThemes.ts` (the offered themes; their stylesheets are resolved in
 `highlightStylesheet.ts` from `highlight.js/styles/`, or `public/` for `nightfall.css`),
 `viewMemory.ts` (per-file folds and scroll position within a comparison), `scrollbar.ts`
 (thumb geometry) and `gutter.ts`. The tree panel's logic is in `src/lib/tree/`. Rows are keyed by
