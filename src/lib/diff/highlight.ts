@@ -1,4 +1,6 @@
 import hljs from "highlight.js";
+import type { TextRange } from "#/lib/diff/inlineChange.ts";
+import { markRange } from "#/lib/diff/markRange.ts";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 
 const SAMPLE_LINES = 200;
@@ -57,24 +59,39 @@ const MAX_HIGHLIGHT_CHARS = 10_000;
 export function highlightLine(
 	content: string,
 	language: string | null,
+	change?: TextRange,
 ): string {
-	const tooLong = content.length > MAX_HIGHLIGHT_CHARS;
-	if (!language || tooLong || !hljs.getLanguage(language)) {
-		return escapeHtml(content);
-	}
+	if (content.length > MAX_HIGHLIGHT_CHARS) return escapeHtml(content);
 
-	const key = `${language} ${content}`;
+	const known = language && hljs.getLanguage(language) ? language : null;
+	if (!known && !change) return escapeHtml(content);
+
+	const key = cacheKey(content, known, change);
 	const cached = cache.get(key);
 	if (cached !== undefined) return cached;
 
-	const html = hljs.highlight(content, {
-		language,
-		ignoreIllegals: true,
-	}).value;
+	const markup = highlightOrEscape(content, known);
+	const html = change ? markRange(markup, change) : markup;
 	if (cache.size >= CACHE_LIMIT) cache.clear();
 	cache.set(key, html);
 
 	return html;
+}
+
+function cacheKey(
+	content: string,
+	language: string | null,
+	change: TextRange | undefined,
+): string {
+	const range = change ? `${change.start}-${change.end}` : "";
+
+	return `${language ?? ""} ${range} ${content}`;
+}
+
+function highlightOrEscape(content: string, language: string | null): string {
+	if (!language) return escapeHtml(content);
+
+	return hljs.highlight(content, { language, ignoreIllegals: true }).value;
 }
 
 function escapeHtml(content: string): string {

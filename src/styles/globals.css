@@ -198,6 +198,8 @@
 	--color-removed-surface: #ffeef0;
 	--color-removed-gutter: #ffdce0;
 	--color-removed-gutter-border: #fdaeb7;
+	--color-added-emphasis: #acf2bd;
+	--color-removed-emphasis: #fdb8c0;
 	--color-fold-surface: var(--gray-light-bg-200);
 	--color-fold-gutter: var(--gray-light-100);
 	--color-fold-gutter-border: var(--gray-light-200);
@@ -213,6 +215,8 @@
 	--color-removed-surface: #442d30;
 	--color-removed-gutter: #61222a;
 	--color-removed-gutter-border: #6e363b;
+	--color-added-emphasis: #336d43;
+	--color-removed-emphasis: #713239;
 	--color-fold-surface: var(--gray-dark-100);
 	--color-fold-gutter: var(--gray-dark-200);
 	--color-fold-gutter-border: var(--gray-dark-400);
