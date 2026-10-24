@@ -295,28 +295,3 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           sarif_file: fallow-results.sarif
-
-      # Published as a run artifact rather than committed back to
-      # `development`. `development` has required status checks, and a push
-      # from this job is rejected by them (`GH006: Protected branch update
-      # failed — 2 of 2 required status checks are expected`): the bot's
-      # commit is brand new, so its checks have not run. They also never
-      # would — a push authenticated with `GITHUB_TOKEN` does not trigger
-      # workflows, so the commit could not become mergeable on its own. The
-      # baselines are downloaded from the run and committed through a normal
-      # PR when they need refreshing; see CONTRIBUTING.md.
-      - name: Save per-analysis baselines
-        run: |
-          bunx fallow dead-code --format json --quiet --save-baseline dead-code-baseline.json
-          bunx fallow health --format json --quiet --save-baseline health-baseline.json
-          bunx fallow dupes --format json --quiet --save-baseline dupes-baseline.json
-
-      - name: Upload per-analysis baselines
-        uses: actions/upload-artifact@v6
-        with:
-          name: fallow-baselines
-          path: |
-            dead-code-baseline.json
-            health-baseline.json
-            dupes-baseline.json
-          retention-days: 30
