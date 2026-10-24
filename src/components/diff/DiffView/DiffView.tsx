@@ -40,9 +40,12 @@ export function DiffView({
 	onSelectLine,
 	highlightTheme,
 }: DiffViewProps) {
+	"use no memo";
+
 	const { path, lines, language, rows, changes } = file;
 
 	const scroller = useRef<HTMLDivElement>(null);
+	// oxlint-disable-next-line react/incompatible-library -- skipped by "use no memo": the virtualizer changes without a new identity
 	const virtualizer = useVirtualizer({
 		count: rows.length,
 		getScrollElement: () => scroller.current,
@@ -155,7 +158,7 @@ export function DiffView({
 			</div>
 			<DiffScrollbar
 				file={file}
-				scroller={scroller}
+				scrollerRef={scroller}
 				spans={virtualizer.measurementsCache}
 			/>
 		</div>

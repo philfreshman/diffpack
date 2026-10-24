@@ -1,8 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 
 export function useKeyShortcut(key: string, onPress: () => void) {
-	const handler = useRef(onPress);
-	handler.current = onPress;
+	const handler = useEffectEvent(onPress);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -10,7 +9,7 @@ export function useKeyShortcut(key: string, onPress: () => void) {
 			if (event.metaKey || event.ctrlKey || event.altKey) return;
 			if (isEditable(event.target)) return;
 			event.preventDefault();
-			handler.current();
+			handler();
 		}
 
 		document.addEventListener("keydown", onKeyDown);

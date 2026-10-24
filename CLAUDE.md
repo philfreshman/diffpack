@@ -310,6 +310,13 @@ is `data-tree-collapsed`, both on `<html>` and moved without a render (`src/lib/
 - The one exception is a reason a tool requires: the explanation after an
   `oxlint-disable-next-line` or `fallow-ignore`, and the comment beside an entry in
   `.fallowrc.jsonc` (see `AGENTS.md`).
+- React Compiler memoizes components and hooks at build time (`viteReact({ compiler: true })`, the
+  experimental Rust port `oxc-transform-react`). Do not add `useMemo`, `useCallback` or `memo` by
+  hand. Never write `ref.current` during render: keep the latest callback with `useEffectEvent`,
+  and name a ref you pass around `…Ref` so the compiler knows what it is. Reset state from props
+  during render (`useStateResetOn`), not in an effect, and learn about hydration from
+  `useHydrated`. oxlint's React Compiler rules flag what the compiler cannot handle. `DiffView`
+  opts out with `"use no memo"`, because TanStack Virtual's virtualizer cannot be memoized.
 
 ## CSS conventions
 
