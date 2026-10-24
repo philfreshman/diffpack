@@ -1,13 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { advisoryFrom } from "#/lib/vulnerabilities/advisory.ts";
 import type { OsvPackage } from "#/lib/vulnerabilities/types.ts";
-import lodashRedos from "./fixtures/GHSA-29mw-wpgm-hmr9.json" with {
-	type: "json",
-};
+import lodashRedos from "./fixtures/GHSA-29mw-wpgm-hmr9.json" with { type: "json" };
 import goHtml from "./fixtures/GO-2023-1988.json" with { type: "json" };
-import tokioAbort from "./fixtures/RUSTSEC-2021-0072.json" with {
-	type: "json",
-};
+import tokioAbort from "./fixtures/RUSTSEC-2021-0072.json" with { type: "json" };
 
 const NPM_X: OsvPackage = { name: "x", ecosystem: "npm" };
 

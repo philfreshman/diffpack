@@ -1,9 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createOsvClient } from "#/lib/vulnerabilities/osvClient.ts";
 import { json, stubFetch } from "../registries/fetchStub.ts";
-import jinjaGithub from "./fixtures/GHSA-462w-v97r-4m45.json" with {
-	type: "json",
-};
+import jinjaGithub from "./fixtures/GHSA-462w-v97r-4m45.json" with { type: "json" };
 import goHtml from "./fixtures/GO-2023-1988.json" with { type: "json" };
 import jinjaPysec from "./fixtures/PYSEC-2019-217.json" with { type: "json" };
 
