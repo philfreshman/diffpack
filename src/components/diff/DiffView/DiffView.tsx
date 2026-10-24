@@ -9,6 +9,7 @@ import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import { gutterChars } from "#/lib/diff/gutter.ts";
 import type { HighlightAppearance } from "#/lib/diff/highlightThemes.ts";
 import { isAnchoredRow, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
+import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
 import styles from "./DiffView.module.css";
 import { useAnchorSeek } from "./useAnchorSeek.ts";
 import { useCloseOnEscape } from "./useCloseOnEscape.ts";
@@ -37,7 +38,7 @@ export function DiffView({
 	onSelectLine,
 	syntax,
 }: DiffViewProps) {
-	const { path, lines, language, rows } = file;
+	const { path, lines, language, rows, changes } = file;
 
 	const scroller = useRef<HTMLDivElement>(null);
 	const virtualizer = useVirtualizer({
@@ -68,6 +69,8 @@ export function DiffView({
 
 	useAnchorSeek(file, anchor, virtualizer);
 	const at = useScrollMemory(file.scrollTop, file.rememberScroll);
+	const changeOf = (side: SplitSide) =>
+		side ? changes.get(side.index) : undefined;
 	useCloseOnEscape(onClose);
 	useOneSidedSelection(scroller);
 
@@ -119,7 +122,9 @@ export function DiffView({
 										key={item.key}
 										language={language}
 										left={row.left}
+										leftChange={changeOf(row.left)}
 										right={row.right}
+										rightChange={changeOf(row.right)}
 										{...placement}
 										{...selection}
 									/>
@@ -128,6 +133,7 @@ export function DiffView({
 
 							return row.kind === "line" ? (
 								<DiffRow
+									change={changes.get(row.index)}
 									key={item.key}
 									language={language}
 									line={row.line}

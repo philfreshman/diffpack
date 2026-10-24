@@ -88,3 +88,16 @@
 	box-shadow: inset 3px 0 var(--color-line-selected-edge);
 	pointer-events: none;
 }
+
+.content mark {
+	color: inherit;
+	border-radius: var(--radius-sm);
+}
+
+.content[data-change="added"] mark {
+	background: var(--color-added-emphasis);
+}
+
+.content[data-change="removed"] mark {
+	background: var(--color-removed-emphasis);
+}

@@ -4,6 +4,7 @@ import type {
 	VirtualRowProps,
 } from "#/components/diff/virtualRow.ts";
 import { highlightLine } from "#/lib/diff/highlight.ts";
+import type { TextRange } from "#/lib/diff/inlineChange.ts";
 import { anchorOfLine } from "#/lib/diff/lineAnchor.ts";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 import styles from "./DiffRow.module.css";
@@ -11,13 +12,18 @@ import styles from "./DiffRow.module.css";
 export function DiffRow({
 	line,
 	language,
+	change,
 	selected,
 	onSelectLine,
 	index,
 	style,
 	ref,
 }: VirtualRowProps &
-	SelectableRowProps & { line: DiffLine; language: string | null }) {
+	SelectableRowProps & {
+		line: DiffLine;
+		language: string | null;
+		change: TextRange | undefined;
+	}) {
 	const anchor = anchorOfLine(line);
 
 	return (
@@ -57,7 +63,7 @@ export function DiffRow({
 				// highlightLine escapes everything it does not highlight.
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: the highlighter's output is markup by definition
 				dangerouslySetInnerHTML={{
-					__html: highlightLine(line.content, language) || " ",
+					__html: highlightLine(line.content, language, change) || " ",
 				}}
 			/>
 		</tr>

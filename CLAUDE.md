@@ -264,7 +264,10 @@ From the engine's text to rows on screen, all pure functions in `src/lib/diff/`:
    the scrollbar minimap both use it, so they cannot disagree.
 
 Supporting modules: `highlight.ts` (cached per line, and a line over 10 000 characters is left
-plain), `highlightThemes.ts` (the offered themes; their stylesheets are resolved in
+plain), `inlineChange.ts` (the part of a changed line that differs from its partner: the line
+minus the start and end the two share, for the pairs `pairSplitRows` sets opposite each other,
+worked out once per file in `parseFile`), `markRange.ts` (wraps that part in `<mark>` inside
+highlighted HTML, closing and reopening it around highlight.js's `<span>`s), `highlightThemes.ts` (the offered themes; their stylesheets are resolved in
 `highlightStylesheet.ts` from `highlight.js/styles/`, or `public/` for `nightfall.css`),
 `viewMemory.ts` (per-file folds and scroll position within a comparison), `scrollbar.ts`
 (thumb geometry) and `gutter.ts`. The tree panel's logic is in `src/lib/tree/`. Rows are keyed by

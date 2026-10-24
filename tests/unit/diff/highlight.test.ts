@@ -90,6 +90,34 @@ describe("highlightLine", () => {
 		expect(highlightLine(line, "json")).toBe(line);
 	});
 
+	test("marks the part of the line that changed", () => {
+		const range = { start: 1, end: 4 };
+
+		expect(highlightLine("a <b> c", null, range)).toBe(
+			"a<mark> &lt;b</mark>&gt; c",
+		);
+		expect(
+			highlightLine('"version": "4.18.2",', "json", { start: 12, end: 18 }),
+		).toBe(
+			'<span class="hljs-attr">&quot;version&quot;</span>' +
+				'<span class="hljs-punctuation">:</span> ' +
+				'<span class="hljs-string">&quot;<mark>4.18.2</mark>&quot;</span>' +
+				'<span class="hljs-punctuation">,</span>',
+		);
+	});
+
+	test("keeps the same line unmarked when no change is given", () => {
+		highlightLine('"name": "express",', "json", { start: 9, end: 16 });
+
+		expect(highlightLine('"name": "express",', "json")).not.toContain("<mark>");
+	});
+
+	test("leaves a line too long to mark up unmarked as well", () => {
+		const line = '{"name":"node"},'.repeat(10_000);
+
+		expect(highlightLine(line, "json", { start: 2, end: 6 })).toBe(line);
+	});
+
 	test("still escapes a line it is too long to mark up", () => {
 		const line = `${"a".repeat(20_000)}<img src=x onerror=alert(1)>`;
 		const html = highlightLine(line, "html");
