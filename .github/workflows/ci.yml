@@ -165,10 +165,16 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # `fail-on-empty-analysis`: a run that analysed no source file reports
+      # zero of everything and passes, which reads exactly like a clean tree.
+      # It fails instead, so a broken root or an ignore pattern that swallows
+      # `src/` cannot pass unnoticed. A PR that changes no source file does not
+      # trip it: the audit still analyses the project.
       - uses: fallow-rs/fallow@v3
         with:
           command: audit
           gate: new-only
+          fail-on-empty-analysis: true
 
       # Phase 7 on #111. `fallow security` is an opt-in surface: its findings
       # never appear under bare `fallow` or in the audit gate above, so without
@@ -245,7 +251,10 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # `fail-on-empty-analysis`: see the PR gate above.
       - uses: fallow-rs/fallow@v3
+        with:
+          fail-on-empty-analysis: true
 
       # Phase 7 on #111: the optional TypeScript semantic pass, here and
       # nowhere else. It is what settles a dead-code candidate that the

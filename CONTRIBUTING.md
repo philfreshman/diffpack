@@ -132,6 +132,15 @@ change introduces** — unused exports, new complexity, duplication, and the res
 `.fallowrc.jsonc` enables. Findings already on `development` in files you did not touch do not
 block you.
 
+Two things fail every fallow run, whatever it changed. A source file fallow cannot parse fails it
+(`failOnParseError`), because otherwise that file silently drops out of every analysis. In CI, a run
+that analysed no source file at all fails too (`fail-on-empty-analysis`), because it would report
+zero of everything and look like a clean tree.
+
+Styling findings (`css-*`) are gated only through `fallow audit`, on the files a change touches:
+`fallow health --css` reports them but never fails, so the full-repo job cannot catch styling drift
+on files no PR touched. To check the whole tree by hand, run `bunx fallow health --css`.
+
 **`fallow audit` analyzes the working tree, not the index.** If you `git add` part of a file and
 leave the rest unstaged, the hook can still fail on the unstaged code, because it looks at what is
 on disk, not what `git commit` is about to record. This is inherent to how `--base` diffing works
