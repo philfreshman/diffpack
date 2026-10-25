@@ -1,17 +1,16 @@
 .frame {
 	--step-height: 1.75rem;
 	--steps-gap: var(--space-1);
+	--section-padding: var(--space-3);
 	--summary-height: 13.75rem;
+	--build-height: calc(
+		var(--step-count) * var(--step-height) + (var(--step-count) - 1) *
+			var(--steps-gap) + 2 * var(--section-padding)
+	);
+	--scan-height: calc(var(--step-height) + 2 * var(--section-padding) + 1px);
 	--steps-height: max(
 		var(--summary-height),
-		calc(
-			var(--step-count) *
-			var(--step-height) +
-			(var(--step-count) - 1) *
-			var(--steps-gap) +
-			2 *
-			var(--space-3)
-		)
+		calc(var(--build-height) + var(--scan-height))
 	);
 
 	display: grid;
@@ -22,10 +21,28 @@
 }
 
 .box {
+	display: flex;
 	width: min(28rem, 100%);
-	min-height: var(--summary-height);
+	flex-direction: column;
 	grid-row: 2 / 4;
 	align-self: start;
+	padding: 0;
+	overflow: hidden;
+	border-radius: var(--radius-md);
+	background-color: var(--color-summary-surface);
+}
+
+.build {
+	flex: 1;
+	padding: var(--section-padding) var(--space-4);
+	background-color: var(--color-summary-overview);
+}
+
+.scan {
+	margin: 0;
+	padding: var(--section-padding) var(--space-4);
+	border-top: 1px solid var(--color-border);
+	list-style: none;
 }
 
 .steps {

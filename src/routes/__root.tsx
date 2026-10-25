@@ -80,14 +80,14 @@ function RootDocument() {
 		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />
-				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: the engine is started before hydration, so this must be inline */}
+				{/* oxlint-disable-next-line react/no-danger -- the engine is started before hydration, so this must be inline */}
 				<script dangerouslySetInnerHTML={{ __html: DIFF_BOOT_SCRIPT }} />
-				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-paint theme script must be inline */}
+				{/* oxlint-disable-next-line react/no-danger -- pre-paint theme script must be inline */}
 				<script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-paint tree width script must be inline */}
+				{/* oxlint-disable-next-line react/no-danger -- pre-paint tree width script must be inline */}
 				<script dangerouslySetInnerHTML={{ __html: TREE_WIDTH_SCRIPT }} />
 				<script async src={GA_SRC} />
-				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: gtag.js bootstrap must be inline, ahead of the async library */}
+				{/* oxlint-disable-next-line react/no-danger -- gtag.js bootstrap must be inline, ahead of the async library */}
 				<script dangerouslySetInnerHTML={{ __html: GA_SCRIPT }} />
 			</head>
 			<body>

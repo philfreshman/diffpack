@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useEffectEvent, useRef } from "react";
+import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { useSetting } from "#/components/storage/useSetting.ts";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
 import { SearchIcon } from "#/components/ui/icons.tsx";
@@ -23,14 +24,15 @@ export interface PackageComboboxProps {
 
 export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 	const navigate = useNavigate();
-	const [inputValue, setInputValue] = useState(selected);
-	// localStorage, so history is empty until after mount.
+	const [inputValue, setInputValue] = useStateResetOn(
+		() => selected,
+		[selected],
+	);
+	// localStorage, so history is empty until after hydration.
 	const history = useSetting(searchHistory(adapter.id));
 
 	const input = useShortcutFocus();
 	useEscapeToClear(input, reset);
-
-	useEffect(() => setInputValue(selected), [selected]);
 
 	const { results, loading, searching } = usePackageSearch(adapter, inputValue);
 	const items = searching ? results : history.value;
@@ -106,8 +108,7 @@ function useEscapeToClear(
 	input: RefObject<HTMLInputElement | null>,
 	onClear: () => void,
 ) {
-	const handler = useRef(onClear);
-	handler.current = onClear;
+	const handler = useEffectEvent(onClear);
 
 	useEffect(() => {
 		const element = input.current;
@@ -116,7 +117,7 @@ function useEscapeToClear(
 		function onKeyDown(event: KeyboardEvent) {
 			if (event.key !== CLEAR || !element?.value) return;
 			if (element.getAttribute("aria-expanded") === "true") return;
-			handler.current();
+			handler();
 		}
 
 		element.addEventListener("keydown", onKeyDown);

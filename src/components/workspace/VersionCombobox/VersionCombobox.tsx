@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
 import { DownloadIcon, ExternalLinkIcon } from "#/components/ui/icons.tsx";
 import type { VersionLinkCopy } from "#/lib/registries/types.ts";
@@ -40,9 +40,7 @@ export function VersionCombobox({
 	downloadUrl,
 	linkCopy = DOWNLOAD_LINK,
 }: VersionComboboxProps) {
-	const [inputValue, setInputValue] = useState(value);
-
-	useEffect(() => setInputValue(value), [value]);
+	const [inputValue, setInputValue] = useStateResetOn(() => value, [value]);
 
 	const LinkIcon = LINK_ICONS[linkCopy.opens];
 

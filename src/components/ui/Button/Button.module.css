@@ -9,20 +9,18 @@
 	font-size: var(--text-sm);
 	font-weight: 500;
 	transition: background-color var(--duration-fast);
+	--button-hover-background: var(--color-surface-hover);
 }
 
 .button[data-variant="primary"] {
 	border-color: transparent;
 	background-color: var(--color-accent);
 	color: var(--color-accent-foreground);
+	--button-hover-background: var(--color-accent-hover);
 }
 
 .button:hover:not(:disabled) {
-	background-color: var(--color-surface-hover);
-}
-
-.button[data-variant="primary"]:hover:not(:disabled) {
-	background-color: var(--color-accent-hover);
+	background-color: var(--button-hover-background);
 }
 
 .button:focus-visible {

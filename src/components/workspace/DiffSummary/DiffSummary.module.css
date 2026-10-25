@@ -1,9 +1,21 @@
 .box {
 	display: flex;
 	width: min(28rem, 100%);
-	max-height: max(100%, 22rem);
+	max-height: max(100cqh, 22rem);
+	flex-direction: column;
+	padding: 0;
+	overflow: hidden;
+	border-radius: var(--radius-md);
+	background-color: var(--color-summary-surface);
+}
+
+.overview {
+	display: flex;
+	flex: none;
 	flex-direction: column;
 	gap: var(--space-3);
+	padding: var(--space-4);
+	background-color: var(--color-summary-overview);
 }
 
 .stats,
@@ -31,8 +43,8 @@
 
 .value {
 	margin: 0;
-	font-family: var(--font-mono);
 	font-size: var(--text-xl);
+	line-height: 1.2;
 	font-variant-numeric: tabular-nums;
 }
 

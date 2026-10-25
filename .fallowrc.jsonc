@@ -16,6 +16,18 @@
 	// directory.
 	"ignorePatterns": ["public/**"],
 
+	// A file the parser rejects drops out of every analysis: its exports, its
+	// imports, its complexity and its styles all go unmeasured, and the only
+	// trace is a warning nobody reads. With this on, the run fails instead and
+	// the `parse-error` gate names the file, in the pre-commit hook, both CI
+	// fallow jobs and the agent gate alike.
+	"failOnParseError": true,
+
+	// `@vitejs/plugin-react` loads React Compiler's Rust port by package name
+	// when `vite.config.ts` passes `compiler: true`. Nothing imports it, so the
+	// import graph cannot see that it is used.
+	"ignoreDependencies": ["oxc-transform-react"],
+
 	"health": {
 		// Decision 1 on #111: CRAP is advisory here, never a gate.
 		// `bun test --coverage` emits only text and lcov; fallow wants Istanbul
@@ -114,10 +126,11 @@
 		// application — nothing imports it — so it is noise with no upside.
 		"private-type-leaks": "off",
 
-		// `test-only-dependencies` is deliberately left at its `warn` default and
-		// is NOT part of the Decision 3 promotion: it was the one warn-tier rule
-		// with a finding (`nitro`), now resolved by moving nitro to
-		// devDependencies. Promote it once it has been zero for a while.
+		// `test-only-dependencies` came after the Decision 3 promotion: it was
+		// the one warn-tier rule with a finding (`nitro`), resolved by moving
+		// nitro to devDependencies. It was left at `warn` until it had stayed at
+		// zero, which it has since September 2026.
+		"test-only-dependencies": "error",
 	},
 
 	// Phase 7 on #111. The repo already had this shape — routes render

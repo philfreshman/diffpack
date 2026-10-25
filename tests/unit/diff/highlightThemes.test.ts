@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
 	defaultHighlightTheme,
 	HIGHLIGHT_THEMES,
-	type HighlightTheme,
 	highlightAppearance,
+	stylesheetFile,
 } from "#/lib/diff/highlightThemes.ts";
 
 describe("HIGHLIGHT_THEMES", () => {
@@ -12,16 +12,10 @@ describe("HIGHLIGHT_THEMES", () => {
 	});
 });
 
-function stylesheetPath({ asset }: HighlightTheme): string {
-	return asset.startsWith("/")
-		? `public${asset}`
-		: `node_modules/highlight.js/styles/${asset}`;
-}
-
 describe("every theme's stylesheet exists", () => {
 	// Named per file, so a highlight.js upgrade that drops a stylesheet fails here.
 	test.each([...HIGHLIGHT_THEMES])("$label", async (theme) => {
-		expect(await Bun.file(stylesheetPath(theme)).exists()).toBe(true);
+		expect(await Bun.file(stylesheetFile(theme)).exists()).toBe(true);
 	});
 });
 
@@ -53,7 +47,7 @@ function luma(color: string): number {
 describe("every theme's declared appearance is the one it paints", () => {
 	// `appearance` is declared, not read from the stylesheet. Windows 95 is a black theme with a light-sounding name.
 	test.each([...HIGHLIGHT_THEMES])("$label", async (theme) => {
-		const css = await Bun.file(stylesheetPath(theme)).text();
+		const css = await Bun.file(stylesheetFile(theme)).text();
 		const light = luma(hljsBackground(css)) > 0.5;
 
 		expect(light ? "light" : "dark").toBe(theme.appearance);

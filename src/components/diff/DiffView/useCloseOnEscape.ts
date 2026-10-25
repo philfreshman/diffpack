@@ -1,15 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 
 /** On the document because the viewer lacks focus; a field keeps its own Escape. */
 export function useCloseOnEscape(onClose: () => void): void {
-	const close = useRef(onClose);
-	close.current = onClose;
+	const close = useEffectEvent(onClose);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
 			if (event.key !== "Escape" || isField(event.target)) return;
 			event.preventDefault();
-			close.current();
+			close();
 		}
 
 		document.addEventListener("keydown", onKeyDown);

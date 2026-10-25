@@ -4,6 +4,7 @@ import {
 	type DiffRow,
 } from "#/lib/diff/computeVisibility.ts";
 import { detectLanguage } from "#/lib/diff/highlight.ts";
+import { inlineChanges, type TextRange } from "#/lib/diff/inlineChange.ts";
 import { pairSplitRows, type SplitRow } from "#/lib/diff/pairSplitRows.ts";
 import {
 	type DiffLine,
@@ -21,6 +22,7 @@ export interface ParsedFile {
 	path: string;
 	lines: DiffLine[];
 	language: string | null;
+	changes: ReadonlyMap<number, TextRange>;
 }
 
 export interface FileModel extends ParsedFile {
@@ -37,7 +39,12 @@ export interface FileModel extends ParsedFile {
 export function parseFile(path: string, diff: FileDiff): ParsedFile {
 	const lines = parseUnifiedDiff(diff);
 
-	return { path, lines, language: detectLanguage(path, lines) };
+	return {
+		path,
+		lines,
+		language: detectLanguage(path, lines),
+		changes: inlineChanges(lines),
+	};
 }
 
 export function fileModel(

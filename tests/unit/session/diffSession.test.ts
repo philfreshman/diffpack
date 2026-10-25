@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { CodedError } from "#/lib/failure/failure.ts";
-import { createDiffSession } from "#/lib/session/diffSession.ts";
+import { createDiffSession, diffSession } from "#/lib/session/diffSession.ts";
 import type { DiffSlug } from "#/lib/url/slug.ts";
 import type {
 	Comparison,
@@ -556,5 +556,16 @@ describe("a URL that names no comparison", () => {
 			expect(stub.built).toEqual([]);
 			expect(session.store.state.status).toBe("idle");
 		}
+	});
+});
+
+describe("the app's session", () => {
+	test("starts idle, so a server render begins with no comparison in it", () => {
+		expect(diffSession.store.state).toMatchObject({
+			key: null,
+			status: "idle",
+			tree: null,
+			file: null,
+		});
 	});
 });

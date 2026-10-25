@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import {
 	ChevronDownIcon,
 	ChevronRightIcon,
@@ -6,6 +6,7 @@ import {
 	FolderIcon,
 	FolderOpenIcon,
 } from "#/components/ui/icons.tsx";
+import { risesIn } from "#/components/ui/RiseIn/riseIn.ts";
 import { treeCommand } from "#/lib/tree/keymap.ts";
 import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
 import styles from "./FileTree.module.css";
@@ -21,8 +22,6 @@ function nameOf(path: string): string {
 	return path.split("/").pop() || path;
 }
 
-const STAGGER_MS = 2;
-const STAGGER_CAP = 30;
 export function FileTree({
 	rows,
 	selectedPath,
@@ -65,6 +64,7 @@ export function FileTree({
 	}
 
 	return (
+		// oxlint-disable-next-line jsx-a11y/interactive-supports-focus -- focus moves between the treeitems, which carry the tabindex
 		<div
 			className={styles.tree}
 			role="tree"
@@ -78,7 +78,7 @@ export function FileTree({
 					onActivate={activate}
 					onFocus={setFocusedKey}
 					position={position}
-					register={elements.current}
+					register={elements}
 					row={row}
 					selected={isSelected(row, selectedPath)}
 				/>
@@ -99,7 +99,7 @@ interface FileTreeRowProps {
 	onFocus(key: string): void;
 	/** Read only at mount, for the fade-in delay. */
 	position: number;
-	register: Map<string, HTMLElement>;
+	register: RefObject<Map<string, HTMLElement>>;
 }
 function FileTreeRow({
 	row,
@@ -113,22 +113,22 @@ function FileTreeRow({
 	const { entry, expanded, hasChildren } = row;
 	const key = rowKey(entry);
 	// Pinned at mount: a later delay on a settled row would replay its animation.
-	const [delay] = useState(() => Math.min(position, STAGGER_CAP) * STAGGER_MS);
+	const [riseIn] = useState(() => risesIn(styles.row, position));
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: the tree owns the keyboard, per the ARIA practices guide
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- the tree owns the keyboard, per the ARIA practices guide
 		<div
 			role="treeitem"
-			className={styles.row}
+			className={riseIn.className}
 			ref={(element) => {
-				if (element) register.set(key, element);
-				else register.delete(key);
+				if (element) register.current.set(key, element);
+				else register.current.delete(key);
 			}}
 			tabIndex={active ? 0 : -1}
 			onFocus={() => onFocus(key)}
 			style={{
+				...riseIn.style,
 				paddingLeft: `${row.depth * 18 + 4}px`,
-				animationDelay: `${delay}ms`,
 			}}
 			aria-level={row.depth + 1}
 			aria-expanded={hasChildren ? expanded : undefined}

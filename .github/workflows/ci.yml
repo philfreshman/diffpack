@@ -42,6 +42,30 @@ jobs:
             echo code=false >> "$GITHUB_OUTPUT"
           fi
 
+  # The release on `main` picks its version and writes its notes from commit
+  # messages, so a commit that is not a Conventional Commit is left out of
+  # both without a word. Merge commits and GitHub's `Revert "…"` are allowed.
+  commits:
+    name: conventional commits
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([^)]+\))?!?: .+|Revert ".+")'
+          bad=$(git log --no-merges --format='%h %s' "$BASE..$HEAD" | grep -vE "^[0-9a-f]+ $pattern$" || true)
+          if [ -n "$bad" ]; then
+            echo "::error::These commits are not Conventional Commits (type(scope): description), see CONTRIBUTING.md:"
+            echo "$bad"
+            exit 1
+          fi
+
   # Everything that needs no browser, so a broken type or a failing unit test
   # is red in well under a minute rather than behind a Chromium download and
   # a production build.
@@ -165,10 +189,16 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # `fail-on-empty-analysis`: a run that analysed no source file reports
+      # zero of everything and passes, which reads exactly like a clean tree.
+      # It fails instead, so a broken root or an ignore pattern that swallows
+      # `src/` cannot pass unnoticed. A PR that changes no source file does not
+      # trip it: the audit still analyses the project.
       - uses: fallow-rs/fallow@v3
         with:
           command: audit
           gate: new-only
+          fail-on-empty-analysis: true
 
       # Phase 7 on #111. `fallow security` is an opt-in surface: its findings
       # never appear under bare `fallow` or in the audit gate above, so without
@@ -204,6 +234,19 @@ jobs:
           bunx fallow security
           --gate newly-reachable
           --changed-since ${{ github.event.pull_request.base.sha }}
+
+      # Every module in `src/lib` gets a unit test (CLAUDE.md), and this holds
+      # it: a file or export there that no unit test imports fails the step and
+      # is listed in the run summary. Only `src/lib`, because Playwright covers
+      # the components without importing them, which fallow cannot see. For the
+      # same reason the `coverage-gaps` rule stays off: at `error` it would gate
+      # the whole tree. A file no unit test can run takes a reasoned
+      # `fallow-ignore-file coverage-gaps` instead.
+      - name: fallow coverage gaps (src/lib)
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          bun run --silent check:coverage-gaps | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: fallow-rs/fallow@v3
         if: ${{ !cancelled() }}
@@ -245,7 +288,10 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # `fail-on-empty-analysis`: see the PR gate above.
       - uses: fallow-rs/fallow@v3
+        with:
+          fail-on-empty-analysis: true
 
       # Phase 7 on #111: the optional TypeScript semantic pass, here and
       # nowhere else. It is what settles a dead-code candidate that the
@@ -279,6 +325,13 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit $status
 
+      # See `fallow coverage gaps (src/lib)` in the PR gate above.
+      - name: fallow coverage gaps (src/lib)
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          bun run --silent check:coverage-gaps | tee -a "$GITHUB_STEP_SUMMARY"
+
       # The same grade the README badge carries, rendered on the run page with
       # the per-threshold detail behind it. The badge is the number; this is
       # why the number is what it is.
@@ -295,28 +348,3 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           sarif_file: fallow-results.sarif
-
-      # Published as a run artifact rather than committed back to
-      # `development`. `development` has required status checks, and a push
-      # from this job is rejected by them (`GH006: Protected branch update
-      # failed — 2 of 2 required status checks are expected`): the bot's
-      # commit is brand new, so its checks have not run. They also never
-      # would — a push authenticated with `GITHUB_TOKEN` does not trigger
-      # workflows, so the commit could not become mergeable on its own. The
-      # baselines are downloaded from the run and committed through a normal
-      # PR when they need refreshing; see CONTRIBUTING.md.
-      - name: Save per-analysis baselines
-        run: |
-          bunx fallow dead-code --format json --quiet --save-baseline dead-code-baseline.json
-          bunx fallow health --format json --quiet --save-baseline health-baseline.json
-          bunx fallow dupes --format json --quiet --save-baseline dupes-baseline.json
-
-      - name: Upload per-analysis baselines
-        uses: actions/upload-artifact@v6
-        with:
-          name: fallow-baselines
-          path: |
-            dead-code-baseline.json
-            health-baseline.json
-            dupes-baseline.json
-          retention-days: 30

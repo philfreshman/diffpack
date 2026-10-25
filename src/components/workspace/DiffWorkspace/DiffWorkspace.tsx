@@ -11,7 +11,11 @@ import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
 import { failureOf } from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
-import { type BuildProgress, FETCHING } from "#/lib/session/buildProgress.ts";
+import {
+	BUILT,
+	type BuildProgress,
+	FETCHING,
+} from "#/lib/session/buildProgress.ts";
 import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
 import {
 	changedFiles,
@@ -31,6 +35,7 @@ import { type LineLink, useLineLink } from "../useLineLink.ts";
 import { useVersions } from "../useVersions.ts";
 import { useViewerSettings } from "../useViewerSettings.ts";
 import {
+	type ScanStatus,
 	useVulnerabilityFindings,
 	type VulnerabilityFindings,
 } from "../useVulnerabilities.ts";
@@ -69,7 +74,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const comparisonPath = buildPath(adapter, { ...slug, file: "" });
 
 	const versionsFailure = versions.error && failureOf(versions.error);
-	const progress = shownProgress(session, slug);
+	const progress = shownProgress(session, slug, vulnerabilities.scan.status);
 	const summary = shownSummary(session);
 	const pane = paneOf(session.status, progress, versionsFailure !== null);
 
@@ -186,11 +191,20 @@ function showsTrail(
 function shownProgress(
 	session: DiffSessionState,
 	slug: DiffSlug,
+	scan: ScanStatus,
 ): BuildProgress | null {
 	if (session.status === "loading" || session.status === "error")
 		return session.progress;
 	if (session.status === "idle" && namesComparison(slug)) return FETCHING;
+	if (summaryAwaitsScan(session, scan)) return BUILT;
 	return null;
+}
+
+function summaryAwaitsScan(
+	session: DiffSessionState,
+	scan: ScanStatus,
+): boolean {
+	return session.status === "ready" && !session.file && scan === "loading";
 }
 
 function readyTree(session: DiffSessionState): DiffFileEntry | null {
@@ -298,7 +312,7 @@ function FilePane({
 						showSigns={showSigns}
 						anchor={lineLink.anchorIn(shown.path)}
 						onSelectLine={lineLink.select}
-						syntax={highlight.appearance}
+						highlightTheme={highlight.theme}
 					/>
 					<VulnerabilityNotice
 						path={shown.path}

@@ -47,7 +47,7 @@ export function DiffProgress({
 	progress,
 	osv,
 }: DiffProgressProps) {
-	const steps: Step[] = [
+	const buildSteps: Step[] = [
 		{
 			id: "from",
 			label: `Fetching ${packageName} ${from}`,
@@ -58,26 +58,31 @@ export function DiffProgress({
 			label: `Fetching ${packageName} ${to}`,
 			state: progress.to.state,
 		},
-		{ id: "diff", label: "Diffing", state: progress.diff.state },
-		{
-			id: "osv",
-			label: `Querying OSV.dev for ${packageName} ${from}, ${to}`,
-			state: OSV_STATES[osv],
-		},
+		{ id: "diff", label: "Diffing packages", state: progress.diff.state },
 	];
+	const scanStep: Step = {
+		id: "osv",
+		label: `Querying OSV.dev for ${packageName} ${from}, ${to}`,
+		state: OSV_STATES[osv],
+	};
 	const failures = failuresOf(progress);
-	const stepCount = { "--step-count": steps.length } as CSSProperties;
+	const stepCount = { "--step-count": buildSteps.length } as CSSProperties;
 
 	return (
 		<ViewportCenter>
 			<div className={styles.frame} style={stepCount}>
 				<Panel className={styles.box} data-testid="diff-progress">
-					<ol className={styles.steps}>
-						{steps.map((step) => (
-							<ProgressStep key={step.id} {...step} />
-						))}
-					</ol>
-					{failures.length > 0 && <Failures failures={failures} />}
+					<div className={styles.build}>
+						<ol className={styles.steps}>
+							{buildSteps.map((step) => (
+								<ProgressStep key={step.id} {...step} />
+							))}
+						</ol>
+						{failures.length > 0 && <Failures failures={failures} />}
+					</div>
+					<ul className={styles.scan}>
+						<ProgressStep {...scanStep} />
+					</ul>
 				</Panel>
 			</div>
 		</ViewportCenter>

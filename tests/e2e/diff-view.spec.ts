@@ -1,5 +1,11 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
-import { SPLIT_VIEW } from "#/lib/storage/settings.ts";
+import {
+	type Browser,
+	expect,
+	type Locator,
+	type Page,
+	test,
+} from "@playwright/test";
+import { HIGHLIGHT_THEME, SPLIT_VIEW } from "#/lib/storage/settings.ts";
 
 const MANIFEST = "/npm/express/4.18.2/5.1.0/package.json";
 
@@ -362,6 +368,81 @@ test("a drag in the split view selects only the side it started in", async ({
 	// An unchanged line appears on both sides; selected from one, it appears once.
 	expect(selected.split('"name"').length - 1).toBe(1);
 	expect(selected).not.toContain(newer?.trim());
+});
+
+async function expectEmphasis(
+	content: Locator,
+	surface: Locator,
+	text: string,
+) {
+	const mark = content.locator("mark");
+	await expect(mark).toHaveText(text);
+
+	const background = (element: Locator) =>
+		element.evaluate((node) => getComputedStyle(node).backgroundColor);
+	expect(await background(mark)).not.toBe(await background(surface));
+}
+
+test("picks out the part of a replaced line that changed", async ({ page }) => {
+	await open(page, MANIFEST);
+
+	const removed = lines(page, "removed").first();
+	const added = lines(page, "added").first();
+	await expectEmphasis(removed.locator("td").last(), removed, "4.18.2");
+	await expectEmphasis(added.locator("td").last(), added, "5.1.0");
+});
+
+test("picks out the changed part on both sides of the split view", async ({
+	page,
+}) => {
+	await page.addInitScript(
+		(key) => localStorage.setItem(key, "true"),
+		SPLIT_VIEW.key,
+	);
+	await open(page, MANIFEST);
+
+	const replaced = page
+		.getByTestId("diff-view")
+		.locator('tr[data-left-type="removed"][data-right-type="added"]')
+		.first();
+	const half = (side: string) => replaced.locator(`td[data-side="${side}"]`);
+	await expectEmphasis(
+		replaced.getByTestId("left-content"),
+		half("left"),
+		"4.18.2",
+	);
+	await expectEmphasis(
+		replaced.getByTestId("right-content"),
+		half("right"),
+		"5.1.0",
+	);
+});
+
+async function expectRemovedEmphasisUnder(
+	browser: Browser,
+	theme: string,
+	colour: string,
+) {
+	const page = await browser.newPage();
+	await page.addInitScript(
+		({ key, value }) => localStorage.setItem(key, value),
+		{ key: HIGHLIGHT_THEME.key, value: theme },
+	);
+	await open(page, MANIFEST);
+
+	await expect(lines(page, "removed").first().locator("mark")).toHaveCSS(
+		"background-color",
+		colour,
+	);
+	await page.close();
+}
+
+test("takes the emphasis colour from the syntax theme's own diff colours", async ({
+	browser,
+}) => {
+	const todaysRemovedEmphasis = "rgb(113, 50, 57)";
+	await expectRemovedEmphasisUnder(browser, "monokai", todaysRemovedEmphasis);
+	await expectRemovedEmphasisUnder(browser, "atom-one-dark", "rgb(99, 58, 62)");
 });
 
 const treeRow = (page: Page, path: string) =>

@@ -1,0 +1,28 @@
+name: Main source
+
+# `main` is released by merging `development` into it and nothing else. GitHub
+# has no branch rule for "only from this branch", so this check does it: it is
+# a required status check on `main`, and it fails for a pull request from any
+# other branch or from a fork. `edited` re-runs it when a PR's base is changed
+# to `main`.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+permissions: {}
+
+jobs:
+  source:
+    name: main source is development
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only development may merge into main
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ] || [ "$HEAD_REF" != development ]; then
+            echo "::error::main only takes merges from development. This pull request comes from $HEAD_REPO:$HEAD_REF; open it against development instead."
+            exit 1
+          fi

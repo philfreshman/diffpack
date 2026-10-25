@@ -36,7 +36,7 @@ export default defineConfig({
 				},
 			},
 		}),
-		viteReact(),
+		viteReact({ compiler: true }),
 	],
 	resolve: {
 		tsconfigPaths: true,

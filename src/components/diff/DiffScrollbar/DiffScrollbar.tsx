@@ -6,27 +6,39 @@ import type { RowSpan } from "#/lib/diff/scrollbar.ts";
 import styles from "./DiffScrollbar.module.css";
 
 export interface DiffScrollbarProps {
-	scroller: RefObject<HTMLElement | null>;
+	scrollerRef: RefObject<HTMLElement | null>;
 	file: Pick<FileModel, "markers">;
 	/** Every row's span, estimated until drawn; not just the rendered items. */
 	spans: readonly RowSpan[];
 }
 
-export function DiffScrollbar({ scroller, file, spans }: DiffScrollbarProps) {
-	const bar = useDiffScrollbar(scroller);
+export function DiffScrollbar({
+	scrollerRef,
+	file,
+	spans,
+}: DiffScrollbarProps) {
+	const {
+		thumb,
+		shown,
+		trackRef,
+		onTrackMouseDown,
+		onThumbMouseDown,
+		onTrackMouseEnter,
+		onTrackMouseLeave,
+	} = useDiffScrollbar(scrollerRef);
 	const markers = useMemo(() => file.markers(spans), [file, spans]);
 
 	return (
 		<div
 			className={styles.track}
-			ref={bar.track}
+			ref={trackRef}
 			data-testid="diff-scrollbar"
-			data-shown={bar.thumb ? bar.shown : false}
+			data-shown={thumb ? shown : false}
 			aria-hidden="true"
-			hidden={!bar.thumb}
-			onMouseDown={bar.onTrackMouseDown}
-			onMouseEnter={bar.onTrackMouseEnter}
-			onMouseLeave={bar.onTrackMouseLeave}
+			hidden={!thumb}
+			onMouseDown={onTrackMouseDown}
+			onMouseEnter={onTrackMouseEnter}
+			onMouseLeave={onTrackMouseLeave}
 		>
 			{markers.map((marker) => (
 				<span
@@ -40,13 +52,13 @@ export function DiffScrollbar({ scroller, file, spans }: DiffScrollbarProps) {
 					}}
 				/>
 			))}
-			{bar.thumb ? (
+			{thumb ? (
 				<div
 					aria-hidden="true"
 					className={styles.thumb}
 					data-testid="diff-scrollbar-thumb"
-					onMouseDown={bar.onThumbMouseDown}
-					style={{ top: bar.thumb.top, height: bar.thumb.height }}
+					onMouseDown={onThumbMouseDown}
+					style={{ top: thumb.top, height: thumb.height }}
 				/>
 			) : null}
 		</div>

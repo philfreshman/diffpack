@@ -5,13 +5,16 @@ import type {
 	VirtualRowProps,
 } from "#/components/diff/virtualRow.ts";
 import { highlightLine } from "#/lib/diff/highlight.ts";
+import type { TextRange } from "#/lib/diff/inlineChange.ts";
 import { anchorOfLine, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
 import styles from "./SplitDiffRow.module.css";
 
 export function SplitDiffRow({
 	left,
+	leftChange,
 	right,
+	rightChange,
 	language,
 	selected,
 	onSelectLine,
@@ -21,7 +24,9 @@ export function SplitDiffRow({
 }: VirtualRowProps &
 	SelectableRowProps & {
 		left: SplitSide;
+		leftChange: TextRange | undefined;
 		right: SplitSide;
+		rightChange: TextRange | undefined;
 		language: string | null;
 	}) {
 	return (
@@ -36,12 +41,14 @@ export function SplitDiffRow({
 		>
 			<Half
 				cell={left}
+				change={leftChange}
 				language={language}
 				onSelectLine={onSelectLine}
 				side="left"
 			/>
 			<Half
 				cell={right}
+				change={rightChange}
 				language={language}
 				onSelectLine={onSelectLine}
 				side="right"
@@ -52,11 +59,13 @@ export function SplitDiffRow({
 
 function Half({
 	cell,
+	change,
 	language,
 	onSelectLine,
 	side,
 }: {
 	cell: SplitSide;
+	change: TextRange | undefined;
 	language: string | null;
 	onSelectLine(anchor: LineAnchor): void;
 	side: "left" | "right";
@@ -83,9 +92,11 @@ function Half({
 				data-change={line?.type}
 				data-testid={`${side}-content`}
 				// Escaped by the highlighter either way; see `DiffRow`.
-				// biome-ignore lint/security/noDangerouslySetInnerHtml: the highlighter's output is markup by definition
+				// oxlint-disable-next-line react/no-danger -- the highlighter's output is markup by definition
 				dangerouslySetInnerHTML={{
-					__html: line ? highlightLine(line.content, language) || " " : "",
+					__html: line
+						? highlightLine(line.content, language, change) || " "
+						: "",
 				}}
 			/>
 		</td>

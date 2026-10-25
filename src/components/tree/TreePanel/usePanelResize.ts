@@ -4,8 +4,8 @@ import { sidebar } from "#/lib/tree/sidebar.ts";
 
 /** The sidebar applies `dragFrame` to the page; the content's fade is done here, on the panel's own element. */
 export function usePanelResize(
-	panel: RefObject<HTMLElement | null>,
-	content: RefObject<HTMLElement | null>,
+	panelRef: RefObject<HTMLElement | null>,
+	contentRef: RefObject<HTMLElement | null>,
 ) {
 	const width = useSyncExternalStore(
 		sidebar.subscribe,
@@ -14,17 +14,17 @@ export function usePanelResize(
 	);
 
 	function fade(opacity: number, blur: number) {
-		const style = content.current?.style;
-		if (!style) return;
-		style.opacity = opacity < 1 ? String(opacity) : "";
-		style.filter = blur > 0 ? `blur(${blur}px)` : "";
+		const element = contentRef.current;
+		if (!element) return;
+		element.style.opacity = opacity < 1 ? String(opacity) : "";
+		element.style.filter = blur > 0 ? `blur(${blur}px)` : "";
 	}
 
 	function startResize(event: React.PointerEvent<HTMLElement>) {
 		event.preventDefault();
 		const startX = event.clientX;
 		const startWidth =
-			panel.current?.getBoundingClientRect().width ?? sidebar.width();
+			panelRef.current?.getBoundingClientRect().width ?? sidebar.width();
 		let edge = startWidth;
 		sidebar.startDrag();
 

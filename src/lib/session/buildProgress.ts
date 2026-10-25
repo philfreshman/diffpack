@@ -33,6 +33,12 @@ export const FETCHING: BuildProgress = {
 	diff: WAITING,
 };
 
+export const BUILT: BuildProgress = {
+	from: DONE,
+	to: DONE,
+	diff: DONE,
+};
+
 function failed(failure: Failure): StepProgress {
 	return { state: "failed", failure };
 }
