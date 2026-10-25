@@ -57,6 +57,7 @@
 	--color-muted: var(--gray-light-900);
 	--color-border: var(--gray-light-200);
 	--color-surface: var(--gray-light-bg-200);
+	--color-summary-surface: var(--color-background);
 	--color-surface-hover: rgb(0 0 0 / 0.05);
 	--color-input: #ffffff;
 	--color-surface-veil: rgb(255 255 255 / 0.65);
@@ -154,6 +155,7 @@
 	--color-muted: var(--gray-dark-900);
 	--color-border: var(--gray-dark-200);
 	--color-surface: var(--gray-dark-100);
+	--color-summary-surface: var(--color-surface);
 	--color-surface-hover: rgb(255 255 255 / 0.06);
 	--color-input: #141414;
 	--color-surface-veil: rgb(10 10 10 / 0.4);
