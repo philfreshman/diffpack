@@ -58,12 +58,12 @@ export function DiffProgress({
 			label: `Fetching ${packageName} ${to}`,
 			state: progress.to.state,
 		},
-		{ id: "diff", label: "Diffing", state: progress.diff.state },
 		{
 			id: "osv",
 			label: `Querying OSV.dev for ${packageName} ${from}, ${to}`,
 			state: OSV_STATES[osv],
 		},
+		{ id: "diff", label: "Diffing", state: progress.diff.state },
 	];
 	const failures = failuresOf(progress);
 	const stepCount = { "--step-count": steps.length } as CSSProperties;
