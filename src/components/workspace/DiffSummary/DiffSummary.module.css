@@ -10,11 +10,8 @@
 }
 
 .overview {
-	flex: none;
-}
-
-.overviewBody {
 	display: flex;
+	flex: none;
 	flex-direction: column;
 	gap: var(--space-3);
 	padding: var(--space-4);

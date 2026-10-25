@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
-import { Panel, PanelHeading } from "#/components/ui/Panel/Panel.tsx";
+import { Panel } from "#/components/ui/Panel/Panel.tsx";
 import type { TreeSummary } from "#/lib/session/tree.ts";
 import { ViewportCenter } from "../ViewportCenter/ViewportCenter.tsx";
 import styles from "./DiffSummary.module.css";
 
 const LINE_COUNT = new Intl.NumberFormat("en-US");
-const HEADING_ID = "diff-summary-heading";
 
 interface DiffSummaryProps {
 	summary: TreeSummary;
@@ -18,32 +17,29 @@ export function DiffSummary({ summary, children }: DiffSummaryProps) {
 	return (
 		<ViewportCenter>
 			<Panel className={styles.box} data-testid="diff-summary">
-				<section className={styles.overview} aria-labelledby={HEADING_ID}>
-					<PanelHeading id={HEADING_ID}>Changes</PanelHeading>
-					<div className={styles.overviewBody}>
-						<dl className={styles.stats}>
-							<LineStat
-								label="Lines added"
-								value={`+${LINE_COUNT.format(addedLines)}`}
-								kind="added"
-							/>
-							<LineStat
-								label="Lines removed"
-								value={`-${LINE_COUNT.format(removedLines)}`}
-								kind="removed"
-							/>
-						</dl>
-						<ChangeBar added={addedLines} removed={removedLines} />
-						<p className={styles.files} data-testid="summary-files">
-							{describeFileCount(summary)}
-						</p>
-						<p className={styles.hint}>
-							{changedCount > 0
-								? "Pick a file in the tree to see its diff."
-								: "Nothing changed between these versions."}
-						</p>
-					</div>
-				</section>
+				<div className={styles.overview}>
+					<dl className={styles.stats}>
+						<LineStat
+							label="Lines added"
+							value={`+${LINE_COUNT.format(addedLines)}`}
+							kind="added"
+						/>
+						<LineStat
+							label="Lines removed"
+							value={`-${LINE_COUNT.format(removedLines)}`}
+							kind="removed"
+						/>
+					</dl>
+					<ChangeBar added={addedLines} removed={removedLines} />
+					<p className={styles.files} data-testid="summary-files">
+						{describeFileCount(summary)}
+					</p>
+					<p className={styles.hint}>
+						{changedCount > 0
+							? "Pick a file in the tree to see its diff."
+							: "Nothing changed between these versions."}
+					</p>
+				</div>
 				{children}
 			</Panel>
 		</ViewportCenter>
