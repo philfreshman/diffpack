@@ -1,0 +1,20 @@
+@keyframes rise-in {
+	from {
+		opacity: 0;
+		transform: translateY(-2px);
+	}
+}
+
+/* Longhands, not the `animation` shorthand, so an inline delay survives. */
+.riseIn {
+	animation-name: rise-in;
+	animation-duration: 50ms;
+	animation-timing-function: ease-out;
+	animation-fill-mode: backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.riseIn {
+		animation-name: none;
+	}
+}

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Failure } from "#/lib/failure/failure.ts";
 import {
 	archiveFetched,
+	BUILT,
 	type BuildProgress,
 	buildFailed,
 	FETCHING,
@@ -31,6 +32,11 @@ describe("a build in progress", () => {
 	test("diffs only once the second archive is in", () => {
 		expect(states(fromFetched)).toEqual(["done", "running", "waiting"]);
 		expect(states(bothFetched)).toEqual(["done", "done", "running"]);
+	});
+
+	test("is built once both archives are in and diffed", () => {
+		expect(states(BUILT)).toEqual(["done", "done", "done"]);
+		expect(failuresOf(BUILT)).toEqual([]);
 	});
 
 	test("marks only the archive that failed", () => {

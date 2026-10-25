@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Route, test } from "@playwright/test";
 
 const LODASH = "/npm/lodash/4.17.20/4.17.21";
 const NODE = "/npm/node/26.6.0/26.7.0";
@@ -54,6 +54,54 @@ test("the loading box names the query to OSV.dev", async ({ page }) => {
 	await expect(
 		page.getByTestId("diff-progress").getByRole("listitem"),
 	).toHaveCount(4);
+});
+
+test("the loading box diffs third and asks OSV.dev last, set apart", async ({
+	page,
+}) => {
+	await page.goto(LODASH);
+
+	const steps = page.getByTestId("diff-progress").getByRole("listitem");
+	await expect(steps).toHaveText([
+		"Fetching lodash 4.17.20",
+		"Fetching lodash 4.17.21",
+		"Diffing packages",
+		"Querying OSV.dev for lodash 4.17.20, 4.17.21",
+	]);
+
+	const gapAbove = async (index: number) => {
+		const [above, below] = await Promise.all([
+			steps.nth(index - 1).boundingBox(),
+			steps.nth(index).boundingBox(),
+		]);
+		if (!above || !below) throw new Error("a loading step is not on screen");
+		return below.y - (above.y + above.height);
+	};
+	expect(await gapAbove(3)).toBeGreaterThan(await gapAbove(2));
+});
+
+test("the summary waits until OSV.dev has answered", async ({ page }) => {
+	const heldQueries: Route[] = [];
+	await page.route("https://api.osv.dev/**", (route) => {
+		heldQueries.push(route);
+	});
+	await page.goto(NODE);
+	await ready(page);
+
+	await expect(page.getByTestId("progress-diff")).toHaveAttribute(
+		"data-state",
+		"done",
+	);
+	await expect(page.getByTestId("progress-osv")).toHaveAttribute(
+		"data-state",
+		"running",
+	);
+	await expect(page.getByTestId("diff-summary")).toHaveCount(0);
+
+	await Promise.all(heldQueries.map((route) => route.continue()));
+
+	await expect(report(page)).toHaveAttribute("data-status", "ready");
+	await expect(page.getByTestId("diff-progress")).toHaveCount(0);
 });
 
 test("the summary names the advisories an update fixes and those it keeps", async ({
