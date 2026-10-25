@@ -58,8 +58,8 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
-          pattern='^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([^)]+\))?!?: .+|Revert ".+")$'
-          bad=$(git log --no-merges --format='%h %s' "$BASE..$HEAD" | grep -vE "^[0-9a-f]+ $pattern" || true)
+          pattern='((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([^)]+\))?!?: .+|Revert ".+")'
+          bad=$(git log --no-merges --format='%h %s' "$BASE..$HEAD" | grep -vE "^[0-9a-f]+ $pattern$" || true)
           if [ -n "$bad" ]; then
             echo "::error::These commits are not Conventional Commits (type(scope): description), see CONTRIBUTING.md:"
             echo "$bad"
