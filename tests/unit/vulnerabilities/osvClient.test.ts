@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createOsvClient } from "#/lib/vulnerabilities/osvClient.ts";
+import { createOsvClient, osvClient } from "#/lib/vulnerabilities/osvClient.ts";
 import { json, stubFetch } from "../registries/fetchStub.ts";
 import jinjaGithub from "./fixtures/GHSA-462w-v97r-4m45.json" with { type: "json" };
 import goHtml from "./fixtures/GO-2023-1988.json" with { type: "json" };
@@ -118,5 +118,13 @@ describe("the OSV.dev client", () => {
 		await expect(
 			createOsvClient(fetcher).query("npm", "x", "1"),
 		).rejects.toThrow("OSV.dev");
+	});
+});
+
+describe("the app's OSV.dev client", () => {
+	test("gives up at once when the lookup was cancelled before it started", async () => {
+		await expect(
+			osvClient.query("npm", "left-pad", "1.3.0", AbortSignal.abort()),
+		).rejects.toMatchObject({ name: "AbortError" });
 	});
 });

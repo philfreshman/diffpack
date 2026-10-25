@@ -1,5 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import { createRng, FIELD_HALF, generateMarks } from "#/lib/starfield/field.ts";
+import {
+	createRng,
+	FIELD_HALF,
+	FIELD_SEED,
+	generateMarks,
+	MARK_COUNT,
+} from "#/lib/starfield/field.ts";
+
+describe("the landing page's field", () => {
+	test("draws the same MARK_COUNT marks on every visit", () => {
+		const marks = generateMarks(MARK_COUNT, createRng(FIELD_SEED));
+
+		expect(marks).toHaveLength(MARK_COUNT);
+		expect(marks).toEqual(generateMarks(MARK_COUNT, createRng(FIELD_SEED)));
+	});
+});
 
 describe("generateMarks", () => {
 	test("produces the same field for the same seed", () => {
