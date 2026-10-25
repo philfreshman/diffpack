@@ -155,3 +155,9 @@ export function highlightAppearance(
 ): HighlightAppearance | null {
 	return HIGHLIGHT_THEMES.find((it) => it.value === value)?.appearance ?? null;
 }
+
+export function stylesheetFile({ asset }: HighlightTheme): string {
+	return asset.startsWith("/")
+		? `public${asset}`
+		: `node_modules/highlight.js/styles/${asset}`;
+}

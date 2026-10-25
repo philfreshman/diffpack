@@ -298,7 +298,7 @@ function FilePane({
 						showSigns={showSigns}
 						anchor={lineLink.anchorIn(shown.path)}
 						onSelectLine={lineLink.select}
-						syntax={highlight.appearance}
+						highlightTheme={highlight.theme}
 					/>
 					<VulnerabilityNotice
 						path={shown.path}

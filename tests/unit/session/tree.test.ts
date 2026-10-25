@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	changedFiles,
 	countChangedFiles,
 	findFile,
 	flattenFiles,
@@ -69,6 +70,35 @@ describe("findFile", () => {
 
 	test("does not find a path this comparison has never had", () => {
 		expect(findFile(TREE, "lib/gone.js")).toBeUndefined();
+	});
+});
+
+describe("changedFiles", () => {
+	const tree: DiffFileEntry = {
+		path: "",
+		type: "directory",
+		status: "modified",
+		children: [
+			{ path: "README.md", type: "file", status: "unchanged" },
+			{ path: "package.json", type: "file", status: "modified" },
+			{
+				path: "src",
+				type: "directory",
+				status: "modified",
+				children: [{ path: "src/index.js", type: "file", status: "added" }],
+			},
+		],
+	};
+
+	test("lists the files that differ in tree order, and leaves out the rest", () => {
+		expect(changedFiles(tree).map((entry) => entry.path)).toEqual([
+			"package.json",
+			"src/index.js",
+		]);
+	});
+
+	test("a comparison with nothing in it lists nothing", () => {
+		expect(changedFiles(null)).toEqual([]);
 	});
 });
 

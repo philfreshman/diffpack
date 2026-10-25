@@ -1,0 +1,27 @@
+export const THEME_EMPHASIS: Readonly<
+	Record<string, { added: string; removed: string }>
+> = {
+	"base16/3024": { added: "#175a37", removed: "#712d2b" },
+	"atom-one-dark": { added: "#4c6545", removed: "#633a3e" },
+	"atom-one-light": { added: "#c8eccd", removed: "#f7c0be" },
+	default: { added: "#acf2bd", removed: "#edcacc" },
+	"base16/dracula": { added: "#556641", removed: "#65344a" },
+	"base16/github": { added: "#acf2bd", removed: "#fdb8c0" },
+	"github-dark": { added: "#46644c", removed: "#713239" },
+	"github-dark-dimmed": { added: "#47634c", removed: "#713239" },
+	material: { added: "#4b6042", removed: "#5e373b" },
+	monokai: { added: "#4a682b", removed: "#713239" },
+	"monokai-sublime": { added: "#336d43", removed: "#713239" },
+	"night-owl": { added: "#4c653c", removed: "#663536" },
+	nightfall: { added: "#2e653e", removed: "#69353d" },
+	nord: { added: "#364838", removed: "#633a3f" },
+	onedark: { added: "#3a5039", removed: "#633a3e" },
+	"stackoverflow-dark": { added: "#40664d", removed: "#5b373b" },
+	"stackoverflow-light": { added: "#acf2bd", removed: "#efbec0" },
+	"solarized-light": { added: "#acf2bd", removed: "#f6bfc0" },
+	"solarized-dark": { added: "#336d43", removed: "#722f30" },
+	"tokyo-night-dark": { added: "#48623d", removed: "#5f383e" },
+	vs: { added: "#acf2bd", removed: "#fdb8c0" },
+	vs2015: { added: "#336d43", removed: "#713239" },
+	"windows-95": { added: "#336d43", removed: "#693537" },
+};

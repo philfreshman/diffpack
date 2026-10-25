@@ -1,6 +1,4 @@
-import enginePackage from "@philfreshman/diffpack-engine/package.json" with {
-	type: "json",
-};
+import enginePackage from "@philfreshman/diffpack-engine/package.json" with { type: "json" };
 import {
 	type Comparison,
 	SIMILARITY_THRESHOLD,

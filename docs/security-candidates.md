@@ -8,8 +8,8 @@ gate, so nothing on this page has ever blocked a commit.
 That property cuts both ways — a backlog nobody gates on is a backlog nobody rereads. So the
 arrangement here is:
 
-- **The nine candidates standing on `development` are triaged below, once, with the evidence.**
-  A tenth row records a candidate that has since been closed.
+- **The ten candidates standing on `development` are triaged below, once, with the evidence.**
+  Row 10 records a candidate that has since been closed.
 - **CI fails a pull request that makes a *new* one runtime-reachable**
   (`fallow security --gate newly-reachable`, in the `fallow audit (PR gate)` job). There is
   deliberately no `--gate all` mode in fallow; gating on the whole backlog is the anti-feature it
@@ -32,20 +32,21 @@ Re-run the review with:
 bunx fallow security
 ```
 
-## Triage, as of fallow 3.21.0 on 2026-10-19
+## Triage, as of fallow 3.35.0 on 2026-10-25
 
 | # | Site | Category | Verdict |
 | :--- | :--- | :--- | :--- |
 | 1 | `src/lib/registries/http.ts:77` | SSRF (CWE-918) | **guarded — asserted by test** |
 | 2 | `src/lib/registries/http.ts:88` | SSRF (CWE-918) | **guarded — asserted by test** |
-| 3 | `src/components/diff/DiffRow/DiffRow.tsx:39` | XSS (CWE-79) | **guarded — asserted by test** |
-| 4 | `src/components/diff/SplitDiffRow/SplitDiffRow.tsx:57` | XSS (CWE-79) | **guarded — asserted by test** |
-| 5 | `src/routes/__root.tsx:87` | XSS (CWE-79) | **not attacker-reachable** |
-| 6 | `src/routes/__root.tsx:89` | XSS (CWE-79) | **not attacker-reachable** |
-| 7 | `src/routes/__root.tsx:91` | XSS (CWE-79) | **not attacker-reachable** |
-| 8 | `src/routes/__root.tsx:94` | XSS (CWE-79) | **not attacker-reachable** |
+| 3 | `src/components/diff/DiffRow/DiffRow.tsx:65` | XSS (CWE-79) | **guarded — asserted by test** |
+| 4 | `src/components/diff/SplitDiffRow/SplitDiffRow.tsx:96` | XSS (CWE-79) | **guarded — asserted by test** |
+| 5 | `src/routes/__root.tsx:84` | XSS (CWE-79) | **not attacker-reachable** |
+| 6 | `src/routes/__root.tsx:86` | XSS (CWE-79) | **not attacker-reachable** |
+| 7 | `src/routes/__root.tsx:88` | XSS (CWE-79) | **not attacker-reachable** |
+| 8 | `src/routes/__root.tsx:91` | XSS (CWE-79) | **not attacker-reachable** |
 | 9 | `scripts/check-cache-key-vectors.ts:10` | SSRF (CWE-918) | **not attacker-reachable — CI script** |
 | 10 | `scripts/check-wasm-types.mjs:35` | Path traversal (CWE-22) | **closed — file deleted** |
+| 11 | `src/lib/registries/http.ts:100` | SSRF (CWE-918) | **guarded — asserted by test** |
 
 ### 1–2 · Non-literal URL passed to `request()`
 
@@ -187,12 +188,21 @@ became of the candidate rather than wondering whether it was ever triaged.
 It was never reachable in any case: `file` was one of two module-level string constants, the script
 took no arguments and read no environment, and fallow put its blast radius at 0.
 
+### 11 · Non-literal URL passed to `request()` by `postJson`
+
+`postJson` is the third way into `request()`, beside `getJson` and `getText`, and it came with the
+OSV.dev lookup. Its one caller, `createOsvClient` (`src/lib/vulnerabilities/osvClient.ts`), passes
+the constant `https://api.osv.dev/v1/query`. The package name and version travel only in the JSON
+body, so no part of the URL comes from the package at all — a stronger position than rows 1–2,
+where the name is at least in the path. `tests/unit/vulnerabilities/osvClient.test.ts` drives the
+client with hostile names and fails unless every request lands on that one URL.
+
 ## Blind spots
 
-The report ends with a note that ~1600 call sites use patterns it could not resolve (dynamic
+The report ends with a note that ~2200 call sites use patterns it could not resolve (dynamic
 dispatch, computed members, aliased bindings). Almost all are dynamic dispatch, and the ten files
-with the most are all tests: eight Playwright specs in `tests/e2e/`, led by `file-tree.spec.ts`,
-and two unit tests. That is expected for test code and is not a finding. `bunx fallow security
+with the most are all tests: seven Playwright specs in `tests/e2e/`, led by `diff-view.spec.ts`,
+and three unit tests. That is expected for test code and is not a finding. `bunx fallow security
 --format json` lists those files under `unresolved_callee_diagnostics.top_files`;
 `bunx fallow security blind-spots` groups only a small sample of sites, so it is not the way to
 see where they are.

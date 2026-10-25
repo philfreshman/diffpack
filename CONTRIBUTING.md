@@ -132,6 +132,15 @@ change introduces** — unused exports, new complexity, duplication, and the res
 `.fallowrc.jsonc` enables. Findings already on `development` in files you did not touch do not
 block you.
 
+Two things fail every fallow run, whatever it changed. A source file fallow cannot parse fails it
+(`failOnParseError`), because otherwise that file silently drops out of every analysis. In CI, a run
+that analysed no source file at all fails too (`fail-on-empty-analysis`), because it would report
+zero of everything and look like a clean tree.
+
+Styling findings (`css-*`) are gated only through `fallow audit`, on the files a change touches:
+`fallow health --css` reports them but never fails, so the full-repo job cannot catch styling drift
+on files no PR touched. To check the whole tree by hand, run `bunx fallow health --css`.
+
 **`fallow audit` analyzes the working tree, not the index.** If you `git add` part of a file and
 leave the rest unstaged, the hook can still fail on the unstaged code, because it looks at what is
 on disk, not what `git commit` is about to record. This is inherent to how `--base` diffing works
@@ -148,14 +157,15 @@ Code commits are gated separately (`.claude/hooks/fallow-gate.sh`, installed via
 ### CI
 
 `.github/workflows/ci.yml` runs on every pull request to `development` and on every push to it, in
-four jobs — none of which needs a Rust toolchain, since the engine arrives prebuilt:
+five jobs — none of which needs a Rust toolchain, since the engine arrives prebuilt:
 
 | Job | Runs | Needs |
 | :--- | :--- | :--- |
+| `conventional commits` | fails on a commit in the PR whose message is not a Conventional Commit | git, PRs only |
 | `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge` | bun only |
 | `end-to-end` | `test:e2e` | bun + Chromium |
-| `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, SARIF upload | bun, PRs only |
-| `fallow (full repo)` | full-repo `fallow`, the type-aware pass, the health grade, SARIF upload | bun, pushes to `development` only |
+| `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, `check:coverage-gaps`, SARIF upload | bun, PRs only |
+| `fallow (full repo)` | full-repo `fallow`, the type-aware pass, `check:coverage-gaps`, the health grade, SARIF upload | bun, pushes to `development` only |
 
 The first two are split so a broken type or a failing unit test goes red in under a minute rather
 than behind a Chromium download and a production build. On an e2e failure the Playwright HTML
@@ -249,10 +259,11 @@ The same grade, with the per-threshold detail behind it, is also written to the 
 ## Development Workflow
 
 - **Branching**: Create a feature branch for your changes.
-- **Code Style**: We use [Biome](https://biomejs.dev) for linting and formatting — tabs, double
-  quotes. Run it with:
+- **Code Style**: We lint with [oxlint](https://oxc.rs/docs/guide/usage/linter) and format with
+  [oxfmt](https://oxc.rs/docs/guide/usage/formatter) — tabs, double quotes. `bun run lint` and
+  `bun run format` only check; to rewrite files in place, run:
   ```bash
-  bun run format
+  bunx oxfmt
   ```
 - **Styling**: CSS Modules, no Tailwind. A component that has a stylesheet lives in its own folder
   with it (`components/ui/Button/{Button.tsx,Button.module.css}`), so the pair moves as a unit.
@@ -288,3 +299,24 @@ Commit messages must follow this format:
 3. Submit a Pull Request with a clear description of your changes.
 4. CI must be green before it can merge. It runs the same commands the hook does, plus the tests —
    so anything that passes locally should pass there.
+
+## Releases
+
+`main` only takes pull requests from `development`, merged with a merge commit. The
+`main source is development` check (`.github/workflows/main-source.yml`) fails a PR to `main` from
+any other branch, and it is required on `main`.
+
+Each merge into `main` runs `.github/workflows/release.yml`, which uses
+[semantic-release](https://semantic-release.gitbook.io/) to turn the commit messages since the last
+`v*` tag into a version, a tag and a GitHub release with notes grouped by type:
+
+| Commits since the last release | Next version |
+| :--- | :--- |
+| a `feat!:` / `fix!:` or a `BREAKING CHANGE:` footer | major (`v2.0.0`) |
+| at least one `feat` | minor (`v1.1.0`) |
+| at least one `fix`, `perf` or `revert` | patch (`v1.0.1`) |
+| only `chore`, `docs`, `style`, `refactor`, `test`, `build`, `ci` | no release |
+
+This is why the commit types matter: a commit that does not follow the format is left out of the
+version and the notes. Nothing is committed back to `main`, so `version` in `package.json` stays as
+it is. The release settings live in `.releaserc.json`.

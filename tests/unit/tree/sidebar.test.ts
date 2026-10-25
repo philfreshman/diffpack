@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { TREE_COLLAPSED, TREE_WIDTH } from "#/lib/storage/settings.ts";
 import type { SettingStore } from "#/lib/storage/storedSetting.ts";
 import { dragFrame } from "#/lib/tree/gesture.ts";
-import { createSidebar } from "#/lib/tree/sidebar.ts";
+import { sidebar as appSidebar, createSidebar } from "#/lib/tree/sidebar.ts";
 import { memoryStore, REFUSING_STORE } from "../storage/storeStub.ts";
 
 function fakeDocument(): Document {
@@ -28,18 +28,18 @@ function fakeDocument(): Document {
 }
 
 function fakeClock() {
-	const waiting: Array<{ ms: number; then: () => void }> = [];
+	const waiting: Array<{ ms: number; fire: () => void }> = [];
 
 	return {
 		waiting,
-		after(ms: number, then: () => void) {
-			waiting.push({ ms, then });
+		after(ms: number, fire: () => void) {
+			waiting.push({ ms, fire });
 		},
 		elapse() {
-			for (const { then } of waiting.splice(0)) then();
+			for (const { fire } of waiting.splice(0)) fire();
 		},
 		elapseFirst() {
-			waiting.shift()?.then();
+			waiting.shift()?.fire();
 		},
 	};
 }
@@ -292,5 +292,12 @@ describe("snapping shut", () => {
 
 		clock.elapse();
 		expect(shut()).toBe(true);
+	});
+});
+
+describe("the app's sidebar", () => {
+	test("is created with no document and no storage, so the server can import it", () => {
+		expect(typeof document).toBe("undefined");
+		expect(appSidebar.width()).toBe(TREE_WIDTH.fallback);
 	});
 });

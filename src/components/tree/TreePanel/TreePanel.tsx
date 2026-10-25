@@ -75,7 +75,6 @@ export function TreePanel({
 				/>
 			</div>
 			<div className={styles.edge}>
-				{/* biome-ignore lint/a11y/useSemanticElements: an <hr> cannot be dragged */}
 				<div
 					className={styles.resizer}
 					role="separator"

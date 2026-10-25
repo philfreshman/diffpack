@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	scrollForDrag,
 	scrollForTrackClick,
@@ -13,7 +13,7 @@ export interface DiffScrollbar {
 	/** `null` while the file fits on screen. */
 	thumb: Thumb | null;
 	shown: boolean;
-	track: RefObject<HTMLDivElement | null>;
+	trackRef: RefObject<HTMLDivElement | null>;
 	onTrackMouseDown(event: React.MouseEvent): void;
 	onThumbMouseDown(event: React.MouseEvent): void;
 	onTrackMouseEnter(): void;
@@ -22,31 +22,28 @@ export interface DiffScrollbar {
 
 /** Drives `scrollTop` only; the thumb is always drawn from the scroll position. */
 export function useDiffScrollbar(
-	scroller: RefObject<HTMLElement | null>,
+	scrollerRef: RefObject<HTMLElement | null>,
 ): DiffScrollbar {
 	const [thumb, setThumb] = useState<Thumb | null>(null);
 	const [shown, setShown] = useState(false);
-	const track = useRef<HTMLDivElement>(null);
+	const trackRef = useRef<HTMLDivElement>(null);
 
-	const held = useRef({ hovering: false, dragging: false });
-	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const heldRef = useRef({ hovering: false, dragging: false });
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const hideLater = useCallback(() => {
-		if (timer.current) clearTimeout(timer.current);
-		timer.current = setTimeout(() => {
-			if (held.current.hovering || held.current.dragging) return;
+	function hideLater() {
+		if (timerRef.current) clearTimeout(timerRef.current);
+		timerRef.current = setTimeout(() => {
+			if (heldRef.current.hovering || heldRef.current.dragging) return;
 			setShown(false);
 		}, HIDE_DELAY);
-	}, []);
-
-	const measure = useCallback(() => {
-		if (scroller.current) setThumb(thumbMetrics(scroller.current));
-	}, [scroller]);
+	}
 
 	useEffect(() => {
-		const element = scroller.current;
+		const element = scrollerRef.current;
 		if (!element) return;
 
+		const measure = () => setThumb(thumbMetrics(element));
 		const onScroll = () => {
 			measure();
 			setShown(true);
@@ -54,7 +51,6 @@ export function useDiffScrollbar(
 		};
 
 		element.addEventListener("scroll", onScroll, { passive: true });
-		measure();
 
 		// Folds, resizes and remeasured rows change the height without a scroll.
 		const observer = new ResizeObserver(measure);
@@ -66,77 +62,68 @@ export function useDiffScrollbar(
 			element.removeEventListener("scroll", onScroll);
 			observer.disconnect();
 		};
-	}, [scroller, measure, hideLater]);
+	}, [scrollerRef]);
 
 	useEffect(
 		() => () => {
-			if (timer.current) clearTimeout(timer.current);
+			if (timerRef.current) clearTimeout(timerRef.current);
 		},
 		[],
 	);
 
-	const onThumbMouseDown = useCallback(
-		(event: React.MouseEvent) => {
-			const element = scroller.current;
-			if (!element) return;
-			// Otherwise the drag selects the file's text.
-			event.preventDefault();
-			event.stopPropagation();
+	function onThumbMouseDown(event: React.MouseEvent) {
+		const element = scrollerRef.current;
+		if (!element) return;
+		// Otherwise the drag selects the file's text.
+		event.preventDefault();
+		event.stopPropagation();
 
-			const startY = event.clientY;
-			const startScrollTop = element.scrollTop;
-			held.current.dragging = true;
+		const startY = event.clientY;
+		const startScrollTop = element.scrollTop;
+		heldRef.current.dragging = true;
 
-			const onMove = (move: MouseEvent) => {
-				element.scrollTop = scrollForDrag(
-					element,
-					startScrollTop,
-					move.clientY - startY,
-				);
-			};
-
-			const onUp = () => {
-				held.current.dragging = false;
-				document.removeEventListener("mousemove", onMove);
-				document.removeEventListener("mouseup", onUp);
-				hideLater();
-			};
-
-			document.addEventListener("mousemove", onMove);
-			document.addEventListener("mouseup", onUp);
-		},
-		[scroller, hideLater],
-	);
-
-	const onTrackMouseDown = useCallback(
-		(event: React.MouseEvent) => {
-			const element = scroller.current;
-			const rect = track.current?.getBoundingClientRect();
-			if (!element || !rect) return;
-
-			element.scrollTop = scrollForTrackClick(
+		const onMove = (move: MouseEvent) => {
+			element.scrollTop = scrollForDrag(
 				element,
-				event.clientY - rect.top,
+				startScrollTop,
+				move.clientY - startY,
 			);
-		},
-		[scroller],
-	);
+		};
 
-	const onTrackMouseEnter = useCallback(() => {
-		held.current.hovering = true;
+		const onUp = () => {
+			heldRef.current.dragging = false;
+			document.removeEventListener("mousemove", onMove);
+			document.removeEventListener("mouseup", onUp);
+			hideLater();
+		};
+
+		document.addEventListener("mousemove", onMove);
+		document.addEventListener("mouseup", onUp);
+	}
+
+	function onTrackMouseDown(event: React.MouseEvent) {
+		const element = scrollerRef.current;
+		const rect = trackRef.current?.getBoundingClientRect();
+		if (!element || !rect) return;
+
+		element.scrollTop = scrollForTrackClick(element, event.clientY - rect.top);
+	}
+
+	function onTrackMouseEnter() {
+		heldRef.current.hovering = true;
 		setShown(true);
-		if (timer.current) clearTimeout(timer.current);
-	}, []);
+		if (timerRef.current) clearTimeout(timerRef.current);
+	}
 
-	const onTrackMouseLeave = useCallback(() => {
-		held.current.hovering = false;
+	function onTrackMouseLeave() {
+		heldRef.current.hovering = false;
 		hideLater();
-	}, [hideLater]);
+	}
 
 	return {
 		thumb,
 		shown,
-		track,
+		trackRef,
 		onTrackMouseDown,
 		onThumbMouseDown,
 		onTrackMouseEnter,

@@ -7,9 +7,11 @@ import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx
 import { SplitDiffRow } from "#/components/diff/SplitDiffRow/SplitDiffRow.tsx";
 import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import { gutterChars } from "#/lib/diff/gutter.ts";
-import type { HighlightAppearance } from "#/lib/diff/highlightThemes.ts";
+import { highlightAppearance } from "#/lib/diff/highlightThemes.ts";
 import { isAnchoredRow, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
+import type { TextRange } from "#/lib/diff/inlineChange.ts";
 import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
+import { emphasisStyle } from "#/lib/diff/themeEmphasis.ts";
 import styles from "./DiffView.module.css";
 import { useAnchorSeek } from "./useAnchorSeek.ts";
 import { useCloseOnEscape } from "./useCloseOnEscape.ts";
@@ -24,7 +26,7 @@ export interface DiffViewProps {
 	anchor: LineAnchor | null;
 	onSelectLine(anchor: LineAnchor): void;
 	/** `null` until the stored theme has been read. */
-	syntax: HighlightAppearance | null;
+	highlightTheme: string | null;
 }
 
 /** Must match `--diff-line-height` in pixels. */
@@ -36,11 +38,14 @@ export function DiffView({
 	showSigns,
 	anchor,
 	onSelectLine,
-	syntax,
+	highlightTheme,
 }: DiffViewProps) {
+	"use no memo";
+
 	const { path, lines, language, rows, changes } = file;
 
 	const scroller = useRef<HTMLDivElement>(null);
+	// oxlint-disable-next-line react/incompatible-library -- skipped by "use no memo": the virtualizer changes without a new identity
 	const virtualizer = useVirtualizer({
 		count: rows.length,
 		getScrollElement: () => scroller.current,
@@ -69,8 +74,6 @@ export function DiffView({
 
 	useAnchorSeek(file, anchor, virtualizer);
 	const at = useScrollMemory(file.scrollTop, file.rememberScroll);
-	const changeOf = (side: SplitSide) =>
-		side ? changes.get(side.index) : undefined;
 	useCloseOnEscape(onClose);
 	useOneSidedSelection(scroller);
 
@@ -85,10 +88,11 @@ export function DiffView({
 			data-layout={file.split ? "split" : "unified"}
 			data-signs={showSigns ? "" : undefined}
 			// Washes and gutters follow the syntax theme's ground, not the page theme (#139).
-			data-syntax={syntax ?? undefined}
+			data-syntax={highlightAppearance(highlightTheme) ?? undefined}
 			style={
 				{
 					"--gutter-width": `max(var(--gutter-min-width), calc(${gutterChars(lines)}ch + var(--space-4)))`,
+					...emphasisStyle(highlightTheme),
 				} as CSSProperties
 			}
 		>
@@ -122,9 +126,9 @@ export function DiffView({
 										key={item.key}
 										language={language}
 										left={row.left}
-										leftChange={changeOf(row.left)}
+										leftChange={changeOf(changes, row.left)}
 										right={row.right}
-										rightChange={changeOf(row.right)}
+										rightChange={changeOf(changes, row.right)}
 										{...placement}
 										{...selection}
 									/>
@@ -154,9 +158,16 @@ export function DiffView({
 			</div>
 			<DiffScrollbar
 				file={file}
-				scroller={scroller}
+				scrollerRef={scroller}
 				spans={virtualizer.measurementsCache}
 			/>
 		</div>
 	);
+}
+
+function changeOf(
+	changes: ReadonlyMap<number, TextRange>,
+	side: SplitSide,
+): TextRange | undefined {
+	return side ? changes.get(side.index) : undefined;
 }

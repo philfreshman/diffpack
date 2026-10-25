@@ -20,12 +20,14 @@ Bun only. No Rust toolchain: the engine arrives prebuilt as `@philfreshman/diffp
 bun install
 bun run dev              # Vite on :4321
 bun run typecheck        # tsc --noEmit
-bun run lint             # biome lint .
-bun run format           # biome format . (tabs, double quotes)
+bun run lint             # oxlint, unused disable comments fail too
+bun run format           # oxfmt --check (tabs, double quotes); bunx oxfmt writes
 bun run test             # unit: bun test tests/unit, no network, ~1s
 bun run test:e2e         # Playwright: production build + real registries, slow and online
 bun run generate-routes  # tsr generate, after adding or renaming a file in src/routes/
+bun run generate-emphasis # rewrite themeEmphasis.gen.ts, after a highlight.js upgrade or a theme change
 bun run badge            # regenerate .github/badges/fallow-health.svg when the score moves
+bun run check:coverage-gaps # fail if a file or export in src/lib has no unit test importing it
 ```
 
 - One unit test: `bun test tests/unit/session/diffSession.test.ts` (add `-t "<name>"` to narrow).
@@ -37,7 +39,8 @@ bun run badge            # regenerate .github/badges/fallow-health.svg when the 
   `https://diffpack-proxy.philipswiezak.workers.dev`, and so does every e2e run.
 - The pre-commit hook runs typecheck, lint, format, test, then `fallow audit` against the branch's
   upstream. Run those before committing rather than finding out from the hook.
-- `src/routeTree.gen.ts` is generated and committed. Do not edit it by hand.
+- `src/routeTree.gen.ts` and `src/lib/diff/themeEmphasis.gen.ts` are generated and committed. Do
+  not edit them by hand; `themeEmphasis.test.ts` fails when the second is out of date.
 
 ## Layout and boundaries
 
@@ -267,7 +270,10 @@ Supporting modules: `highlight.ts` (cached per line, and a line over 10 000 char
 plain), `inlineChange.ts` (the part of a changed line that differs from its partner: the line
 minus the start and end the two share, for the pairs `pairSplitRows` sets opposite each other,
 worked out once per file in `parseFile`), `markRange.ts` (wraps that part in `<mark>` inside
-highlighted HTML, closing and reopening it around highlight.js's `<span>`s), `highlightThemes.ts` (the offered themes; their stylesheets are resolved in
+highlighted HTML, closing and reopening it around highlight.js's `<span>`s), `themeEmphasis.ts`
+(each syntax theme's `<mark>` colours: its `.hljs-addition` / `.hljs-deletion` colour read by
+`themeColours.ts`, mixed over the row by `emphasis.ts` only as far as no token ends up less readable
+than on the default mark, set on the viewer as `--color-*-emphasis`), `highlightThemes.ts` (the offered themes; their stylesheets are resolved in
 `highlightStylesheet.ts` from `highlight.js/styles/`, or `public/` for `nightfall.css`),
 `viewMemory.ts` (per-file folds and scroll position within a comparison), `scrollbar.ts`
 (thumb geometry) and `gutter.ts`. The tree panel's logic is in `src/lib/tree/`. Rows are keyed by
@@ -302,8 +308,16 @@ is `data-tree-collapsed`, both on `<html>` and moved without a render (`src/lib/
   until it does not. The why behind a change goes in the commit message or the PR description.
 - Existing comments, the doc comments in `src/lib/` among them: keep them true when you change the
   code they describe, and delete them once the code makes them redundant.
-- The one exception is a reason a tool requires: the explanation after a `biome-ignore` or
-  `fallow-ignore`, and the comment beside an entry in `.fallowrc.jsonc` (see `AGENTS.md`).
+- The one exception is a reason a tool requires: the explanation after an
+  `oxlint-disable-next-line` or `fallow-ignore`, and the comment beside an entry in
+  `.fallowrc.jsonc` (see `AGENTS.md`).
+- React Compiler memoizes components and hooks at build time (`viteReact({ compiler: true })`, the
+  experimental Rust port `oxc-transform-react`). Do not add `useMemo`, `useCallback` or `memo` by
+  hand. Never write `ref.current` during render: keep the latest callback with `useEffectEvent`,
+  and name a ref you pass around `…Ref` so the compiler knows what it is. Reset state from props
+  during render (`useStateResetOn`), not in an effect, and learn about hydration from
+  `useHydrated`. oxlint's React Compiler rules flag what the compiler cannot handle. `DiffView`
+  opts out with `"use no memo"`, because TanStack Virtual's virtualizer cannot be memoized.
 
 ## CSS conventions
 
@@ -334,6 +348,15 @@ server function).
   that matches ends matching, which is why `/assets/**.wasm` repeats the immutable cache header.
 - **Only `main` deploys.** Work goes to `development` through PRs, and CI runs there. `main` is
   released by merging `development` into it. There are no preview deployments.
+- **`main` takes pull requests from `development` only, as a merge commit.** The required
+  `main source is development` check (`main-source.yml`) fails any other head branch, and the
+  ruleset on `main` allows no squash or rebase.
+- **Every push to `main` is a release.** `release.yml` runs semantic-release (`.releaserc.json`):
+  the Conventional Commits since the last `v*` tag pick the next version (`fix` patch, `feat`
+  minor, `!` or `BREAKING CHANGE` major), and it pushes the tag and writes the GitHub release notes.
+  It commits nothing back, so `package.json`'s `version` is not the release number. A merge with
+  only `chore`, `docs`, `test` or `ci` commits releases nothing. The `conventional commits` CI job
+  rejects a PR commit that does not follow the format.
 - The `www` → apex redirect is a Vercel domain setting, not repo config.
 
 ## Working here

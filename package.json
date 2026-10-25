@@ -1,8 +1,8 @@
 {
 	"name": "diffpack",
+	"version": "0.0.1",
 	"private": true,
 	"type": "module",
-	"version": "0.0.1",
 	"imports": {
 		"#/*": "./src/*"
 	},
@@ -11,15 +11,17 @@
 		"build": "vite build",
 		"preview": "vite preview --port 4321 --strictPort",
 		"generate-routes": "tsr generate",
+		"generate-emphasis": "bun scripts/generate-theme-emphasis.ts",
 		"test": "bun test tests/unit",
 		"test:e2e": "playwright test",
 		"test:networked": "bun test tests/networked",
 		"screenshots": "bun scripts/capture-screenshots.mjs",
-		"lint": "biome lint .",
-		"format": "biome format .",
+		"lint": "oxlint --deny-warnings --report-unused-disable-directives",
+		"format": "oxfmt --check",
 		"typecheck": "tsc --noEmit",
 		"badge": "fallow health --format badge > .github/badges/fallow-health.svg",
 		"check:badge": "fallow health --format badge | diff -u .github/badges/fallow-health.svg -",
+		"check:coverage-gaps": "bun scripts/check-lib-coverage-gaps.ts",
 		"check:vectors": "bun scripts/check-cache-key-vectors.ts",
 		"check:vectors:development": "bun scripts/check-cache-key-vectors.ts development",
 		"fallow": "fallow",
@@ -41,7 +43,6 @@
 		"zod": "4.4.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.15",
 		"@playwright/test": "1.62.1",
 		"@tanstack/react-router-devtools": "1.167.1",
 		"@tanstack/router-cli": "1.167.40",
@@ -50,9 +51,12 @@
 		"@types/react-dom": "19.2.5",
 		"@types/three": "0.185.1",
 		"@vitejs/plugin-react": "6.1.2",
-		"fallow": "3.21.0",
+		"fallow": "3.35.0",
 		"husky": "9.1.7",
 		"nitro": "3.0.260610-beta",
+		"oxc-transform-react": "0.152.0",
+		"oxfmt": "0.74.0",
+		"oxlint": "1.89.0",
 		"typescript": "6.0.3",
 		"vite": "8.2.2"
 	}

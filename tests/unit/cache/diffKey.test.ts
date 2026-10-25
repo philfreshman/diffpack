@@ -5,9 +5,7 @@ import {
 	type DiffKey,
 	diffId,
 } from "#/lib/cache/diffKey.ts";
-import vectorFile from "../../../fixtures/cache-key-vectors.json" with {
-	type: "json",
-};
+import vectorFile from "../../../fixtures/cache-key-vectors.json" with { type: "json" };
 
 type VectorInput = (typeof vectorFile.vectors)[number]["input"];
 

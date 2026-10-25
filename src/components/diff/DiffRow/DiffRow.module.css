@@ -45,12 +45,12 @@
 	background: var(--color-removed-surface);
 }
 
-.row[data-type="added"] .gutter[data-filled] {
+.gutter[data-fill="added"] {
 	background: var(--color-added-gutter);
 	border-right-color: var(--color-added-gutter-border);
 }
 
-.row[data-type="removed"] .gutter[data-filled] {
+.gutter[data-fill="removed"] {
 	background: var(--color-removed-gutter);
 	border-right-color: var(--color-removed-gutter-border);
 }
