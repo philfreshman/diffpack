@@ -56,6 +56,14 @@ test("the loading box names the query to OSV.dev", async ({ page }) => {
 	).toHaveCount(4);
 });
 
+test("the loading box lists diffing as its last step", async ({ page }) => {
+	await page.goto(LODASH);
+
+	await expect(
+		page.getByTestId("diff-progress").getByRole("listitem").last(),
+	).toHaveText("Diffing");
+});
+
 test("the summary names the advisories an update fixes and those it keeps", async ({
 	page,
 }) => {
