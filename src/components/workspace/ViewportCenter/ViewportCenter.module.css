@@ -6,6 +6,7 @@
 	);
 
 	display: grid;
+	container-type: size;
 	flex: 1;
 	min-height: 0;
 	grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) var(--below-mirrored-half);
