@@ -165,7 +165,7 @@ five jobs — none of which needs a Rust toolchain, since the engine arrives pre
 | `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge` | bun only |
 | `end-to-end` | `test:e2e` | bun + Chromium |
 | `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, `check:coverage-gaps`, SARIF upload | bun, PRs only |
-| `fallow (full repo)` | full-repo `fallow`, the type-aware pass, `check:coverage-gaps`, the health grade, SARIF upload, baseline artifact | bun, pushes to `development` only |
+| `fallow (full repo)` | full-repo `fallow`, the type-aware pass, `check:coverage-gaps`, the health grade, SARIF upload | bun, pushes to `development` only |
 
 The first two are split so a broken type or a failing unit test goes red in under a minute rather
 than behind a Chromium download and a production build. On an e2e failure the Playwright HTML
@@ -177,13 +177,7 @@ not here.
 
 The two `fallow` jobs mirror the pre-commit hook's `--gate new-only` behavior on PRs and add a
 full-repo run on `development` itself, which catches drift on files no PR touched — something
-`--gate new-only` will never do, by design. That job also re-saves the per-analysis baseline files
-(`dead-code-baseline.json`, `health-baseline.json`, `dupes-baseline.json`) and publishes them as a
-`fallow-baselines` artifact on the run. It does not commit them back: `development` has required
-status checks, so a push from the job is rejected outright, and a `GITHUB_TOKEN` push would not
-trigger the checks that would clear it either. To refresh the checked-in baselines, download the
-artifact from the latest `development` run (or regenerate them locally with the same three
-`--save-baseline` commands) and open a normal PR. These jobs exist to catch a PR opened with
+`--gate new-only` will never do, by design. These jobs exist to catch a PR opened with
 `--no-verify`, which skips the local hook entirely.
 
 ### What `fallow` enforces here
@@ -250,8 +244,9 @@ service call — `fallow health --format badge` emits the image itself, not a sh
 can go stale, and something has to notice: `bun run check:badge` regenerates the badge and diffs it
 against the committed one, and it runs in the `typecheck, lint, unit tests` job.
 
-It cannot be refreshed by CI on your behalf — pushes from a workflow to `development` are rejected
-by its own required checks, which is the wall the baselines above already hit. So when a change
+It cannot be refreshed by CI on your behalf: `development` has required status checks, so a push
+from a workflow is rejected, and a `GITHUB_TOKEN` push would not trigger the checks that would
+clear it either. So when a change
 moves the score, the fix is one command:
 
 ```bash
