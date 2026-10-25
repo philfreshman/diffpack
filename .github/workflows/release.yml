@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# Two merges in quick succession must not race for the same version number.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: tag and publish a GitHub release
+    runs-on: ubuntu-latest
+    permissions:
+      # Pushes the tag and creates the release.
+      contents: write
+      # Opens an issue when a release fails.
+      issues: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # semantic-release reads every commit since the last tag.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Reads the Conventional Commits since the last `v*` tag, picks the next
+      # version from them (fix → patch, feat → minor, `!` or BREAKING CHANGE →
+      # major), then pushes the tag and writes the release notes. Nothing is
+      # committed back: `main` only takes pull requests from `development`.
+      # A merge holding only chore, docs, test or ci commits releases nothing.
+      # Configuration: `.releaserc.json`.
+      - uses: cycjimmy/semantic-release-action@v8
+        with:
+          semantic_version: 25
+          # Preset 10 needs conventional-changelog-writer 9, and
+          # semantic-release 25 still ships writer 8.
+          extra_plugins: conventional-changelog-conventionalcommits@9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
