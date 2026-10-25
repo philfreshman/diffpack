@@ -211,6 +211,19 @@ jobs:
           --gate newly-reachable
           --changed-since ${{ github.event.pull_request.base.sha }}
 
+      # Every module in `src/lib` gets a unit test (CLAUDE.md), and this holds
+      # it: a file or export there that no unit test imports fails the step and
+      # is listed in the run summary. Only `src/lib`, because Playwright covers
+      # the components without importing them, which fallow cannot see. For the
+      # same reason the `coverage-gaps` rule stays off: at `error` it would gate
+      # the whole tree. A file no unit test can run takes a reasoned
+      # `fallow-ignore-file coverage-gaps` instead.
+      - name: fallow coverage gaps (src/lib)
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          bun run --silent check:coverage-gaps | tee -a "$GITHUB_STEP_SUMMARY"
+
       - uses: fallow-rs/fallow@v3
         if: ${{ !cancelled() }}
         with:
@@ -287,6 +300,13 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit $status
+
+      # See `fallow coverage gaps (src/lib)` in the PR gate above.
+      - name: fallow coverage gaps (src/lib)
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          bun run --silent check:coverage-gaps | tee -a "$GITHUB_STEP_SUMMARY"
 
       # The same grade the README badge carries, rendered on the run page with
       # the per-threshold detail behind it. The badge is the number; this is

@@ -163,8 +163,8 @@ four jobs — none of which needs a Rust toolchain, since the engine arrives pre
 | :--- | :--- | :--- |
 | `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge` | bun only |
 | `end-to-end` | `test:e2e` | bun + Chromium |
-| `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, SARIF upload | bun, PRs only |
-| `fallow (full repo)` | full-repo `fallow`, the type-aware pass, the health grade, SARIF upload, baseline artifact | bun, pushes to `development` only |
+| `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, `check:coverage-gaps`, SARIF upload | bun, PRs only |
+| `fallow (full repo)` | full-repo `fallow`, the type-aware pass, `check:coverage-gaps`, the health grade, SARIF upload, baseline artifact | bun, pushes to `development` only |
 
 The first two are split so a broken type or a failing unit test goes red in under a minute rather
 than behind a Chromium download and a production build. On an e2e failure the Playwright HTML
