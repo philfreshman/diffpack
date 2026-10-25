@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Route, test } from "@playwright/test";
 
 const LODASH = "/npm/lodash/4.17.20/4.17.21";
 const NODE = "/npm/node/26.6.0/26.7.0";
@@ -62,6 +62,30 @@ test("the loading box lists diffing as its last step", async ({ page }) => {
 	await expect(
 		page.getByTestId("diff-progress").getByRole("listitem").last(),
 	).toHaveText("Diffing");
+});
+
+test("the summary waits until OSV.dev has answered", async ({ page }) => {
+	const heldQueries: Route[] = [];
+	await page.route("https://api.osv.dev/**", (route) => {
+		heldQueries.push(route);
+	});
+	await page.goto(NODE);
+	await ready(page);
+
+	await expect(page.getByTestId("progress-diff")).toHaveAttribute(
+		"data-state",
+		"done",
+	);
+	await expect(page.getByTestId("progress-osv")).toHaveAttribute(
+		"data-state",
+		"running",
+	);
+	await expect(page.getByTestId("diff-summary")).toHaveCount(0);
+
+	await Promise.all(heldQueries.map((route) => route.continue()));
+
+	await expect(report(page)).toHaveAttribute("data-status", "ready");
+	await expect(page.getByTestId("diff-progress")).toHaveCount(0);
 });
 
 test("the summary names the advisories an update fixes and those it keeps", async ({
