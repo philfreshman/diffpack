@@ -157,10 +157,11 @@ Code commits are gated separately (`.claude/hooks/fallow-gate.sh`, installed via
 ### CI
 
 `.github/workflows/ci.yml` runs on every pull request to `development` and on every push to it, in
-four jobs — none of which needs a Rust toolchain, since the engine arrives prebuilt:
+five jobs — none of which needs a Rust toolchain, since the engine arrives prebuilt:
 
 | Job | Runs | Needs |
 | :--- | :--- | :--- |
+| `conventional commits` | fails on a commit in the PR whose message is not a Conventional Commit | git, PRs only |
 | `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge` | bun only |
 | `end-to-end` | `test:e2e` | bun + Chromium |
 | `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, `check:coverage-gaps`, SARIF upload | bun, PRs only |
@@ -303,3 +304,24 @@ Commit messages must follow this format:
 3. Submit a Pull Request with a clear description of your changes.
 4. CI must be green before it can merge. It runs the same commands the hook does, plus the tests —
    so anything that passes locally should pass there.
+
+## Releases
+
+`main` only takes pull requests from `development`, merged with a merge commit. The
+`main source is development` check (`.github/workflows/main-source.yml`) fails a PR to `main` from
+any other branch, and it is required on `main`.
+
+Each merge into `main` runs `.github/workflows/release.yml`, which uses
+[semantic-release](https://semantic-release.gitbook.io/) to turn the commit messages since the last
+`v*` tag into a version, a tag and a GitHub release with notes grouped by type:
+
+| Commits since the last release | Next version |
+| :--- | :--- |
+| a `feat!:` / `fix!:` or a `BREAKING CHANGE:` footer | major (`v2.0.0`) |
+| at least one `feat` | minor (`v1.1.0`) |
+| at least one `fix`, `perf` or `revert` | patch (`v1.0.1`) |
+| only `chore`, `docs`, `style`, `refactor`, `test`, `build`, `ci` | no release |
+
+This is why the commit types matter: a commit that does not follow the format is left out of the
+version and the notes. Nothing is committed back to `main`, so `version` in `package.json` stays as
+it is. The release settings live in `.releaserc.json`.

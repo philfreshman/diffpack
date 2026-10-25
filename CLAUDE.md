@@ -348,6 +348,15 @@ server function).
   that matches ends matching, which is why `/assets/**.wasm` repeats the immutable cache header.
 - **Only `main` deploys.** Work goes to `development` through PRs, and CI runs there. `main` is
   released by merging `development` into it. There are no preview deployments.
+- **`main` takes pull requests from `development` only, as a merge commit.** The required
+  `main source is development` check (`main-source.yml`) fails any other head branch, and the
+  ruleset on `main` allows no squash or rebase.
+- **Every push to `main` is a release.** `release.yml` runs semantic-release (`.releaserc.json`):
+  the Conventional Commits since the last `v*` tag pick the next version (`fix` patch, `feat`
+  minor, `!` or `BREAKING CHANGE` major), and it pushes the tag and writes the GitHub release notes.
+  It commits nothing back, so `package.json`'s `version` is not the release number. A merge with
+  only `chore`, `docs`, `test` or `ci` commits releases nothing. The `conventional commits` CI job
+  rejects a PR commit that does not follow the format.
 - The `www` → apex redirect is a Vercel domain setting, not repo config.
 
 ## Working here
