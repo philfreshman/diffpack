@@ -4,14 +4,6 @@
 	font-size: var(--text-sm);
 }
 
-/* `.row` uses longhands, not the `animation` shorthand, so its inline delay survives. */
-@keyframes tree-row-in {
-	from {
-		opacity: 0;
-		transform: translateY(-2px);
-	}
-}
-
 .row {
 	display: flex;
 	align-items: center;
@@ -20,16 +12,6 @@
 	border-radius: var(--radius-md);
 	cursor: pointer;
 	user-select: none;
-	animation-name: tree-row-in;
-	animation-duration: 50ms;
-	animation-timing-function: ease-out;
-	animation-fill-mode: backwards;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.row {
-		animation-name: none;
-	}
 }
 
 .row:hover {
