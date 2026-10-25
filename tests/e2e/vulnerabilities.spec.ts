@@ -56,12 +56,28 @@ test("the loading box names the query to OSV.dev", async ({ page }) => {
 	).toHaveCount(4);
 });
 
-test("the loading box lists diffing as its last step", async ({ page }) => {
+test("the loading box diffs third and asks OSV.dev last, set apart", async ({
+	page,
+}) => {
 	await page.goto(LODASH);
 
-	await expect(
-		page.getByTestId("diff-progress").getByRole("listitem").last(),
-	).toHaveText("Diffing");
+	const steps = page.getByTestId("diff-progress").getByRole("listitem");
+	await expect(steps).toHaveText([
+		"Fetching lodash 4.17.20",
+		"Fetching lodash 4.17.21",
+		"Diffing packages",
+		"Querying OSV.dev for lodash 4.17.20, 4.17.21",
+	]);
+
+	const gapAbove = async (index: number) => {
+		const [above, below] = await Promise.all([
+			steps.nth(index - 1).boundingBox(),
+			steps.nth(index).boundingBox(),
+		]);
+		if (!above || !below) throw new Error("a loading step is not on screen");
+		return below.y - (above.y + above.height);
+	};
+	expect(await gapAbove(3)).toBeGreaterThan(await gapAbove(2));
 });
 
 test("the summary waits until OSV.dev has answered", async ({ page }) => {
