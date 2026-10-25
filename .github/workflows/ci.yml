@@ -42,6 +42,30 @@ jobs:
             echo code=false >> "$GITHUB_OUTPUT"
           fi
 
+  # The release on `main` picks its version and writes its notes from commit
+  # messages, so a commit that is not a Conventional Commit is left out of
+  # both without a word. Merge commits and GitHub's `Revert "…"` are allowed.
+  commits:
+    name: conventional commits
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='^((build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([^)]+\))?!?: .+|Revert ".+")$'
+          bad=$(git log --no-merges --format='%h %s' "$BASE..$HEAD" | grep -vE "^[0-9a-f]+ $pattern" || true)
+          if [ -n "$bad" ]; then
+            echo "::error::These commits are not Conventional Commits (type(scope): description), see CONTRIBUTING.md:"
+            echo "$bad"
+            exit 1
+          fi
+
   # Everything that needs no browser, so a broken type or a failing unit test
   # is red in well under a minute rather than behind a Chromium download and
   # a production build.
