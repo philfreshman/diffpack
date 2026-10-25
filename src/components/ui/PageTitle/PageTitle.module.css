@@ -1,0 +1,14 @@
+.title {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: var(--text-2xl);
+	font-weight: 700;
+	letter-spacing: -0.025em;
+}
+
+/* --breakpoint-sm */
+@media (min-width: 53rem) {
+	.title[data-size="hero"] {
+		font-size: var(--text-3xl);
+	}
+}

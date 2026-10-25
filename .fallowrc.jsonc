@@ -16,6 +16,13 @@
 	// directory.
 	"ignorePatterns": ["public/**"],
 
+	// A file the parser rejects drops out of every analysis: its exports, its
+	// imports, its complexity and its styles all go unmeasured, and the only
+	// trace is a warning nobody reads. With this on, the run fails instead and
+	// the `parse-error` gate names the file, in the pre-commit hook, both CI
+	// fallow jobs and the agent gate alike.
+	"failOnParseError": true,
+
 	// `@vitejs/plugin-react` loads React Compiler's Rust port by package name
 	// when `vite.config.ts` passes `compiler: true`. Nothing imports it, so the
 	// import graph cannot see that it is used.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { visibleRows } from "#/lib/tree/visibility.ts";
+import { rowKey, visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 
 function file(path: string, status: DiffFileEntry["status"]): DiffFileEntry {
@@ -30,6 +30,26 @@ const SHOW_ALL = {
 	expandedKeys: new Set<string>(),
 	collapsedKeys: new Set<string>(),
 };
+
+describe("rowKey", () => {
+	test("keeps a file and a folder at the same path apart", () => {
+		const asFile = file("lib", "removed");
+		const asFolder: DiffFileEntry = {
+			path: "lib",
+			type: "directory",
+			status: "added",
+			children: [],
+		};
+
+		expect(rowKey(asFile)).not.toBe(rowKey(asFolder));
+	});
+
+	test("gives the same entry the same key every time", () => {
+		expect(rowKey(file("lib/index.js", "modified"))).toBe(
+			rowKey(file("lib/index.js", "unchanged")),
+		);
+	});
+});
 
 describe("visibleRows", () => {
 	test("a folder's contents appear only when it is open", () => {

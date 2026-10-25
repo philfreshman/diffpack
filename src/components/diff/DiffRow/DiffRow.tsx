@@ -38,7 +38,7 @@ export function DiffRow({
 			<td
 				className={styles.gutter}
 				data-testid="old-number"
-				data-filled={line.oldNumber === null ? undefined : true}
+				data-fill={line.oldNumber === null ? undefined : line.type}
 			>
 				<LineNumber
 					anchor={anchor}
@@ -49,7 +49,7 @@ export function DiffRow({
 			<td
 				className={styles.gutter}
 				data-testid="new-number"
-				data-filled={line.newNumber === null ? undefined : true}
+				data-fill={line.newNumber === null ? undefined : line.type}
 			>
 				<LineNumber
 					anchor={anchor}

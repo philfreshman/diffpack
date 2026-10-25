@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	createFixCommitClient,
+	fixCommitClient,
 	fixCommitsToLookUp,
 	MAX_FIX_COMMITS,
 } from "#/lib/vulnerabilities/fixCommitClient.ts";
@@ -97,5 +98,13 @@ describe("fixCommitsToLookUp", () => {
 		expect(fixCommitsToLookUp(entries)).toEqual(
 			commits.slice(0, MAX_FIX_COMMITS),
 		);
+	});
+});
+
+describe("the app's fix commit client", () => {
+	test("gives up at once when the lookup was cancelled before it started", async () => {
+		await expect(
+			fixCommitClient.files(COMMIT, AbortSignal.abort()),
+		).rejects.toMatchObject({ name: "AbortError" });
 	});
 });

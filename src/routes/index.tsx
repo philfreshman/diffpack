@@ -4,6 +4,7 @@ import { SiteAbout } from "#/components/landing/SiteAbout/SiteAbout.tsx";
 import { StarField } from "#/components/landing/StarField/StarField.tsx";
 import { ThemeToggle } from "#/components/theme/ThemeToggle/ThemeToggle.tsx";
 import { GithubIcon } from "#/components/ui/icons.tsx";
+import { PageTitle } from "#/components/ui/PageTitle/PageTitle.tsx";
 import { homeHead } from "#/lib/url/homeHead.ts";
 import styles from "./index.module.css";
 
@@ -20,7 +21,7 @@ function Home() {
 			<ThemeToggle />
 			<main className={styles.page}>
 				<header className={styles.intro}>
-					<h1 className={styles.title}>diffpack</h1>
+					<PageTitle size="hero">diffpack</PageTitle>
 					<p className={styles.tagline}>
 						Compare package versions across ecosystems.
 						<br />
