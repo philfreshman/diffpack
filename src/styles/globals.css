@@ -58,6 +58,7 @@
 	--color-border: var(--gray-light-200);
 	--color-surface: var(--gray-light-bg-200);
 	--color-summary-surface: var(--color-background);
+	--color-panel-heading: rgb(0 0 0 / 0.03);
 	--color-surface-hover: rgb(0 0 0 / 0.05);
 	--color-input: #ffffff;
 	--color-surface-veil: rgb(255 255 255 / 0.65);
@@ -156,6 +157,7 @@
 	--color-border: var(--gray-dark-200);
 	--color-surface: var(--gray-dark-100);
 	--color-summary-surface: var(--color-surface);
+	--color-panel-heading: rgb(255 255 255 / 0.04);
 	--color-surface-hover: rgb(255 255 255 / 0.06);
 	--color-input: #141414;
 	--color-surface-veil: rgb(10 10 10 / 0.4);

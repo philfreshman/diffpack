@@ -9,3 +9,18 @@ export function Panel({ className, ...props }: ComponentProps<"div">) {
 		/>
 	);
 }
+
+export function PanelHeading({
+	className,
+	children,
+	...props
+}: ComponentProps<"h2">) {
+	return (
+		<h2
+			className={className ? `${styles.heading} ${className}` : styles.heading}
+			{...props}
+		>
+			{children}
+		</h2>
+	);
+}
