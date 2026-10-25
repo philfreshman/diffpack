@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Panel } from "#/components/ui/Panel/Panel.tsx";
+import { risesIn } from "#/components/ui/RiseIn/riseIn.ts";
 import type { TreeSummary } from "#/lib/session/tree.ts";
 import { ViewportCenter } from "../ViewportCenter/ViewportCenter.tsx";
 import styles from "./DiffSummary.module.css";
@@ -18,7 +19,7 @@ export function DiffSummary({ summary, children }: DiffSummaryProps) {
 		<ViewportCenter>
 			<Panel className={styles.box} data-testid="diff-summary">
 				<div className={styles.overview}>
-					<dl className={styles.stats}>
+					<dl {...risesIn(styles.stats, 0)}>
 						<LineStat
 							label="Lines added"
 							value={`+${LINE_COUNT.format(addedLines)}`}
@@ -31,10 +32,10 @@ export function DiffSummary({ summary, children }: DiffSummaryProps) {
 						/>
 					</dl>
 					<ChangeBar added={addedLines} removed={removedLines} />
-					<p className={styles.files} data-testid="summary-files">
+					<p {...risesIn(styles.files, 2)} data-testid="summary-files">
 						{describeFileCount(summary)}
 					</p>
-					<p className={styles.hint}>
+					<p {...risesIn(styles.hint, 3)}>
 						{changedCount > 0
 							? "Pick a file in the tree to see its diff."
 							: "Nothing changed between these versions."}
@@ -71,7 +72,7 @@ function ChangeBar({ added, removed }: { added: number; removed: number }) {
 	if (added + removed === 0) return null;
 
 	return (
-		<div className={styles.bar} aria-hidden="true">
+		<div {...risesIn(styles.bar, 1)} aria-hidden="true">
 			{added > 0 && (
 				<span className={styles.added} style={{ flexGrow: added }} />
 			)}
