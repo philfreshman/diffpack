@@ -1,3 +1,4 @@
+// fallow-ignore-file coverage-gaps -- GLSL source the GPU compiles at run time, with no JavaScript in it for a unit test to call.
 /** `nebula(dir, time, flow, …)`: `dir` is a unit vector, `flow` drifts the clouds with the viewer's travel. */
 export const CLOUD_GLSL = /* glsl */ `
 float hash(vec3 p) {

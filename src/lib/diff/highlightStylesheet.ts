@@ -1,3 +1,4 @@
+// fallow-ignore-file coverage-gaps -- import.meta.glob is a Vite transform bun test cannot run; diff-toolbar.spec.ts loads every theme's stylesheet from the build.
 import { HIGHLIGHT_THEMES } from "#/lib/diff/highlightThemes.ts";
 
 // Listed one per theme, not globbed: a wildcard would make Vite emit all of
