@@ -34,6 +34,11 @@ export const SHOW_SIGNS = flag({
 	fallback: true,
 });
 
+export const AUTOHIDE_SCROLLBAR = flag({
+	key: "autohide-scrollbar-preference",
+	fallback: false,
+});
+
 // `null` means no choice: the default follows the page theme. A theme no longer
 // offered (the old app's `"github"`) reads as `null`.
 export const HIGHLIGHT_THEME = oneOf({

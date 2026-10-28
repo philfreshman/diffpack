@@ -23,6 +23,7 @@ export interface DiffScrollbar {
 /** Drives `scrollTop` only; the thumb is always drawn from the scroll position. */
 export function useDiffScrollbar(
 	scrollerRef: RefObject<HTMLElement | null>,
+	autohide: boolean,
 ): DiffScrollbar {
 	const [thumb, setThumb] = useState<Thumb | null>(null);
 	const [shown, setShown] = useState(false);
@@ -122,7 +123,7 @@ export function useDiffScrollbar(
 
 	return {
 		thumb,
-		shown,
+		shown: shown || !autohide,
 		trackRef,
 		onTrackMouseDown,
 		onThumbMouseDown,

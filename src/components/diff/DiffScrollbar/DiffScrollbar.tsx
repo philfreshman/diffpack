@@ -10,12 +10,14 @@ export interface DiffScrollbarProps {
 	file: Pick<FileModel, "markers">;
 	/** Every row's span, estimated until drawn; not just the rendered items. */
 	spans: readonly RowSpan[];
+	autohide: boolean;
 }
 
 export function DiffScrollbar({
 	scrollerRef,
 	file,
 	spans,
+	autohide,
 }: DiffScrollbarProps) {
 	const {
 		thumb,
@@ -25,7 +27,7 @@ export function DiffScrollbar({
 		onThumbMouseDown,
 		onTrackMouseEnter,
 		onTrackMouseLeave,
-	} = useDiffScrollbar(scrollerRef);
+	} = useDiffScrollbar(scrollerRef, autohide);
 	const markers = useMemo(() => file.markers(spans), [file, spans]);
 
 	return (

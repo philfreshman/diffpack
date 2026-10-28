@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { GA_SCRIPT } from "#/lib/analytics.ts";
 import * as settings from "#/lib/storage/settings.ts";
 import {
+	AUTOHIDE_SCROLLBAR,
 	HIGHLIGHT_THEME,
 	IGNORE_WHITESPACE,
 	ONLY_MODIFIED,
@@ -85,6 +86,18 @@ const CASES: Case[] = [
 			["no", true],
 			["FALSE", true],
 			["", true],
+		],
+	),
+	reading(
+		AUTOHIDE_SCROLLBAR,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["yes", false],
+			["TRUE", false],
+			["", false],
 		],
 	),
 	reading(

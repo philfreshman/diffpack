@@ -47,7 +47,7 @@ import styles from "./DiffWorkspace.module.css";
 export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const adapter = requireAdapter(slug.registry);
 	const navigate = useNavigate();
-	const { whitespace, split, signs } = useViewerSettings();
+	const { whitespace, split, signs, autohide } = useViewerSettings();
 	// One instance for the toolbar and the viewer; a second would be a second answer.
 	const highlight = useHighlightTheme();
 	// null until the stored value is read, or a deep link would build a
@@ -140,6 +140,8 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 									onIgnoreWhitespaceChange: whitespace.set,
 									showSigns: signs.value,
 									onShowSignsChange: signs.set,
+									autohideScrollbar: autohide.value,
+									onAutohideScrollbarChange: autohide.set,
 									highlight,
 								}}
 							/>
@@ -158,6 +160,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								file={session.file}
 								highlight={highlight}
 								showSigns={signs.value}
+								autohideScrollbar={autohide.value}
 								lineLink={lineLink}
 								onClose={closeFile}
 								shown={shown}
@@ -273,6 +276,7 @@ interface FilePaneProps {
 	onClose(): void;
 	highlight: HighlightThemeControls;
 	showSigns: boolean;
+	autohideScrollbar: boolean;
 	lineLink: LineLink;
 	vulnerabilities: VulnerabilityFindings;
 }
@@ -283,6 +287,7 @@ function FilePane({
 	onClose,
 	highlight,
 	showSigns,
+	autohideScrollbar,
 	lineLink,
 	vulnerabilities,
 }: FilePaneProps) {
@@ -310,6 +315,7 @@ function FilePane({
 						onClose={onClose}
 						pending={file?.status === "loading"}
 						showSigns={showSigns}
+						autohideScrollbar={autohideScrollbar}
 						anchor={lineLink.anchorIn(shown.path)}
 						onSelectLine={lineLink.select}
 						highlightTheme={highlight.theme}
