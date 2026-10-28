@@ -48,53 +48,6 @@ someone.
                                                                             diff ──▶ you
 ```
 
-For npm, crates.io, PyPI and Go, both archives travel straight from the registry to your machine,
-where a Rust/WebAssembly module unpacks and diffs them inside a Web Worker. diffpack's server
-renders the page shell and nothing else — package contents never reach it.
-
-Composer is the exception. Packagist's version metadata and the archives it lists (mostly from
-GitHub) send no CORS header, the rule that lets a page read a response from another site, so the
-browser cannot read them directly. For Composer only, the page and the engine fetch them through
-[diffpack-proxy](https://github.com/philfreshman/diffpack-proxy), a small Cloudflare Worker at
-`diffpack-proxy.philipswiezak.workers.dev`. It passes the bytes through unchanged, without
-unpacking, storing or logging them, and it never sees the diff, which is still worked out in your
-browser. Like any web host, Cloudflare sees each request: your IP address, and the package and
-archives it asks for. Workers Logs are off for the proxy, so Cloudflare keeps no record of single
-requests, only totals such as the number of requests a day. Packagist search does not use the
-proxy: it goes straight from your browser to `packagist.org`.
-
-Searching Go modules by keyword goes through the same proxy. pkg.go.dev's search sends no CORS
-header either, so the proxy passes the words you type to `pkg.go.dev` and its list of modules back.
-A full module path that resolves skips the proxy: it is looked up straight at `proxy.golang.org`,
-where Go archives always come from. Text that does not resolve, including a path you are still
-typing, is searched through the proxy.
-
-The proxy runs on Cloudflare's free plan, which allows 100,000 requests a day. It stops itself at
-90,000 so that it can still answer clearly, and it starts again at 00:00 UTC. Until then, a Composer
-comparison shows a notice saying when Composer comes back, and Go search finds nothing by keyword
-but still takes a full module path. The other registries keep working.
-
-Before downloading anything, the page asks
-[diffpack-server](https://github.com/philfreshman/diffpack-server) whether it has already worked
-out this comparison for an AI agent. That request carries one thing: a `diff_id`, a SHA-256 of the
-registry, the package, both versions, the engine version and the diff settings. It goes without
-cookies and without a referrer, so it does not name the package. Like any request, it shows the
-server your IP address and browser, and the server logs the `diff_id` it was asked for. A hash
-names a comparison without spelling it out; it does not stop someone who guesses the comparison
-from checking the guess. On a hit, the file tree and the changed files arrive from the server
-without either archive being downloaded; an unchanged file, or one the server left out for size,
-is still worked out in your browser when you open it. On a miss or any failure, the browser does
-all the work as above.
-
-To list known vulnerabilities, the page sends the package name, its registry and each of the two
-versions to [OSV.dev](https://osv.dev)'s API at `api.osv.dev`, straight from your browser. Package
-contents never go there. When an advisory links the GitHub commit that fixed it, the page reads
-which files and lines that commit changed from `api.github.com`, without signing in, to point at
-the affected files in the diff. A failed lookup only leaves the vulnerability list or those
-pointers out; the diff works the same.
-
-<br>
-
 ### Registries
 
 | | Registry | Language | Search |
