@@ -152,27 +152,45 @@ test("filtering narrows the tree to what matches, and opens the way to it", asyn
 	await expect(row(page, "package.json")).toHaveCount(0);
 });
 
-test("the toggle brings the unchanged files back, and remembers it", async ({
+const treeOptions = (page: Page) =>
+	page.getByRole("button", { name: "File tree options" });
+const option = (page: Page, name: string) =>
+	page.getByRole("button", { name, exact: true });
+
+async function openTreeOptions(page: Page) {
+	await treeOptions(page).click();
+	await expect(option(page, "Only modified")).toBeVisible();
+}
+
+test("only modified, in the tree's menu, brings the unchanged files back, and remembers it", async ({
 	page,
 }) => {
 	await page.goto(EXPRESS);
 	await ready(page);
-	const toggle = page.getByRole("button", { name: "Show only modified files" });
-	await expect(toggle).toHaveAttribute("aria-pressed", "true");
+	await openTreeOptions(page);
+	await expect(option(page, "Only modified")).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
 
-	await toggle.click();
+	await option(page, "Only modified").click();
 
-	await expect(toggle).toHaveAttribute("aria-pressed", "false");
+	await expect(option(page, "Only modified")).toHaveAttribute(
+		"aria-pressed",
+		"false",
+	);
 	await expect(
 		page.locator("[role='treeitem'][data-status='unchanged']").first(),
 	).toBeVisible();
 
 	await page.reload();
 	await ready(page);
+	await openTreeOptions(page);
 
-	await expect(
-		page.getByRole("button", { name: "Show only modified files" }),
-	).toHaveAttribute("aria-pressed", "false");
+	await expect(option(page, "Only modified")).toHaveAttribute(
+		"aria-pressed",
+		"false",
+	);
 });
 
 test("a folder opens and shuts on click, and stays shut", async ({ page }) => {

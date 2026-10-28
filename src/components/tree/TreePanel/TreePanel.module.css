@@ -57,6 +57,9 @@
 
 /* Puts the first tree row level with the diff's top edge. */
 .filter {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
 	margin-bottom: calc(var(--space-3) - var(--space-2));
 }
 
