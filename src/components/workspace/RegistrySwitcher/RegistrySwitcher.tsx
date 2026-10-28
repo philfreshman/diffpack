@@ -1,10 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { CheckIcon, ChevronsUpDownIcon } from "#/components/ui/icons.tsx";
-import {
-	Menu,
-	MenuLinkItem,
-	MenuSeparator,
-} from "#/components/ui/Menu/Menu.tsx";
+import { Menu, MenuLinkItem } from "#/components/ui/Menu/Menu.tsx";
 import { registryAdapters } from "#/lib/registries/index.ts";
 import type { RegistryAdapter } from "#/lib/registries/types.ts";
 import styles from "./RegistrySwitcher.module.css";
@@ -34,8 +30,6 @@ export function RegistrySwitcher({ adapter }: { adapter: RegistryAdapter }) {
 					{other.id === adapter.id && <CheckIcon width="16" height="16" />}
 				</MenuLinkItem>
 			))}
-			<MenuSeparator />
-			<MenuLinkItem render={<Link to="/" />}>All registries</MenuLinkItem>
 		</Menu>
 	);
 }

@@ -217,8 +217,8 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 	// Each client-side navigation counts as a page view, as each URL did on the old Astro site.
 	// The hover preloads the route chunk (`defaultPreload: "intent"`); a click before it lands hard-navigates.
 	await page.getByRole("button", { name: /Switch registry/ }).click();
-	const home = page.getByRole("menuitem", { name: "All registries" });
-	await home.hover();
+	const crates = page.getByRole("menuitem", { name: "crates.io" });
+	await crates.hover();
 	await page.waitForLoadState("networkidle");
 
 	// A hard navigation resets `dataLayer`, which looks like an uncounted view; the stamp tells them apart.
@@ -226,8 +226,8 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 		(window as Window & { __document?: true }).__document = true;
 	});
 
-	await home.click();
-	await expect(page).toHaveURL("/");
+	await crates.click();
+	await expect(page).toHaveURL("/crates");
 
 	expect(
 		await page.evaluate(
@@ -246,10 +246,10 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 		Record<string, string>,
 	];
 	expect([type, name]).toEqual(["event", "page_view"]);
-	expect(params.page_path).toBe("/");
+	expect(params.page_path).toBe("/crates");
 	// The title of the page arrived at, not the one just left.
 	expect(params.page_title).toBe(
-		"diffpack: compare npm, crates.io, Go, PyPI and Packagist versions",
+		"Compare crates.io package versions | diffpack",
 	);
 });
 
