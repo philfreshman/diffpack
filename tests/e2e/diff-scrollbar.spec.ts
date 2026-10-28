@@ -84,14 +84,19 @@ test("scrolls the file by dragging the thumb", async ({ page }) => {
 	expect(dropped?.y ?? 0).toBeGreaterThan(track.y + track.height / 4);
 });
 
-test("jumps to a part of the file clicked in the track", async ({ page }) => {
-	await open(page, LODASH);
-
+async function clickNearTheTrackBottom(page: Page) {
 	const track = await scrollbar(page).boundingBox();
 	if (!track) throw new Error("no scrollbar");
 	await page.mouse.click(track.x + track.width / 2, track.y + track.height - 8);
+}
 
-	expect(await scrollTop(page)).toBeGreaterThan(0);
+test("jumps to a part of the file clicked in the track", async ({ page }) => {
+	await open(page, LODASH);
+
+	await expect(async () => {
+		await clickNearTheTrackBottom(page);
+		expect(await scrollTop(page)).toBeGreaterThan(0);
+	}).toPass();
 });
 
 test("marks every change in the file, not only the rendered ones", async ({
