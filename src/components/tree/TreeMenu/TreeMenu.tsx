@@ -57,6 +57,7 @@ export function TreeMenu({
 						label={POSITION_LABELS[choice]}
 						chosen={position === choice}
 						onChoose={() => onPositionChange(choice)}
+						closesMenu
 					/>
 				))}
 			</FoldOutOption>

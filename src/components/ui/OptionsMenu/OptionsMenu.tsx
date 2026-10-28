@@ -1,5 +1,12 @@
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
-import type { ComponentProps, ReactNode } from "react";
+import {
+	type ComponentProps,
+	createContext,
+	type ReactNode,
+	use,
+	useRef,
+	useState,
+} from "react";
 import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
 import {
 	CheckIcon,
@@ -15,6 +22,12 @@ const FOLD_OUT_CHEVRONS: Record<FoldOutSide, typeof ChevronRightIcon> = {
 	right: ChevronRightIcon,
 };
 
+const OPTIONS_ITEM = "options";
+
+type CloseMenuThen = (then: () => void) => void;
+
+const CloseMenuThenContext = createContext<CloseMenuThen>((then) => then());
+
 export interface OptionsMenuProps {
 	label: string;
 	icon: ReactNode;
@@ -27,10 +40,19 @@ export function OptionsMenu({
 	triggerClassName = "",
 	children,
 }: OptionsMenuProps) {
+	const { openItem, setOpenItem, closeMenuThen, runAfterClose } =
+		useCloseMenuThen();
+
 	return (
-		<NavigationMenu.Root className={styles.root} orientation="vertical">
+		<NavigationMenu.Root
+			className={styles.root}
+			orientation="vertical"
+			value={openItem}
+			onValueChange={setOpenItem}
+			onOpenChangeComplete={runAfterClose}
+		>
 			<NavigationMenu.List className={styles.list}>
-				<NavigationMenu.Item>
+				<NavigationMenu.Item value={OPTIONS_ITEM}>
 					<NavigationMenu.Trigger
 						className={`${iconButtonStyles.iconButton} ${styles.trigger} ${triggerClassName}`}
 						aria-label={label}
@@ -40,7 +62,9 @@ export function OptionsMenu({
 					</NavigationMenu.Trigger>
 
 					<NavigationMenu.Content className={styles.content}>
-						<ul className={styles.options}>{children}</ul>
+						<CloseMenuThenContext value={closeMenuThen}>
+							<ul className={styles.options}>{children}</ul>
+						</CloseMenuThenContext>
 					</NavigationMenu.Content>
 				</NavigationMenu.Item>
 			</NavigationMenu.List>
@@ -58,6 +82,25 @@ export function OptionsMenu({
 			</NavigationMenu.Portal>
 		</NavigationMenu.Root>
 	);
+}
+
+function useCloseMenuThen() {
+	const [openItem, setOpenItem] = useState<string | null>(null);
+	const afterCloseRef = useRef<(() => void) | null>(null);
+
+	function closeMenuThen(then: () => void) {
+		afterCloseRef.current = then;
+		setOpenItem(null);
+	}
+
+	function runAfterClose(open: boolean) {
+		if (open) return;
+		const then = afterCloseRef.current;
+		afterCloseRef.current = null;
+		then?.();
+	}
+
+	return { openItem, setOpenItem, closeMenuThen, runAfterClose };
 }
 
 export function ToggleOption({
@@ -78,19 +121,23 @@ export function ChoiceOption({
 	label,
 	chosen,
 	onChoose,
+	closesMenu = false,
 	...buttonProps
 }: {
 	label: string;
 	chosen: boolean;
 	onChoose(): void;
+	closesMenu?: boolean;
 } & Omit<ComponentProps<"button">, "className" | "onClick" | "type">) {
+	const closeMenuThen = use(CloseMenuThenContext);
+
 	return (
 		<li>
 			<button
 				{...buttonProps}
 				className={styles.option}
 				aria-pressed={chosen}
-				onClick={onChoose}
+				onClick={closesMenu ? () => closeMenuThen(onChoose) : onChoose}
 				type="button"
 			>
 				{label}

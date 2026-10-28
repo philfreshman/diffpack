@@ -143,7 +143,10 @@ test("stores the tree's position under its own key, and only once chosen", async
 
 	await choice("Right").click();
 
-	await expect(choice("Right")).toHaveAttribute("aria-pressed", "true");
+	await expect(page.locator("html")).toHaveAttribute(
+		"data-tree-position",
+		"right",
+	);
 	expect(await stored()).toBe("right");
 });
 

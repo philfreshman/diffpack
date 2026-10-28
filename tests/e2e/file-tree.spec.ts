@@ -704,12 +704,15 @@ test("moved to the right, the whole sidebar mirrors, and it is there before the 
 
 	await option(page, "Right").click();
 
-	await expect(page.getByTestId("position-fold")).toContainText("Right");
-	await page.keyboard.press("Escape");
+	await expect(page.getByTestId("position-popup")).toBeHidden();
+	await expect(page.getByTestId("position-fold")).toBeHidden();
 	await expect(page.locator("html")).toHaveAttribute(
 		"data-tree-position",
 		"right",
 	);
+	await openTreeOptions(page);
+	await expect(page.getByTestId("position-fold")).toContainText("Right");
+	await page.keyboard.press("Escape");
 	expect((await boxOf(panel)).x).toBeGreaterThanOrEqual(
 		(await boxOf(diff)).x + (await boxOf(diff)).width,
 	);
