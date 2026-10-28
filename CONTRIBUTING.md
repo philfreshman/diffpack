@@ -174,6 +174,10 @@ The first two are split so a broken type or a failing unit test goes red in unde
 than behind a Chromium download and a production build. On an e2e failure the Playwright HTML
 report and traces are uploaded as a `playwright-report` artifact on the run.
 
+The e2e specs hit the real registries, so a slow download or a late layout shift sometimes fails one.
+In CI each failed test runs once more. A test that passes on the retry does not fail the job, but the
+report still lists it as flaky, so it stays visible. Locally there are no retries.
+
 Rust — `cargo fmt --all --check`, `cargo test`, and `wasm-pack test --headless --chrome` — runs in
 [the engine's CI](https://github.com/philfreshman/diffpack-engine/blob/main/.github/workflows/ci.yml),
 not here.
