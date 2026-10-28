@@ -84,7 +84,7 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 				emptyMessage={searching ? "No packages found" : "Type to search"}
 				placeholder={adapter.capabilities.searchPlaceholder}
 				leading={<SearchIcon width="16" height="16" />}
-				trailing={<SearchState state={state} filled={inputValue !== ""} />}
+				trailing={<SearchState state={state} />}
 				inputRef={input}
 				keyShortcut={SHORTCUT}
 			/>
@@ -127,13 +127,7 @@ function useEscapeToClear(
 
 // The test id is needed because an open popup makes this slot inert, leaving
 // no accessible role to find it by.
-function SearchState({
-	state,
-	filled,
-}: {
-	state: "selected" | "searching" | "idle";
-	filled: boolean;
-}) {
+function SearchState({ state }: { state: "selected" | "searching" | "idle" }) {
 	return (
 		<span
 			className={styles.trailing}
@@ -141,11 +135,7 @@ function SearchState({
 			data-state={state}
 		>
 			{state === "searching" && <Spinner label="Searching packages" />}
-			{filled ? (
-				<Kbd keys="esc" />
-			) : (
-				<Kbd className={styles.shortcut} keys={SHORTCUT} />
-			)}
+			<Kbd className={styles.shortcut} keys={SHORTCUT} />
 		</span>
 	);
 }
