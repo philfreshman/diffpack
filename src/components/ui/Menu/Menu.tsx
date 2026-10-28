@@ -46,7 +46,3 @@ export function MenuLinkItem({
 		</Base.LinkItem>
 	);
 }
-
-export function MenuSeparator() {
-	return <Base.Separator className={styles.separator} />;
-}

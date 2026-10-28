@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useMemo, useReducer, useRef, useState } from "react";
 import { useSetting } from "#/components/storage/useSetting.ts";
 import { FileTree } from "#/components/tree/FileTree/FileTree.tsx";
@@ -19,14 +18,12 @@ export interface TreePanelProps {
 	comparison: string;
 	selectedPath: string;
 	onOpenFile(path: string): void;
-	header?: ReactNode;
 }
 export function TreePanel({
 	tree,
 	comparison,
 	selectedPath,
 	onOpenFile,
-	header,
 }: TreePanelProps) {
 	const [filter, setFilter] = useState("");
 	const { value: onlyModified, set: setOnlyModified } =
@@ -61,7 +58,6 @@ export function TreePanel({
 	return (
 		<aside className={styles.panel} ref={panelRef} data-testid="tree-panel">
 			<div className={styles.content} ref={contentRef}>
-				{header && <div className={styles.head}>{header}</div>}
 				<div className={styles.filter}>
 					<TreeFilter
 						filter={filter}

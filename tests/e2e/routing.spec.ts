@@ -111,9 +111,7 @@ test("404s a bare unknown registry too", async ({ page }) => {
 	await expect(page.getByTestId("not-found")).toBeVisible();
 });
 
-test("the sidebar's switcher moves between registries and back home", async ({
-	page,
-}) => {
+test("the registry switcher moves between registries", async ({ page }) => {
 	await page.goto("/npm");
 	await expect(page.locator("[data-ready]").first()).toBeAttached();
 
@@ -122,10 +120,11 @@ test("the sidebar's switcher moves between registries and back home", async ({
 	const switcher = page.getByRole("button", { name: /Switch registry/ });
 	await expect(switcher).toHaveAccessibleName(/npm/);
 	await switcher.click();
+	await expect(page.getByRole("menuitem")).toHaveCount(5);
+	await expect(
+		page.getByRole("menuitem", { name: "All registries" }),
+	).toHaveCount(0);
 	await page.getByRole("menuitem", { name: "crates.io" }).click();
 	await expect(page).toHaveURL("/crates");
-
-	await switcher.click();
-	await page.getByRole("menuitem", { name: "All registries" }).click();
-	await expect(page).toHaveURL("/");
+	await expect(switcher).toHaveAccessibleName(/crates\.io/);
 });

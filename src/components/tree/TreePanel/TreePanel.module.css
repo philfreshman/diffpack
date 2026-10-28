@@ -55,21 +55,14 @@
 	}
 }
 
-/* Lines up with the workspace top bar, and the filter below it with the diff toolbar. */
-.head {
-	display: flex;
-	flex-shrink: 0;
-	align-items: flex-end;
-	height: calc(var(--workspace-header-height) - var(--space-2));
-	margin-bottom: calc(var(--space-4) - var(--space-2));
-	padding-bottom: calc(var(--space-2) + 1px);
-}
-
-/* Puts the first tree row level with the diff's top edge. */
+/* Lines the filter up with the diff toolbar, and the first tree row with the diff's top edge. */
 .filter {
 	display: flex;
 	align-items: center;
 	gap: var(--space-2);
+	margin-top: calc(
+		var(--workspace-header-height) + var(--space-4) - var(--space-2)
+	);
 	margin-bottom: calc(var(--space-3) - var(--space-2));
 }
 

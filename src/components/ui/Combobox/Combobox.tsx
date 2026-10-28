@@ -105,7 +105,7 @@ export function Combobox<T>({
 				<span className={styles.leading}>{leading}</span>
 				<Base.Input
 					ref={inputRef}
-					className={styles.input}
+					className={`${styles.surface} ${styles.input}`}
 					aria-label={label}
 					aria-keyshortcuts={keyShortcut}
 					placeholder={placeholder}

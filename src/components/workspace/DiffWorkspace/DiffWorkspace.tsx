@@ -29,7 +29,6 @@ import { AsciiTrail } from "../AsciiTrail/AsciiTrail.tsx";
 import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
 import { DiffSummary } from "../DiffSummary/DiffSummary.tsx";
 import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
-import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
 import { type LineLink, useLineLink } from "../useLineLink.ts";
 import { useVersions } from "../useVersions.ts";
@@ -111,7 +110,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 				comparison={comparisonPath}
 				selectedPath={slug.file}
 				onOpenFile={openFile}
-				header={<RegistrySwitcher adapter={adapter} />}
 			/>
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />

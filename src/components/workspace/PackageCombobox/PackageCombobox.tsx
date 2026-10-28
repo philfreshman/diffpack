@@ -11,6 +11,7 @@ import type { RegistryAdapter } from "#/lib/registries/types.ts";
 import { addToHistory } from "#/lib/storage/searchHistory.ts";
 import { searchHistory } from "#/lib/storage/settings.ts";
 import { buildPath } from "#/lib/url/slug.ts";
+import { RegistrySwitcher } from "../RegistrySwitcher/RegistrySwitcher.tsx";
 import { usePackageSearch } from "../usePackageSearch.ts";
 import styles from "./PackageCombobox.module.css";
 
@@ -59,35 +60,38 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 
 	return (
 		<div className={styles.field}>
-			<span className={styles.label}>Package Name</span>
-			<Combobox
-				label="Package Name"
-				items={items}
-				inputValue={inputValue}
-				onInputValueChange={setInputValue}
-				onSelect={(item) => choose(item.name)}
-				// Reaches a Go module that pkg.go.dev's search does not list, by its exact path.
-				onSubmitText={choose}
-				itemToText={(item) => item.name}
-				renderItem={(item) => (
-					<>
-						<strong className={styles.name}>{item.name}</strong>
-						{item.description ? (
-							<span className={styles.description}>{item.description}</span>
-						) : null}
-					</>
-				)}
-				// Local filtering would hide results whose name lacks the typed text.
-				filter={null}
-				loading={loading}
-				loadingMessage="Searching…"
-				emptyMessage={searching ? "No packages found" : "Type to search"}
-				placeholder={adapter.capabilities.searchPlaceholder}
-				leading={<SearchIcon width="16" height="16" />}
-				trailing={<SearchState state={state} />}
-				inputRef={input}
-				keyShortcut={SHORTCUT}
-			/>
+			<RegistrySwitcher adapter={adapter} />
+			<div className={styles.search}>
+				<span className={styles.label}>Package Name</span>
+				<Combobox
+					label="Package Name"
+					items={items}
+					inputValue={inputValue}
+					onInputValueChange={setInputValue}
+					onSelect={(item) => choose(item.name)}
+					// Reaches a Go module that pkg.go.dev's search does not list, by its exact path.
+					onSubmitText={choose}
+					itemToText={(item) => item.name}
+					renderItem={(item) => (
+						<>
+							<strong className={styles.name}>{item.name}</strong>
+							{item.description ? (
+								<span className={styles.description}>{item.description}</span>
+							) : null}
+						</>
+					)}
+					// Local filtering would hide results whose name lacks the typed text.
+					filter={null}
+					loading={loading}
+					loadingMessage="Searching…"
+					emptyMessage={searching ? "No packages found" : "Type to search"}
+					placeholder={adapter.capabilities.searchPlaceholder}
+					leading={<SearchIcon width="16" height="16" />}
+					trailing={<SearchState state={state} />}
+					inputRef={input}
+					keyShortcut={SHORTCUT}
+				/>
+			</div>
 		</div>
 	);
 }
