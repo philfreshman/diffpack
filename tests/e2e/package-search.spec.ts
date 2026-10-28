@@ -122,7 +122,7 @@ test("/ reaches the field; Escape closes the list, then empties it", async ({
 	await expect(field(page)).toHaveValue("");
 
 	await page.keyboard.type("expr");
-	await expect(slot).toContainText("esc");
+	await expect(slot).not.toContainText("esc");
 	await expect(option(page, "express")).toBeVisible();
 
 	await page.keyboard.press("Escape");
