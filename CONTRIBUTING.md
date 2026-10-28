@@ -174,6 +174,11 @@ The first two are split so a broken type or a failing unit test goes red in unde
 than behind a Chromium download and a production build. On an e2e failure the Playwright HTML
 report and traces are uploaded as a `playwright-report` artifact on the run.
 
+`bun run ci-failure <pr>` (or `--run <run-id>`) shows why a PR's checks failed. For each failed job
+it prints the lines leading up to every `##[error]`, and every `##[warning]`, from the job log. For
+`end-to-end` it also downloads the `playwright-report` artifact, prints each failed test's error
+details and gives the folder with the full report and traces.
+
 The e2e specs hit the real registries, so a slow download or a late layout shift sometimes fails one.
 In CI each failed test runs once more. A test that passes on the retry does not fail the job, but the
 report still lists it as flaky, so it stays visible. Locally there are no retries.

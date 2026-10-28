@@ -24,6 +24,7 @@
 		"check:coverage-gaps": "bun scripts/check-lib-coverage-gaps.ts",
 		"check:vectors": "bun scripts/check-cache-key-vectors.ts",
 		"check:vectors:development": "bun scripts/check-cache-key-vectors.ts development",
+		"ci-failure": "bun scripts/ci-failure.ts",
 		"fallow": "fallow",
 		"fallow:audit": "fallow audit",
 		"prepare": "husky"
