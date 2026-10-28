@@ -130,7 +130,10 @@ test ~0.3s, `fallow audit` ~1.4s warm — about 5.3s total.
 `fallow audit --gate new-only` (the default, and what the hook passes) only blocks findings **your
 change introduces** — unused exports, new complexity, duplication, and the rest of what
 `.fallowrc.jsonc` enables. Findings already on `development` in files you did not touch do not
-block you.
+block you. A finding fallow rates only a warning, such as a small clone group, blocks too. `fallow
+audit` exits 0 on a `warn` verdict, but the CI action fails on any issue, so the hook reads the
+verdict from the JSON output and fails on anything but `pass`. A commit that passes locally then
+also passes the PR gate.
 
 Two things fail every fallow run, whatever it changed. A source file fallow cannot parse fails it
 (`failOnParseError`), because otherwise that file silently drops out of every analysis. In CI, a run

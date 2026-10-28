@@ -17,4 +17,13 @@ fi
 # Run fallow's static-analysis audit on changes since $BASE (dead code,
 # complexity, duplication, etc.), tagged so its config can identify this
 # as the pre-commit gate.
-bunx fallow audit --base "$BASE" --quiet --gate-marker pre-commit
+audit() {
+  bunx fallow audit --base "$BASE" --quiet --gate-marker pre-commit "$@"
+}
+
+VERDICT="$(audit --format json | bun -e 'console.log((await Bun.stdin.json()).verdict)')"
+if [ "$VERDICT" != "pass" ]; then
+  audit || true
+  echo "fallow audit verdict: $VERDICT. The CI fallow gate fails on warnings as well as errors."
+  exit 1
+fi
