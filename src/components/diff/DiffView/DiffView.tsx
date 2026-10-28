@@ -1,6 +1,5 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
 import type { CSSProperties } from "react";
-import { useImperativeHandle, useRef } from "react";
+import { useRef } from "react";
 import { CollapsedRow } from "#/components/diff/CollapsedRow/CollapsedRow.tsx";
 import { DiffRow } from "#/components/diff/DiffRow/DiffRow.tsx";
 import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
@@ -16,6 +15,7 @@ import styles from "./DiffView.module.css";
 import { useAnchorSeek } from "./useAnchorSeek.ts";
 import { useCloseOnEscape } from "./useCloseOnEscape.ts";
 import { useOneSidedSelection } from "./useOneSidedSelection.ts";
+import { useRowVirtualizer } from "./useRowVirtualizer.ts";
 import { useScrollMemory } from "./useScrollMemory.ts";
 
 export interface DiffViewProps {
@@ -29,8 +29,6 @@ export interface DiffViewProps {
 	highlightTheme: string | null;
 }
 
-/** Must match `--diff-line-height` in pixels. */
-const ROW_HEIGHT = 23;
 export function DiffView({
 	file,
 	onClose,
@@ -45,35 +43,13 @@ export function DiffView({
 	const { path, lines, language, rows, changes } = file;
 
 	const scroller = useRef<HTMLDivElement>(null);
-	// oxlint-disable-next-line react/incompatible-library -- skipped by "use no memo": the virtualizer changes without a new identity
-	const virtualizer = useVirtualizer({
-		count: rows.length,
-		getScrollElement: () => scroller.current,
-		estimateSize: () => ROW_HEIGHT,
-		overscan: 16,
-		// Restoring by hand after mount would draw the top of the file, then jump.
-		initialOffset: file.scrollTop,
-	});
+	const virtualizer = useRowVirtualizer(file, scroller);
 
 	// Also refreshes measurementsCache, which the scrollbar reads below.
 	const height = virtualizer.getTotalSize();
 
-	useImperativeHandle(
-		file.viewport,
-		() => ({
-			topRow() {
-				const top = scroller.current?.scrollTop ?? 0;
-				return virtualizer.getVirtualItemForOffset(top)?.index ?? 0;
-			},
-			scrollToRow(index) {
-				virtualizer.scrollToIndex(index, { align: "start" });
-			},
-		}),
-		[virtualizer],
-	);
-
 	useAnchorSeek(file, anchor, virtualizer);
-	const at = useScrollMemory(file.scrollTop, file.rememberScroll);
+	const scrollTopRef = useScrollMemory(file.scrollTop, file.rememberScroll);
 	useCloseOnEscape(onClose);
 	useOneSidedSelection(scroller);
 
@@ -102,7 +78,7 @@ export function DiffView({
 				ref={scroller}
 				data-testid="diff-scroller"
 				onScroll={(event) => {
-					at.current = event.currentTarget.scrollTop;
+					scrollTopRef.current = event.currentTarget.scrollTop;
 				}}
 			>
 				<table className={styles.sizer} aria-label={path} style={{ height }}>
