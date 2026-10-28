@@ -23,6 +23,7 @@ export interface DiffViewProps {
 	onClose(): void;
 	pending?: boolean;
 	showSigns: boolean;
+	autohideScrollbar: boolean;
 	anchor: LineAnchor | null;
 	onSelectLine(anchor: LineAnchor): void;
 	/** `null` until the stored theme has been read. */
@@ -34,6 +35,7 @@ export function DiffView({
 	onClose,
 	pending,
 	showSigns,
+	autohideScrollbar,
 	anchor,
 	onSelectLine,
 	highlightTheme,
@@ -133,6 +135,7 @@ export function DiffView({
 				</table>
 			</div>
 			<DiffScrollbar
+				autohide={autohideScrollbar}
 				file={file}
 				scrollerRef={scroller}
 				spans={virtualizer.measurementsCache}

@@ -16,6 +16,8 @@ export interface SettingsMenuProps {
 	onIgnoreWhitespaceChange(ignore: boolean): void;
 	showSigns: boolean;
 	onShowSignsChange(show: boolean): void;
+	autohideScrollbar: boolean;
+	onAutohideScrollbarChange(autohide: boolean): void;
 	/** Passed in, not called here: the viewer must read the same hook instance. */
 	highlight: HighlightThemeControls;
 }
@@ -24,6 +26,8 @@ export function SettingsMenu({
 	onIgnoreWhitespaceChange,
 	showSigns,
 	onShowSignsChange,
+	autohideScrollbar,
+	onAutohideScrollbarChange,
 	highlight,
 }: SettingsMenuProps) {
 	// Called here, not in the menu's content: the content unmounts when the menu shuts,
@@ -53,6 +57,11 @@ export function SettingsMenu({
 								label="Show +/- signs"
 								on={showSigns}
 								onChange={onShowSignsChange}
+							/>
+							<ToggleOption
+								label="Auto-hide scrollbar"
+								on={autohideScrollbar}
+								onChange={onAutohideScrollbarChange}
 							/>
 
 							<li>
