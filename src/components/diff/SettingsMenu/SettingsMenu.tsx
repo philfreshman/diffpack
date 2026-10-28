@@ -1,13 +1,13 @@
-import { NavigationMenu } from "@base-ui/react/navigation-menu";
 import { ThemeSwitch } from "#/components/theme/ThemeSwitch/ThemeSwitch.tsx";
 import { useThemeSelection } from "#/components/theme/useThemeSelection.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
-import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
+import { SettingsIcon } from "#/components/ui/icons.tsx";
 import {
-	CheckIcon,
-	ChevronRightIcon,
-	SettingsIcon,
-} from "#/components/ui/icons.tsx";
+	ChoiceOption,
+	FoldOutOption,
+	OptionsMenu,
+	ToggleOption,
+} from "#/components/ui/OptionsMenu/OptionsMenu.tsx";
 import { HIGHLIGHT_THEMES } from "#/lib/diff/highlightThemes.ts";
 import styles from "./SettingsMenu.module.css";
 
@@ -35,143 +35,48 @@ export function SettingsMenu({
 	const themeSelection = useThemeSelection();
 
 	return (
-		<NavigationMenu.Root className={styles.root} orientation="vertical">
-			<NavigationMenu.List className={styles.list}>
-				<NavigationMenu.Item>
-					<NavigationMenu.Trigger
-						className={`${iconButtonStyles.iconButton} ${styles.gear}`}
-						aria-label="Settings"
-						title="Settings"
-					>
-						<SettingsIcon width="16" height="16" />
-					</NavigationMenu.Trigger>
+		<OptionsMenu
+			label="Settings"
+			icon={<SettingsIcon width="16" height="16" />}
+		>
+			<ToggleOption
+				label="Ignore whitespaces"
+				on={ignoreWhitespace}
+				onChange={onIgnoreWhitespaceChange}
+			/>
+			<ToggleOption
+				label="Show +/- signs"
+				on={showSigns}
+				onChange={onShowSignsChange}
+			/>
+			<ToggleOption
+				label="Auto-hide scrollbar"
+				on={autohideScrollbar}
+				onChange={onAutohideScrollbarChange}
+			/>
 
-					<NavigationMenu.Content className={styles.content}>
-						<ul className={styles.options}>
-							<ToggleOption
-								label="Ignore whitespaces"
-								on={ignoreWhitespace}
-								onChange={onIgnoreWhitespaceChange}
-							/>
-							<ToggleOption
-								label="Show +/- signs"
-								on={showSigns}
-								onChange={onShowSignsChange}
-							/>
-							<ToggleOption
-								label="Auto-hide scrollbar"
-								on={autohideScrollbar}
-								onChange={onAutohideScrollbarChange}
-							/>
-
-							<li>
-								<NavigationMenu.Root orientation="vertical">
-									<NavigationMenu.List className={styles.options}>
-										<NavigationMenu.Item>
-											<NavigationMenu.Trigger
-												className={styles.option}
-												data-testid="theme-fold"
-											>
-												Theme
-												<span className={styles.value}>
-													{label(highlight.theme)}
-												</span>
-												<NavigationMenu.Icon className={styles.fold}>
-													<ChevronRightIcon width="14" height="14" />
-												</NavigationMenu.Icon>
-											</NavigationMenu.Trigger>
-
-											<NavigationMenu.Content className={styles.content}>
-												<ul className={styles.options}>
-													{HIGHLIGHT_THEMES.map((theme) => (
-														<li key={theme.value}>
-															<button
-																className={styles.option}
-																data-testid="theme-option"
-																data-theme={theme.value}
-																aria-pressed={highlight.theme === theme.value}
-																onClick={() => highlight.choose(theme.value)}
-																type="button"
-															>
-																{theme.label}
-																{highlight.theme === theme.value && (
-																	<CheckIcon
-																		className={styles.chosen}
-																		width="14"
-																		height="14"
-																	/>
-																)}
-															</button>
-														</li>
-													))}
-												</ul>
-											</NavigationMenu.Content>
-										</NavigationMenu.Item>
-									</NavigationMenu.List>
-
-									<NavigationMenu.Portal>
-										<NavigationMenu.Positioner
-											className={styles.positioner}
-											sideOffset={8}
-											alignOffset={-8}
-											align="start"
-											side="left"
-										>
-											<NavigationMenu.Popup
-												className={styles.popup}
-												data-testid="theme-popup"
-											>
-												<NavigationMenu.Viewport className={styles.viewport} />
-											</NavigationMenu.Popup>
-										</NavigationMenu.Positioner>
-									</NavigationMenu.Portal>
-								</NavigationMenu.Root>
-							</li>
-
-							<li className={styles.switchRow}>
-								<ThemeSwitch {...themeSelection} />
-							</li>
-						</ul>
-					</NavigationMenu.Content>
-				</NavigationMenu.Item>
-			</NavigationMenu.List>
-
-			<NavigationMenu.Portal>
-				<NavigationMenu.Positioner
-					className={styles.positioner}
-					sideOffset={6}
-					align="end"
-				>
-					<NavigationMenu.Popup className={styles.popup}>
-						<NavigationMenu.Viewport className={styles.viewport} />
-					</NavigationMenu.Popup>
-				</NavigationMenu.Positioner>
-			</NavigationMenu.Portal>
-		</NavigationMenu.Root>
-	);
-}
-
-function ToggleOption({
-	label,
-	on,
-	onChange,
-}: {
-	label: string;
-	on: boolean;
-	onChange(on: boolean): void;
-}) {
-	return (
-		<li>
-			<button
-				className={styles.option}
-				aria-pressed={on}
-				onClick={() => onChange(!on)}
-				type="button"
+			<FoldOutOption
+				label="Theme"
+				value={label(highlight.theme)}
+				side="left"
+				testId="theme"
 			>
-				{label}
-				{on && <CheckIcon className={styles.chosen} width="14" height="14" />}
-			</button>
-		</li>
+				{HIGHLIGHT_THEMES.map((theme) => (
+					<ChoiceOption
+						key={theme.value}
+						label={theme.label}
+						chosen={highlight.theme === theme.value}
+						onChoose={() => highlight.choose(theme.value)}
+						data-testid="theme-option"
+						data-theme={theme.value}
+					/>
+				))}
+			</FoldOutOption>
+
+			<li className={styles.switchRow}>
+				<ThemeSwitch {...themeSelection} />
+			</li>
+		</OptionsMenu>
 	);
 }
 
