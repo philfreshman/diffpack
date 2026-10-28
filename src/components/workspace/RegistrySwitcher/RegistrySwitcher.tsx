@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import comboboxStyles from "#/components/ui/Combobox/Combobox.module.css";
 import { CheckIcon, ChevronsUpDownIcon } from "#/components/ui/icons.tsx";
 import { Menu, MenuLinkItem } from "#/components/ui/Menu/Menu.tsx";
 import { registryAdapters } from "#/lib/registries/index.ts";
@@ -11,7 +12,7 @@ export function RegistrySwitcher({ adapter }: { adapter: RegistryAdapter }) {
 			<WidestTriggerSpace />
 			<Menu
 				label={`Registry: ${adapter.label}. Switch registry`}
-				triggerClassName={styles.trigger}
+				triggerClassName={`${comboboxStyles.surface} ${styles.trigger}`}
 				trigger={<TriggerFace adapter={adapter} />}
 			>
 				{registryAdapters.map((other) => (
@@ -30,7 +31,11 @@ export function RegistrySwitcher({ adapter }: { adapter: RegistryAdapter }) {
 
 function WidestTriggerSpace() {
 	return registryAdapters.map((other) => (
-		<span key={other.id} className={styles.spacer} aria-hidden="true">
+		<span
+			key={other.id}
+			className={`${comboboxStyles.surface} ${styles.spacer}`}
+			aria-hidden="true"
+		>
 			<TriggerFace adapter={other} />
 		</span>
 	));
