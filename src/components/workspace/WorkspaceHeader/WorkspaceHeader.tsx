@@ -18,7 +18,7 @@ export function WorkspaceHeader({ slug }: { slug: DiffSlug }) {
 				title="Expand sidebar"
 				onClick={() => sidebar.open()}
 			>
-				<SidebarIcon width="16" height="16" />
+				<SidebarIcon className={styles.sidebarIcon} width="16" height="16" />
 			</IconButton>
 			<div className={styles.controls}>
 				<PackageCombobox adapter={adapter} selected={slug.package} />

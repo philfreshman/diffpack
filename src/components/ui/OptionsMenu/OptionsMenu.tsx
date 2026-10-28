@@ -8,7 +8,7 @@ import {
 } from "#/components/ui/icons.tsx";
 import styles from "./OptionsMenu.module.css";
 
-type FoldOutSide = "left" | "right";
+export type FoldOutSide = "left" | "right";
 
 const FOLD_OUT_CHEVRONS: Record<FoldOutSide, typeof ChevronRightIcon> = {
 	left: ChevronLeftIcon,

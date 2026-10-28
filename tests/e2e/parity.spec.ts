@@ -6,6 +6,7 @@ import {
 	SPLIT_VIEW,
 	searchHistory,
 	THEME_SELECTION,
+	TREE_POSITION,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
 
@@ -123,6 +124,27 @@ test("writes the same six localStorage keys as the old site", async ({
 
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 	await expect(page.getByTestId("tree-panel")).toHaveCSS("width", "320px");
+});
+
+test("stores the tree's position under its own key, and only once chosen", async ({
+	page,
+}) => {
+	expect(TREE_POSITION.key).toBe("tree_position");
+	const stored = () =>
+		page.evaluate((key) => localStorage.getItem(key), TREE_POSITION.key);
+	await ready(page, "/npm/node/26.6.0/26.7.0");
+	await page.getByRole("button", { name: "File tree options" }).click();
+	await page.getByTestId("position-fold").click();
+	const choice = (name: string) =>
+		page.getByRole("button", { name, exact: true });
+
+	await expect(choice("Left")).toHaveAttribute("aria-pressed", "true");
+	expect(await stored()).toBeNull();
+
+	await choice("Right").click();
+
+	await expect(choice("Right")).toHaveAttribute("aria-pressed", "true");
+	expect(await stored()).toBe("right");
 });
 
 test("serves every icon and card image it points at", async ({

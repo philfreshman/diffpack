@@ -11,6 +11,7 @@ import { sidebar } from "#/lib/tree/sidebar.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./TreePanel.module.css";
+import { usePanelPosition } from "./usePanelPosition.ts";
 import { usePanelResize } from "./usePanelResize.ts";
 
 export interface TreePanelProps {
@@ -55,6 +56,7 @@ export function TreePanel({
 	const panelRef = useRef<HTMLElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const { width, startResize, nudge } = usePanelResize(panelRef, contentRef);
+	const position = usePanelPosition();
 
 	return (
 		<aside className={styles.panel} ref={panelRef} data-testid="tree-panel">
@@ -68,6 +70,8 @@ export function TreePanel({
 					<TreeMenu
 						onlyModified={onlyModified}
 						onOnlyModifiedChange={(next) => narrow(() => setOnlyModified(next))}
+						position={position}
+						onPositionChange={sidebar.place}
 					/>
 				</div>
 				<FileTree
@@ -97,7 +101,7 @@ export function TreePanel({
 					title="Collapse sidebar"
 					onClick={() => sidebar.close()}
 				>
-					<ChevronLeftIcon width="14" height="14" />
+					<ChevronLeftIcon className={styles.chevron} width="14" height="14" />
 				</button>
 			</div>
 		</aside>

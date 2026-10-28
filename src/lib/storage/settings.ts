@@ -1,6 +1,7 @@
 import { HIGHLIGHT_THEMES } from "#/lib/diff/highlightThemes.ts";
 import type { RegistryId, SearchResult } from "#/lib/registries/types.ts";
 import { DEFAULT_SELECTION, SELECTIONS } from "#/lib/theme.ts";
+import { TREE_POSITIONS } from "#/lib/tree/position.ts";
 import { parseHistory } from "./searchHistory.ts";
 import {
 	clampedInteger,
@@ -63,6 +64,12 @@ export const TREE_COLLAPSED = flag({
 export const ONLY_MODIFIED = flag({
 	key: "tree_show_only_modified",
 	fallback: true,
+});
+
+export const TREE_POSITION = oneOf({
+	key: "tree_position",
+	values: TREE_POSITIONS,
+	fallback: "left",
 });
 
 const histories = new Map<RegistryId, StoredSetting<readonly SearchResult[]>>();

@@ -1,14 +1,21 @@
-import { TREE_COLLAPSED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import {
+	TREE_COLLAPSED,
+	TREE_POSITION,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
 import {
 	readSetting,
 	type SettingStore,
 	writeSetting,
 } from "#/lib/storage/storedSetting.ts";
 import { type DragFrame, dragFrame } from "./gesture.ts";
+import type { TreePosition } from "./position.ts";
 
 export const WIDTH_PROPERTY = "--tree-panel-width";
 
 export const COLLAPSED_ATTRIBUTE = "data-tree-collapsed";
+
+export const POSITION_ATTRIBUTE = "data-tree-position";
 
 const DRAGGING_ATTRIBUTE = "data-tree-dragging";
 
@@ -30,6 +37,7 @@ export function createSidebar({
 }: SidebarOptions = {}) {
 	const listeners = new Set<() => void>();
 	let chosen: number | undefined;
+	let placed: TreePosition | undefined;
 	// A fresh object per snap, so the timer of a settled snap knows it is stale.
 	let snap: object | null = null;
 
@@ -50,6 +58,29 @@ export function createSidebar({
 		return chosen;
 	}
 
+	function position(): TreePosition {
+		placed ??= readSetting(TREE_POSITION, store);
+
+		return placed;
+	}
+
+	function showPosition(next: TreePosition): void {
+		if (next === TREE_POSITION.fallback)
+			root().removeAttribute(POSITION_ATTRIBUTE);
+		else root().setAttribute(POSITION_ATTRIBUTE, next);
+	}
+
+	function place(next: TreePosition): void {
+		placed = next;
+		showPosition(next);
+		writeSetting(TREE_POSITION, next, store);
+		notify();
+	}
+
+	function notify(): void {
+		for (const listener of listeners) listener();
+	}
+
 	function subscribe(listener: () => void): () => void {
 		listeners.add(listener);
 
@@ -61,7 +92,7 @@ export function createSidebar({
 		chosen = TREE_WIDTH.clamp(Math.round(next));
 		showWidth(chosen);
 		writeSetting(TREE_WIDTH, chosen, store);
-		for (const listener of listeners) listener();
+		notify();
 	}
 
 	// Settles a snap first: the panel can be reopened the moment a snap starts.
@@ -119,6 +150,8 @@ export function createSidebar({
 		close,
 		resize,
 		width,
+		place,
+		position,
 		subscribe,
 		startDrag,
 		dragTo,

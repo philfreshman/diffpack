@@ -11,6 +11,7 @@ import {
 	searchHistory,
 	THEME_SELECTION,
 	TREE_COLLAPSED,
+	TREE_POSITION,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
 import {
@@ -155,6 +156,18 @@ const CASES: Case[] = [
 			["nonsense", true],
 			["FALSE", true],
 			["", true],
+		],
+	),
+	reading(
+		TREE_POSITION,
+		[
+			["left", "left"],
+			["right", "right"],
+		],
+		[
+			["Right", "left"],
+			["top", "left"],
+			["", "left"],
 		],
 	),
 ];
