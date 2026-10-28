@@ -7,29 +7,40 @@ import styles from "./RegistrySwitcher.module.css";
 
 export function RegistrySwitcher({ adapter }: { adapter: RegistryAdapter }) {
 	return (
-		<Menu
-			label={`Registry: ${adapter.label}. Switch registry`}
-			triggerClassName={styles.trigger}
-			trigger={
-				<>
-					<span className={styles.label}>{adapter.label}</span>
-					<ChevronsUpDownIcon
-						className={styles.chevrons}
-						width="16"
-						height="16"
-					/>
-				</>
-			}
-		>
-			{registryAdapters.map((other) => (
-				<MenuLinkItem
-					key={other.id}
-					render={<Link to="/$registry" params={{ registry: other.id }} />}
-				>
-					<span className={styles.label}>{other.label}</span>
-					{other.id === adapter.id && <CheckIcon width="16" height="16" />}
-				</MenuLinkItem>
-			))}
-		</Menu>
+		<div className={styles.slot}>
+			<WidestTriggerSpace />
+			<Menu
+				label={`Registry: ${adapter.label}. Switch registry`}
+				triggerClassName={styles.trigger}
+				trigger={<TriggerFace adapter={adapter} />}
+			>
+				{registryAdapters.map((other) => (
+					<MenuLinkItem
+						key={other.id}
+						render={<Link to="/$registry" params={{ registry: other.id }} />}
+					>
+						<span className={styles.option}>{other.label}</span>
+						{other.id === adapter.id && <CheckIcon width="16" height="16" />}
+					</MenuLinkItem>
+				))}
+			</Menu>
+		</div>
+	);
+}
+
+function WidestTriggerSpace() {
+	return registryAdapters.map((other) => (
+		<span key={other.id} className={styles.spacer} aria-hidden="true">
+			<TriggerFace adapter={other} />
+		</span>
+	));
+}
+
+function TriggerFace({ adapter }: { adapter: RegistryAdapter }) {
+	return (
+		<>
+			<span className={styles.label}>{adapter.label}</span>
+			<ChevronsUpDownIcon className={styles.chevrons} width="16" height="16" />
+		</>
 	);
 }
