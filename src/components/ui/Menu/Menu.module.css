@@ -29,9 +29,3 @@
 .item[data-highlighted] {
 	background-color: var(--color-surface-hover);
 }
-
-.separator {
-	height: 1px;
-	margin: var(--space-1) 0;
-	background-color: var(--color-border);
-}

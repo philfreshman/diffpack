@@ -2,6 +2,14 @@
 	display: flex;
 	min-width: 0;
 	flex: 2 1 0;
+	align-items: flex-end;
+	gap: var(--space-4);
+}
+
+.search {
+	display: flex;
+	min-width: 0;
+	flex: 1;
 	flex-direction: column;
 	gap: var(--space-1);
 }

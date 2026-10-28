@@ -1,6 +1,8 @@
 import { type RefObject, useSyncExternalStore } from "react";
 import { TREE_WIDTH } from "#/lib/storage/settings.ts";
+import { edgeAfterDrag, nudgedWidth } from "#/lib/tree/gesture.ts";
 import { sidebar } from "#/lib/tree/sidebar.ts";
+import { usePanelPosition } from "./usePanelPosition.ts";
 
 /** The sidebar applies `dragFrame` to the page; the content's fade is done here, on the panel's own element. */
 export function usePanelResize(
@@ -12,6 +14,7 @@ export function usePanelResize(
 		sidebar.width,
 		() => TREE_WIDTH.fallback,
 	);
+	const position = usePanelPosition();
 
 	function fade(opacity: number, blur: number) {
 		const element = contentRef.current;
@@ -29,7 +32,11 @@ export function usePanelResize(
 		sidebar.startDrag();
 
 		function onMove(move: PointerEvent) {
-			edge = startWidth + move.clientX - startX;
+			edge = edgeAfterDrag({
+				startWidth,
+				travel: move.clientX - startX,
+				position,
+			});
 			const frame = sidebar.dragTo(edge);
 			fade(frame.opacity, frame.blur);
 		}
@@ -49,11 +56,10 @@ export function usePanelResize(
 	}
 
 	function nudge(event: React.KeyboardEvent<HTMLElement>) {
-		const step =
-			event.key === "ArrowRight" ? 16 : event.key === "ArrowLeft" ? -16 : 0;
-		if (!step) return;
+		const next = nudgedWidth(sidebar.width(), event.key, position);
+		if (next === null) return;
 		event.preventDefault();
-		sidebar.resize(sidebar.width() + step);
+		sidebar.resize(next);
 	}
 
 	return { width, startResize, nudge };

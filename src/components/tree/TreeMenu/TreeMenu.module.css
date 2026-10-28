@@ -1,0 +1,7 @@
+.trigger {
+	flex-shrink: 0;
+	width: var(--control-height);
+	height: var(--control-height);
+	border: 1px solid var(--color-border);
+	color: var(--color-muted);
+}

@@ -1,5 +1,5 @@
 import { gzipSync } from "node:zlib";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import {
 	ONLY_MODIFIED,
 	TREE_COLLAPSED,
@@ -152,27 +152,45 @@ test("filtering narrows the tree to what matches, and opens the way to it", asyn
 	await expect(row(page, "package.json")).toHaveCount(0);
 });
 
-test("the toggle brings the unchanged files back, and remembers it", async ({
+const treeOptions = (page: Page) =>
+	page.getByRole("button", { name: "File tree options" });
+const option = (page: Page, name: string) =>
+	page.getByRole("button", { name, exact: true });
+
+async function openTreeOptions(page: Page) {
+	await treeOptions(page).click();
+	await expect(option(page, "Only modified")).toBeVisible();
+}
+
+test("only modified, in the tree's menu, brings the unchanged files back, and remembers it", async ({
 	page,
 }) => {
 	await page.goto(EXPRESS);
 	await ready(page);
-	const toggle = page.getByRole("button", { name: "Show only modified files" });
-	await expect(toggle).toHaveAttribute("aria-pressed", "true");
+	await openTreeOptions(page);
+	await expect(option(page, "Only modified")).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
 
-	await toggle.click();
+	await option(page, "Only modified").click();
 
-	await expect(toggle).toHaveAttribute("aria-pressed", "false");
+	await expect(option(page, "Only modified")).toHaveAttribute(
+		"aria-pressed",
+		"false",
+	);
 	await expect(
 		page.locator("[role='treeitem'][data-status='unchanged']").first(),
 	).toBeVisible();
 
 	await page.reload();
 	await ready(page);
+	await openTreeOptions(page);
 
-	await expect(
-		page.getByRole("button", { name: "Show only modified files" }),
-	).toHaveAttribute("aria-pressed", "false");
+	await expect(option(page, "Only modified")).toHaveAttribute(
+		"aria-pressed",
+		"false",
+	);
 });
 
 test("a folder opens and shuts on click, and stays shut", async ({ page }) => {
@@ -657,4 +675,103 @@ test("let go at its minimum, the sidebar stays open at that width", async ({
 
 	await expect(panel).toBeVisible();
 	await expect(panel).toHaveCSS("width", "220px");
+});
+
+async function boxOf(locator: Locator) {
+	const box = await locator.boundingBox();
+	if (!box) throw new Error("not on screen");
+
+	return box;
+}
+
+async function openPosition(page: Page) {
+	await openTreeOptions(page);
+	await page.getByTestId("position-fold").click();
+	await expect(option(page, "Right")).toBeVisible();
+}
+
+test("moved to the right, the whole sidebar mirrors, and it is there before the first paint", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+	const panel = page.getByTestId("tree-panel");
+	const diff = page.getByTestId("diff-file");
+	const width = () =>
+		panel.evaluate((node) => node.getBoundingClientRect().width);
+	await openPosition(page);
+	await expect(page.getByTestId("position-fold")).toContainText("Left");
+
+	await option(page, "Right").click();
+
+	await expect(page.getByTestId("position-popup")).toBeHidden();
+	await expect(page.getByTestId("position-fold")).toBeHidden();
+	await expect(page.locator("html")).toHaveAttribute(
+		"data-tree-position",
+		"right",
+	);
+	await openTreeOptions(page);
+	await expect(page.getByTestId("position-fold")).toContainText("Right");
+	await page.keyboard.press("Escape");
+	expect((await boxOf(panel)).x).toBeGreaterThanOrEqual(
+		(await boxOf(diff)).x + (await boxOf(diff)).width,
+	);
+
+	await page.reload({ waitUntil: "domcontentloaded" });
+	expect(
+		await page.evaluate(() =>
+			document.documentElement.getAttribute("data-tree-position"),
+		),
+	).toBe("right");
+	await ready(page);
+	const viewport = page.viewportSize() ?? { width: 0, height: 0 };
+	expect(await boxOf(panel)).toMatchObject({ x: viewport.width - 320 });
+
+	const handle = page.getByRole("separator", { name: "Resize file tree" });
+	const edge = await boxOf(handle);
+	expect(edge.x).toBeLessThan(viewport.width - 320);
+	expect(edge.x + edge.width).toBeGreaterThan(viewport.width - 320);
+	const grip = { x: edge.x + edge.width / 2, y: edge.y + edge.height / 4 };
+	await page.mouse.move(grip.x, grip.y);
+	await page.mouse.down();
+	await page.mouse.move(grip.x - 120, grip.y, { steps: 5 });
+	await page.mouse.up();
+	expect(await width()).toBe(440);
+	await handle.focus();
+	await page.keyboard.press("ArrowLeft");
+	expect(await width()).toBe(456);
+	await expect(handle).toHaveAttribute("aria-valuenow", "456");
+
+	const held = await boxOf(handle);
+	await page.mouse.move(held.x + held.width / 2, grip.y);
+	await page.mouse.down();
+	await page.mouse.move(viewport.width - 100, grip.y, { steps: 5 });
+	expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+		viewport.width,
+	);
+	await page.mouse.up();
+	await expect(panel).toBeHidden();
+	const expand = page.getByRole("button", { name: "Expand sidebar" });
+	expect((await boxOf(expand)).x).toBeGreaterThan(viewport.width / 2);
+	await expand.click();
+	await expect(panel).toHaveCSS("width", "456px");
+
+	const collapse = page.getByRole("button", { name: "Collapse sidebar" });
+	await collapse.hover();
+	await collapse.click();
+	await expect(panel).toBeHidden();
+	await expand.click();
+	await expect(panel).toBeVisible();
+	expect(await boxOf(panel)).toMatchObject({ x: viewport.width - 456 });
+
+	await openPosition(page);
+	const fold = await boxOf(page.getByTestId("position-fold"));
+	const foldOut = await boxOf(page.getByTestId("position-popup"));
+	expect(foldOut.x + foldOut.width).toBeLessThanOrEqual(fold.x);
+
+	await option(page, "Left").click();
+
+	await expect(page.locator("html")).not.toHaveAttribute("data-tree-position");
+	expect(await boxOf(panel)).toMatchObject({ x: 0, width: 456 });
+	expect((await boxOf(diff)).x).toBeGreaterThanOrEqual(456);
 });

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { TREE_WIDTH } from "#/lib/storage/settings.ts";
-import { dragFrame } from "#/lib/tree/gesture.ts";
+import { dragFrame, edgeAfterDrag, nudgedWidth } from "#/lib/tree/gesture.ts";
 
 describe("dragFrame", () => {
 	test("within limits the panel is simply that wide, and untouched", () => {
@@ -38,5 +38,42 @@ describe("dragFrame", () => {
 	test("let go anywhere past the minimum it snaps shut, and at it does not", () => {
 		expect(dragFrame(TREE_WIDTH.min).collapses).toBe(false);
 		expect(dragFrame(TREE_WIDTH.min - 1).collapses).toBe(true);
+	});
+});
+
+describe("edgeAfterDrag", () => {
+	test("on the left, the panel widens as the edge is pulled right", () => {
+		expect(
+			edgeAfterDrag({ startWidth: 300, travel: 120, position: "left" }),
+		).toBe(420);
+		expect(
+			edgeAfterDrag({ startWidth: 300, travel: -100, position: "left" }),
+		).toBe(200);
+	});
+
+	test("on the right, the panel widens as the edge is pulled left", () => {
+		expect(
+			edgeAfterDrag({ startWidth: 300, travel: -120, position: "right" }),
+		).toBe(420);
+		expect(
+			edgeAfterDrag({ startWidth: 300, travel: 100, position: "right" }),
+		).toBe(200);
+	});
+});
+
+describe("nudgedWidth", () => {
+	test("on the left, the right arrow widens and the left arrow narrows", () => {
+		expect(nudgedWidth(320, "ArrowRight", "left")).toBe(336);
+		expect(nudgedWidth(320, "ArrowLeft", "left")).toBe(304);
+	});
+
+	test("on the right, the left arrow widens and the right arrow narrows", () => {
+		expect(nudgedWidth(320, "ArrowLeft", "right")).toBe(336);
+		expect(nudgedWidth(320, "ArrowRight", "right")).toBe(304);
+	});
+
+	test("any other key leaves the width alone", () => {
+		expect(nudgedWidth(320, "ArrowUp", "left")).toBeNull();
+		expect(nudgedWidth(320, "Enter", "right")).toBeNull();
 	});
 });

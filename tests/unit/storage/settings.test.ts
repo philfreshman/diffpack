@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { GA_SCRIPT } from "#/lib/analytics.ts";
 import * as settings from "#/lib/storage/settings.ts";
 import {
+	AUTOHIDE_SCROLLBAR,
 	HIGHLIGHT_THEME,
 	IGNORE_WHITESPACE,
 	ONLY_MODIFIED,
@@ -10,6 +11,7 @@ import {
 	searchHistory,
 	THEME_SELECTION,
 	TREE_COLLAPSED,
+	TREE_POSITION,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
 import {
@@ -88,6 +90,18 @@ const CASES: Case[] = [
 		],
 	),
 	reading(
+		AUTOHIDE_SCROLLBAR,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["yes", false],
+			["TRUE", false],
+			["", false],
+		],
+	),
+	reading(
 		HIGHLIGHT_THEME,
 		[
 			["nord", "nord"],
@@ -142,6 +156,18 @@ const CASES: Case[] = [
 			["nonsense", true],
 			["FALSE", true],
 			["", true],
+		],
+	),
+	reading(
+		TREE_POSITION,
+		[
+			["left", "left"],
+			["right", "right"],
+		],
+		[
+			["Right", "left"],
+			["top", "left"],
+			["", "left"],
 		],
 	),
 ];

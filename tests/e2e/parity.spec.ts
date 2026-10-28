@@ -6,6 +6,7 @@ import {
 	SPLIT_VIEW,
 	searchHistory,
 	THEME_SELECTION,
+	TREE_POSITION,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
 
@@ -125,6 +126,30 @@ test("writes the same six localStorage keys as the old site", async ({
 	await expect(page.getByTestId("tree-panel")).toHaveCSS("width", "320px");
 });
 
+test("stores the tree's position under its own key, and only once chosen", async ({
+	page,
+}) => {
+	expect(TREE_POSITION.key).toBe("tree_position");
+	const stored = () =>
+		page.evaluate((key) => localStorage.getItem(key), TREE_POSITION.key);
+	await ready(page, "/npm/node/26.6.0/26.7.0");
+	await page.getByRole("button", { name: "File tree options" }).click();
+	await page.getByTestId("position-fold").click();
+	const choice = (name: string) =>
+		page.getByRole("button", { name, exact: true });
+
+	await expect(choice("Left")).toHaveAttribute("aria-pressed", "true");
+	expect(await stored()).toBeNull();
+
+	await choice("Right").click();
+
+	await expect(page.locator("html")).toHaveAttribute(
+		"data-tree-position",
+		"right",
+	);
+	expect(await stored()).toBe("right");
+});
+
 test("serves every icon and card image it points at", async ({
 	page,
 	request,
@@ -192,8 +217,8 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 	// Each client-side navigation counts as a page view, as each URL did on the old Astro site.
 	// The hover preloads the route chunk (`defaultPreload: "intent"`); a click before it lands hard-navigates.
 	await page.getByRole("button", { name: /Switch registry/ }).click();
-	const home = page.getByRole("menuitem", { name: "All registries" });
-	await home.hover();
+	const crates = page.getByRole("menuitem", { name: "crates.io" });
+	await crates.hover();
 	await page.waitForLoadState("networkidle");
 
 	// A hard navigation resets `dataLayer`, which looks like an uncounted view; the stamp tells them apart.
@@ -201,8 +226,8 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 		(window as Window & { __document?: true }).__document = true;
 	});
 
-	await home.click();
-	await expect(page).toHaveURL("/");
+	await crates.click();
+	await expect(page).toHaveURL("/crates");
 
 	expect(
 		await page.evaluate(
@@ -221,10 +246,10 @@ test("counts a visit, and each comparison after it", async ({ page }) => {
 		Record<string, string>,
 	];
 	expect([type, name]).toEqual(["event", "page_view"]);
-	expect(params.page_path).toBe("/");
+	expect(params.page_path).toBe("/crates");
 	// The title of the page arrived at, not the one just left.
 	expect(params.page_title).toBe(
-		"diffpack: compare npm, crates.io, Go, PyPI and Packagist versions",
+		"Compare crates.io package versions | diffpack",
 	);
 });
 

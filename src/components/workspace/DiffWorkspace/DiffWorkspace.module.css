@@ -3,6 +3,7 @@
 .workspace {
 	display: flex;
 	height: 100dvh;
+	overflow-x: clip;
 }
 
 .body {

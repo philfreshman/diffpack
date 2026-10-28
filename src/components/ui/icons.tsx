@@ -126,10 +126,12 @@ export function ExternalLinkIcon(props: IconProps) {
 	);
 }
 
-export function FilterIcon(props: IconProps) {
+export function DotsVerticalIcon(props: IconProps) {
 	return (
 		<Icon {...props}>
-			<path d="M3 5h18M6 12h12M10 19h4" />
+			<circle cx="12" cy="5" r="1" />
+			<circle cx="12" cy="12" r="1" />
+			<circle cx="12" cy="19" r="1" />
 		</Icon>
 	);
 }

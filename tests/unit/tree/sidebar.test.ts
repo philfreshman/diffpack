@@ -1,17 +1,29 @@
 import { describe, expect, test } from "bun:test";
-import { TREE_COLLAPSED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import {
+	TREE_COLLAPSED,
+	TREE_POSITION,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
 import type { SettingStore } from "#/lib/storage/storedSetting.ts";
 import { dragFrame } from "#/lib/tree/gesture.ts";
 import { sidebar as appSidebar, createSidebar } from "#/lib/tree/sidebar.ts";
+import { TREE_WIDTH_SCRIPT } from "#/lib/tree/widthScript.ts";
 import { memoryStore, REFUSING_STORE } from "../storage/storeStub.ts";
 
 function fakeDocument(): Document {
-	const attributes = new Set<string>();
+	const attributes = new Map<string, string>();
 	const properties = new Map<string, string>();
 	const documentElement = {
 		hasAttribute: (name: string) => attributes.has(name),
+		getAttribute: (name: string) => attributes.get(name) ?? null,
+		setAttribute(name: string, value: string) {
+			attributes.set(name, value);
+		},
+		removeAttribute(name: string) {
+			attributes.delete(name);
+		},
 		toggleAttribute(name: string, force: boolean) {
-			if (force) attributes.add(name);
+			if (force) attributes.set(name, "");
 			else attributes.delete(name);
 
 			return force;
@@ -59,8 +71,14 @@ function page(store: SettingStore = memoryStore()) {
 		dragging: () => html.hasAttribute("data-tree-dragging"),
 		snapping: () => html.hasAttribute("data-tree-snapping"),
 		shownWidth: () => html.style.getPropertyValue("--tree-panel-width"),
+		side: () => html.getAttribute("data-tree-position"),
 		// What the pre-paint script does for a visitor who left it shut.
 		loadShut: () => html.toggleAttribute("data-tree-collapsed", true),
+		runPrePaintScript: () =>
+			new Function("document", "localStorage", TREE_WIDTH_SCRIPT)(
+				document,
+				store,
+			),
 	};
 }
 
@@ -294,6 +312,99 @@ describe("snapping shut", () => {
 		expect(shut()).toBe(true);
 	});
 });
+
+describe("moving it to a side", () => {
+	test("to the right marks the page, and it stays there for the next visit", () => {
+		const { sidebar, store, side } = page();
+
+		sidebar.place("right");
+
+		expect(side()).toBe("right");
+		expect(sidebar.position()).toBe("right");
+		expect(store.getItem(TREE_POSITION.key)).toBe("right");
+	});
+
+	test("back to the left clears the mark, and stores the choice", () => {
+		const { sidebar, store, side } = page();
+		sidebar.place("right");
+
+		sidebar.place("left");
+
+		expect(side()).toBeNull();
+		expect(sidebar.position()).toBe("left");
+		expect(store.getItem(TREE_POSITION.key)).toBe("left");
+	});
+
+	test("starts on the side stored on an earlier visit, and on the left otherwise", () => {
+		const store = memoryStore();
+		store.setItem(TREE_POSITION.key, "right");
+
+		expect(page(store).sidebar.position()).toBe("right");
+		expect(page().sidebar.position()).toBe("left");
+		expect(page(REFUSING_STORE).sidebar.position()).toBe("left");
+	});
+
+	test("a store that refuses still moves it for the session", () => {
+		const { sidebar, side } = page(REFUSING_STORE);
+
+		sidebar.place("right");
+
+		expect(side()).toBe("right");
+		expect(sidebar.position()).toBe("right");
+	});
+
+	test("tells whoever is listening", () => {
+		const { sidebar } = page();
+		const heard: string[] = [];
+		sidebar.subscribe(() => heard.push(sidebar.position()));
+
+		sidebar.place("right");
+
+		expect(heard).toEqual(["right"]);
+	});
+});
+
+describe("before the first paint", () => {
+	test("a visitor who chose the right finds the page marked for it", () => {
+		const store = memoryStore();
+		store.setItem(TREE_POSITION.key, "right");
+		const { side, runPrePaintScript } = page(store);
+
+		runPrePaintScript();
+
+		expect(side()).toBe("right");
+	});
+
+	test("the side chosen in one visit is the one marked in the next", () => {
+		const store = memoryStore();
+		page(store).sidebar.place("right");
+		const next = page(store);
+
+		next.runPrePaintScript();
+
+		expect(next.side()).toBe("right");
+	});
+
+	test.each([
+		["nothing is stored", memoryStore()],
+		["the left is stored", storing(TREE_POSITION.key, "left")],
+		["the store refuses", REFUSING_STORE],
+	])("nothing is marked when %s", (_, store) => {
+		const { side, shownWidth, runPrePaintScript } = page(store);
+
+		runPrePaintScript();
+
+		expect(side()).toBeNull();
+		expect(shownWidth()).toBe("320px");
+	});
+});
+
+function storing(key: string, value: string): SettingStore {
+	const store = memoryStore();
+	store.setItem(key, value);
+
+	return store;
+}
 
 describe("the app's sidebar", () => {
 	test("is created with no document and no storage, so the server can import it", () => {
