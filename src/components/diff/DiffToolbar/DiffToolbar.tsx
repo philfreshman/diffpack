@@ -10,11 +10,14 @@ import {
 	ArrowRightIcon,
 	ArrowUpIcon,
 	CloseIcon,
+	FileIcon,
+	FilesIcon,
 	FoldIcon,
 	SplitViewIcon,
 	UnfoldIcon,
 	UnifiedViewIcon,
 } from "#/components/ui/icons.tsx";
+import type { FileLayout } from "#/lib/review/fileStream.ts";
 import styles from "./DiffToolbar.module.css";
 
 export interface DiffToolbarProps {
@@ -30,6 +33,8 @@ export interface DiffToolbarProps {
 	> | null;
 	split: boolean;
 	onSplitChange(split: boolean): void;
+	layout: FileLayout;
+	onLayoutChange(layout: FileLayout): void;
 	settings: SettingsMenuProps;
 }
 
@@ -42,9 +47,12 @@ export function DiffToolbar({
 	file,
 	split,
 	onSplitChange,
+	layout,
+	onLayoutChange,
 	settings,
 }: DiffToolbarProps) {
 	const open = path !== "";
+	const closable = open && layout === "single";
 
 	return (
 		<div className={styles.toolbar} data-testid="diff-toolbar">
@@ -90,7 +98,7 @@ export function DiffToolbar({
 				<IconButton
 					aria-label="Close file"
 					title="Close file"
-					disabled={!open}
+					disabled={!closable}
 					onClick={onClose}
 				>
 					<CloseIcon width="16" height="16" />
@@ -107,6 +115,8 @@ export function DiffToolbar({
 			)}
 
 			<ViewControls file={file} onSplitChange={onSplitChange} split={split} />
+
+			<LayoutControls layout={layout} onLayoutChange={onLayoutChange} />
 
 			<SettingsMenu {...settings} />
 		</div>
@@ -151,6 +161,34 @@ function ViewControls({
 				onClick={() => onSplitChange(false)}
 			>
 				<UnifiedViewIcon width="16" height="16" />
+			</IconButton>
+		</div>
+	);
+}
+
+function LayoutControls({
+	layout,
+	onLayoutChange,
+}: Pick<DiffToolbarProps, "layout" | "onLayoutChange">) {
+	return (
+		<div className={styles.group}>
+			<IconButton
+				aria-label="Show one file at a time"
+				aria-pressed={layout === "single"}
+				title="Show one file at a time"
+				data-testid="layout-single"
+				onClick={() => onLayoutChange("single")}
+			>
+				<FileIcon width="16" height="16" />
+			</IconButton>
+			<IconButton
+				aria-label="Show all files"
+				aria-pressed={layout === "all"}
+				title="Show all files"
+				data-testid="layout-all"
+				onClick={() => onLayoutChange("all")}
+			>
+				<FilesIcon width="16" height="16" />
 			</IconButton>
 		</div>
 	);

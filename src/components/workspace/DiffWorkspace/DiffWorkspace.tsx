@@ -7,8 +7,14 @@ import {
 } from "#/components/diff/useFileModel.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { useHighlightTheme } from "#/components/diff/useHighlightTheme.ts";
+import {
+	FileStream,
+	type FileStreamProps,
+} from "#/components/review/FileStream/FileStream.tsx";
+import { useViewedFiles } from "#/components/review/useViewedFiles.ts";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
+import { formatLineAnchor, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import { failureOf } from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
 import {
@@ -16,7 +22,11 @@ import {
 	type BuildProgress,
 	FETCHING,
 } from "#/lib/session/buildProgress.ts";
-import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
+import {
+	type DiffSessionState,
+	diffSession,
+	type OpenFile,
+} from "#/lib/session/diffSession.ts";
 import {
 	changedFiles,
 	summarizeTree,
@@ -24,12 +34,13 @@ import {
 } from "#/lib/session/tree.ts";
 import { buildPath, type DiffSlug, namesComparison } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
-import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
+import type { DiffFileEntry, DiffRequest } from "#/lib/worker/protocol.ts";
 import { AsciiTrail } from "../AsciiTrail/AsciiTrail.tsx";
 import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
 import { DiffSummary } from "../DiffSummary/DiffSummary.tsx";
 import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
 import { useDiffSession } from "../useDiffSession.ts";
+import { useFileNavigation } from "../useFileNavigation.ts";
 import { type LineLink, useLineLink } from "../useLineLink.ts";
 import { useVersions } from "../useVersions.ts";
 import { useViewerSettings } from "../useViewerSettings.ts";
@@ -46,7 +57,7 @@ import styles from "./DiffWorkspace.module.css";
 export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const adapter = requireAdapter(slug.registry);
 	const navigate = useNavigate();
-	const { whitespace, split, signs, autohide } = useViewerSettings();
+	const { whitespace, split, signs, autohide, layout } = useViewerSettings();
 	// One instance for the toolbar and the viewer; a second would be a second answer.
 	const highlight = useHighlightTheme();
 	// null until the stored value is read, or a deep link would build a
@@ -57,10 +68,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	);
 	// The arrows skip unchanged files, which the tree hides by default.
 	const changed = changedFiles(session.tree);
-	// From the session, not the URL: a file is open only once its tree is ready.
-	const fileIndex = changed.findIndex(
-		(entry) => entry.path === session.file?.path,
-	);
 
 	// The header's list, shared through the query cache: no second request.
 	const versions = useVersions(adapter, slug.package);
@@ -77,6 +84,18 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const summary = shownSummary(session);
 	const pane = paneOf(session.status, progress, versionsFailure !== null);
 
+	const review = useViewedFiles(reviewedRequest(slug, session));
+	const files = useFileNavigation({
+		changed,
+		// From the session, not the URL: a file is open only once its tree is ready.
+		session,
+		urlPath: slug.file,
+		summaryShown: summary !== null,
+		layout,
+		openFile,
+		closeFile,
+	});
+
 	function fileLink(file: string): string {
 		return buildPath(adapter, { ...slug, file });
 	}
@@ -89,9 +108,8 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 		navigate({ to: comparisonPath });
 	}
 
-	function stepFile(direction: 1 | -1) {
-		const next = changed[fileIndex + direction];
-		if (next) openFile(next.path);
+	function selectStreamLine(file: string, anchor: LineAnchor) {
+		navigate({ to: fileLink(file), hash: formatLineAnchor(anchor) });
 	}
 
 	return (
@@ -108,8 +126,9 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			<TreePanel
 				tree={session.tree}
 				comparison={comparisonPath}
-				selectedPath={slug.file}
-				onOpenFile={openFile}
+				selectedPath={files.selectedPath}
+				onOpenFile={files.showFile}
+				viewedPaths={review.viewed}
 			/>
 			<div className={styles.column}>
 				<WorkspaceHeader slug={slug} />
@@ -125,14 +144,16 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 					{pane !== "versions-failure" && (
 						<section className={styles.file} data-testid="diff-file">
 							<DiffToolbar
-								path={session.file?.path ?? ""}
-								fileIndex={fileIndex}
+								path={files.currentPath}
+								fileIndex={files.currentIndex}
 								fileCount={changed.length}
-								onStepFile={stepFile}
+								onStepFile={files.stepFile}
 								onClose={closeFile}
 								file={shown}
 								split={split.value}
 								onSplitChange={split.set}
+								layout={files.shownLayout}
+								onLayoutChange={files.changeLayout}
 								settings={{
 									ignoreWhitespace: whitespace.value,
 									onIgnoreWhitespaceChange: whitespace.set,
@@ -155,6 +176,18 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								slug={slug}
 								progress={progress}
 								summary={summary}
+								streaming={files.streaming}
+								stream={{
+									streamRef: files.streamRef,
+									files: changed,
+									readFile: diffSession.readFile,
+									viewed: review.viewed,
+									onViewedChange: review.setViewed,
+									onCurrentFileChange: files.onCurrentFileChange,
+									onOpenFile: openFile,
+									onSelectLine: selectStreamLine,
+									split: split.value,
+								}}
 								file={session.file}
 								highlight={highlight}
 								showSigns={signs.value}
@@ -208,6 +241,16 @@ function summaryAwaitsScan(
 	return session.status === "ready" && !session.file && scan === "loading";
 }
 
+function reviewedRequest(
+	slug: DiffSlug,
+	session: DiffSessionState,
+): DiffRequest | null {
+	if (session.status !== "ready") return null;
+	const { registry, package: pkg, from, to } = slug;
+
+	return { registry, pkg, from, to };
+}
+
 function readyTree(session: DiffSessionState): DiffFileEntry | null {
 	return session.status === "ready" ? session.tree : null;
 }
@@ -228,10 +271,17 @@ function paneOf(
 	return "file";
 }
 
+type StreamProps = Omit<
+	FileStreamProps,
+	"header" | "showSigns" | "highlightTheme"
+>;
+
 interface ComparisonPaneProps extends FilePaneProps {
 	slug: DiffSlug;
 	progress: BuildProgress | null;
 	summary: TreeSummary | null;
+	streaming: boolean;
+	stream: StreamProps;
 	fileLink(path: string): string;
 }
 
@@ -239,6 +289,8 @@ function ComparisonPane({
 	slug,
 	progress,
 	summary,
+	streaming,
+	stream,
 	fileLink,
 	...filePane
 }: ComparisonPaneProps) {
@@ -253,9 +305,9 @@ function ComparisonPane({
 				osv={scan.status}
 			/>
 		);
-	if (summary)
-		return (
-			<DiffSummary summary={summary}>
+	if (summary) {
+		const header = (
+			<DiffSummary summary={summary} layout={streaming ? "all" : "single"}>
 				<VulnerabilityReport
 					scan={scan}
 					affected={affected}
@@ -265,6 +317,17 @@ function ComparisonPane({
 				/>
 			</DiffSummary>
 		);
+		if (!streaming) return header;
+
+		return (
+			<FileStream
+				{...stream}
+				header={header}
+				showSigns={filePane.showSigns}
+				highlightTheme={filePane.highlight.theme}
+			/>
+		);
+	}
 	return <FilePane {...filePane} />;
 }
 
