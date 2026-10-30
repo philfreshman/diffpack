@@ -64,6 +64,17 @@
 	color: var(--color-renamed);
 }
 
+.row[data-viewed] .name {
+	opacity: 0.6;
+}
+
+.viewed {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	color: var(--color-muted);
+}
+
 .added,
 .removed {
 	flex-shrink: 0;

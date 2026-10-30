@@ -1,5 +1,6 @@
 import { type RefObject, useRef, useState } from "react";
 import {
+	CheckIcon,
 	ChevronDownIcon,
 	ChevronRightIcon,
 	FileIcon,
@@ -14,9 +15,12 @@ import styles from "./FileTree.module.css";
 export interface FileTreeProps {
 	rows: readonly TreeRow[];
 	selectedPath: string;
+	viewedPaths?: ReadonlySet<string>;
 	onOpenFile(path: string): void;
 	onToggleFolder(path: string, expanded: boolean): void;
 }
+
+const NONE_VIEWED: ReadonlySet<string> = new Set();
 
 function nameOf(path: string): string {
 	return path.split("/").pop() || path;
@@ -25,6 +29,7 @@ function nameOf(path: string): string {
 export function FileTree({
 	rows,
 	selectedPath,
+	viewedPaths = NONE_VIEWED,
 	onOpenFile,
 	onToggleFolder,
 }: FileTreeProps) {
@@ -81,6 +86,7 @@ export function FileTree({
 					register={elements}
 					row={row}
 					selected={isSelected(row, selectedPath)}
+					viewed={isViewed(row, viewedPaths)}
 				/>
 			))}
 		</div>
@@ -91,10 +97,15 @@ function isSelected(row: TreeRow, selectedPath: string): boolean {
 	return row.entry.type === "file" && row.entry.path === selectedPath;
 }
 
+function isViewed(row: TreeRow, viewedPaths: ReadonlySet<string>): boolean {
+	return row.entry.type === "file" && viewedPaths.has(row.entry.path);
+}
+
 interface FileTreeRowProps {
 	row: TreeRow;
 	active: boolean;
 	selected: boolean;
+	viewed: boolean;
 	onActivate(row: TreeRow): void;
 	onFocus(key: string): void;
 	/** Read only at mount, for the fade-in delay. */
@@ -105,6 +116,7 @@ function FileTreeRow({
 	row,
 	active,
 	selected,
+	viewed,
 	onActivate,
 	onFocus,
 	position,
@@ -136,6 +148,7 @@ function FileTreeRow({
 			data-path={entry.path}
 			data-type={entry.type}
 			data-status={entry.status}
+			data-viewed={viewed || undefined}
 			title={
 				entry.status === "renamed" && entry.oldPath
 					? `Renamed from ${entry.oldPath}`
@@ -148,6 +161,17 @@ function FileTreeRow({
 			<span className={styles.name} data-testid="name">
 				{nameOf(entry.path)}
 			</span>
+			{viewed && (
+				<span
+					className={styles.viewed}
+					role="img"
+					aria-label="Viewed"
+					title="Viewed"
+					data-testid="viewed-mark"
+				>
+					<CheckIcon width="12" height="12" />
+				</span>
+			)}
 			{entry.status === "renamed" && (
 				<span className={styles.renamed}>RENAMED</span>
 			)}
