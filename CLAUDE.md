@@ -28,6 +28,7 @@ bun run generate-routes  # tsr generate, after adding or renaming a file in src/
 bun run generate-emphasis # rewrite themeEmphasis.gen.ts, after a highlight.js upgrade or a theme change
 bun run badge            # regenerate .github/badges/fallow-health.svg when the score moves
 bun run check:coverage-gaps # fail if a file or export in src/lib has no unit test importing it
+bun run ci-failure 258   # why a PR's CI failed: error excerpts, plus Playwright's errors for e2e (--run <id> for a run)
 ```
 
 - One unit test: `bun test tests/unit/session/diffSession.test.ts` (add `-t "<name>"` to narrow).
