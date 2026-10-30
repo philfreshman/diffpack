@@ -505,6 +505,51 @@ describe("the file the URL names", () => {
 	});
 });
 
+describe("reading a file for the all-files view", () => {
+	test("reads it out of the comparison on screen, under both paths", async () => {
+		const { stub, session } = await readySession();
+		const renamed = {
+			path: "lib/router.js",
+			oldPath: "lib/routes.js",
+			type: "file",
+			status: "renamed",
+		} as const;
+
+		const read = session.readFile(renamed);
+		take(stub.fileReplies, 0).resolve({ data: "diff", isDiff: true });
+
+		expect(await read).toEqual({ data: "diff", isDiff: true });
+		expect(stub.filesAsked).toEqual([
+			[COMPARISON, "lib/router.js", "lib/routes.js"],
+		]);
+	});
+
+	test("leaves the open file alone", async () => {
+		const { session } = await readySession();
+
+		void session.readFile({
+			path: "index.js",
+			type: "file",
+			status: "modified",
+		});
+
+		expect(session.store.state.file).toBeNull();
+	});
+
+	test("is refused while the tree is still being built", async () => {
+		const { stub, session } = toldOf(SLUG);
+
+		const read = session.readFile({
+			path: "index.js",
+			type: "file",
+			status: "modified",
+		});
+
+		await expect(read).rejects.toThrow("index.js is not in this comparison");
+		expect(stub.filesAsked).toEqual([]);
+	});
+});
+
 describe("prefetch", () => {
 	test("warms a comparison once, however often it is hovered", () => {
 		const stub = stubClient();

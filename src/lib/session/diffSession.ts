@@ -201,6 +201,17 @@ export function createDiffSession(client: DiffClient) {
 		}
 	}
 
+	async function readFile(entry: DiffFileEntry): Promise<FileDiff> {
+		const comparison = wanted();
+		const ready =
+			comparison !== null &&
+			isCurrent(comparisonKey(comparison)) &&
+			store.state.status === "ready";
+		if (!ready) throw new Error(`${entry.path} is not in this comparison`);
+
+		return client.getFile(comparison, entry.path, entry.oldPath);
+	}
+
 	function closeFile(): void {
 		if (store.state.file) store.setState((state) => ({ ...state, file: null }));
 	}
@@ -220,7 +231,7 @@ export function createDiffSession(client: DiffClient) {
 		settle();
 	}
 
-	return { store, follow, answerWhitespace, prefetch };
+	return { store, follow, answerWhitespace, prefetch, readFile };
 }
 
 // Only effects write to it, so on the server it cannot leak between SSR renders.

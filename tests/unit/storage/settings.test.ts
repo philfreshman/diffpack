@@ -3,6 +3,7 @@ import { GA_SCRIPT } from "#/lib/analytics.ts";
 import * as settings from "#/lib/storage/settings.ts";
 import {
 	AUTOHIDE_SCROLLBAR,
+	FILE_LAYOUT,
 	HIGHLIGHT_THEME,
 	IGNORE_WHITESPACE,
 	ONLY_MODIFIED,
@@ -13,6 +14,7 @@ import {
 	TREE_COLLAPSED,
 	TREE_POSITION,
 	TREE_WIDTH,
+	VIEWED_FILES,
 } from "#/lib/storage/settings.ts";
 import {
 	type HeadSetting,
@@ -170,6 +172,18 @@ const CASES: Case[] = [
 			["", "left"],
 		],
 	),
+	reading(
+		FILE_LAYOUT,
+		[
+			["single", "single"],
+			["all", "all"],
+		],
+		[
+			["All", "single"],
+			["every", "single"],
+			["", "single"],
+		],
+	),
 ];
 
 function storeHolding(key: string, raw: string | null) {
@@ -229,15 +243,34 @@ for (const { setting, valid, invalid } of CASES) {
 	});
 }
 
-test("has a row for every setting declared in settings.ts", () => {
+test("has a row for every head setting declared in settings.ts", () => {
 	const exported: unknown[] = Object.values(settings);
 	const declared = exported.filter(
-		(it): it is StoredSetting<unknown> =>
-			typeof it === "object" && it !== null && "key" in it,
+		(it): it is HeadSetting<unknown> =>
+			typeof it === "object" && it !== null && "parseSource" in it,
 	);
 
 	expect(CASES.map((it) => it.setting.key).sort()).toEqual(
 		declared.map((it) => it.key).sort(),
+	);
+});
+
+describe("the viewed-files setting", () => {
+	const LOG = [{ id: "npm\nexpress\n4.18.2\n5.1.0", paths: ["index.js"] }];
+
+	test("reads back what it stored", () => {
+		const store = memoryStore();
+
+		writeSetting(VIEWED_FILES, LOG, store);
+
+		expect(readSetting(VIEWED_FILES, store)).toEqual(LOG);
+	});
+
+	test.each(storesWithNothingFor(VIEWED_FILES.key))(
+		"reads as nothing viewed when %s",
+		(_, store) => {
+			expect(readOnceMountedFrom(VIEWED_FILES, store)).toEqual([]);
+		},
 	);
 });
 

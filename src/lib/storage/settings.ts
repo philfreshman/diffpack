@@ -1,5 +1,7 @@
 import { HIGHLIGHT_THEMES } from "#/lib/diff/highlightThemes.ts";
 import type { RegistryId, SearchResult } from "#/lib/registries/types.ts";
+import { FILE_LAYOUTS } from "#/lib/review/fileStream.ts";
+import { parseViewedLog, type ViewedLog } from "#/lib/review/viewedFiles.ts";
 import { DEFAULT_SELECTION, SELECTIONS } from "#/lib/theme.ts";
 import { TREE_POSITIONS } from "#/lib/tree/position.ts";
 import { parseHistory } from "./searchHistory.ts";
@@ -71,6 +73,19 @@ export const TREE_POSITION = oneOf({
 	values: TREE_POSITIONS,
 	fallback: "left",
 });
+
+export const FILE_LAYOUT = oneOf({
+	key: "file-layout",
+	values: FILE_LAYOUTS,
+	fallback: "single",
+});
+
+export const VIEWED_FILES: StoredSetting<ViewedLog> = {
+	key: "viewed-files",
+	fallback: [],
+	parse: parseViewedLog,
+	serialize: (log) => JSON.stringify(log),
+};
 
 const histories = new Map<RegistryId, StoredSetting<readonly SearchResult[]>>();
 
