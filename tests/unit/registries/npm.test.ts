@@ -83,6 +83,32 @@ describe("npm versions", () => {
 		expect(versions).toEqual(["5.1.0", "5.0.0", "4.18.2"]);
 		expect(calls[0]?.url).toBe("https://registry.npmjs.org/express");
 	});
+
+	test("orders by version, not by when each was published", async () => {
+		const { fetcher } = stubFetch(() =>
+			json({
+				versions: {
+					"8.3.0-beta.0": {},
+					"8.3.0": {},
+					"6.4.4": {},
+					"8.3.4": {},
+					"6.4.5": {},
+					"8.3.5": {},
+				},
+			}),
+		);
+
+		const versions = await createNpmAdapter(fetcher).versions("vite");
+
+		expect(versions).toEqual([
+			"8.3.5",
+			"8.3.4",
+			"8.3.0",
+			"8.3.0-beta.0",
+			"6.4.5",
+			"6.4.4",
+		]);
+	});
 });
 
 describe("npm versions failure", () => {
