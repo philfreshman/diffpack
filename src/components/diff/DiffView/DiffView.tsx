@@ -15,7 +15,10 @@ import styles from "./DiffView.module.css";
 import { useAnchorSeek } from "./useAnchorSeek.ts";
 import { useCloseOnEscape } from "./useCloseOnEscape.ts";
 import { useOneSidedSelection } from "./useOneSidedSelection.ts";
-import { useRowVirtualizer } from "./useRowVirtualizer.ts";
+import {
+	offsetInEstimatedRows,
+	useRowVirtualizer,
+} from "./useRowVirtualizer.ts";
 import { useScrollMemory } from "./useScrollMemory.ts";
 
 export interface DiffViewProps {
@@ -80,7 +83,10 @@ export function DiffView({
 				ref={scroller}
 				data-testid="diff-scroller"
 				onScroll={(event) => {
-					scrollTopRef.current = event.currentTarget.scrollTop;
+					scrollTopRef.current = offsetInEstimatedRows(
+						virtualizer,
+						event.currentTarget.scrollTop,
+					);
 				}}
 			>
 				<table className={styles.sizer} aria-label={path} style={{ height }}>
