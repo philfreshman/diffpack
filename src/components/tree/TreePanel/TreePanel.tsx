@@ -17,12 +17,14 @@ export interface TreePanelProps {
 	tree: DiffFileEntry | null;
 	comparison: string;
 	selectedPath: string;
+	viewedPaths?: ReadonlySet<string>;
 	onOpenFile(path: string): void;
 }
 export function TreePanel({
 	tree,
 	comparison,
 	selectedPath,
+	viewedPaths,
 	onOpenFile,
 }: TreePanelProps) {
 	const [filter, setFilter] = useState("");
@@ -73,6 +75,7 @@ export function TreePanel({
 				<FileTree
 					rows={rows}
 					selectedPath={selectedPath}
+					viewedPaths={viewedPaths}
 					onOpenFile={onOpenFile}
 					onToggleFolder={toggleFolder}
 				/>

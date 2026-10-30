@@ -1,10 +1,10 @@
-/* Overlays the scroller rather than sitting beside it, so showing it never reflows the file. */
+/* Sits over space its scroller keeps clear, so showing it never reflows the content. */
 .track {
 	position: absolute;
 	top: 0;
 	right: 0;
 	bottom: 0;
-	width: var(--diff-scrollbar-width, 0.875rem);
+	width: var(--scrollbar-width);
 	background: var(--color-surface);
 	border-left: 1px solid var(--color-border);
 	opacity: 0;

@@ -1,4 +1,4 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer, type Virtualizer } from "@tanstack/react-virtual";
 import type { RefObject } from "react";
 import { useImperativeHandle } from "react";
 import type { FileModelControls } from "#/components/diff/useFileModel.ts";
@@ -37,4 +37,14 @@ export function useRowVirtualizer(
 	);
 
 	return virtualizer;
+}
+
+export function offsetInEstimatedRows(
+	virtualizer: Virtualizer<HTMLDivElement, Element>,
+	scrollTop: number,
+): number {
+	const top = virtualizer.getVirtualItemForOffset(scrollTop);
+	if (!top) return scrollTop;
+
+	return top.index * ROW_HEIGHT + (scrollTop - top.start);
 }

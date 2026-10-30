@@ -25,6 +25,7 @@
 	flex: 0 1 auto;
 	min-height: 0;
 	overflow: auto;
+	padding-inline-end: var(--scrollbar-width);
 	/* DiffScrollbar draws over this edge instead. */
 	scrollbar-width: none;
 	/* Not `auto`: virtual rows change the hit element on every scroll step, so the cursor flickers. */

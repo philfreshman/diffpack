@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { useRef } from "react";
 import { CollapsedRow } from "#/components/diff/CollapsedRow/CollapsedRow.tsx";
 import { DiffRow } from "#/components/diff/DiffRow/DiffRow.tsx";
-import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
+import { FileScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
 import { SplitDiffRow } from "#/components/diff/SplitDiffRow/SplitDiffRow.tsx";
 import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import { gutterChars } from "#/lib/diff/gutter.ts";
@@ -15,7 +15,10 @@ import styles from "./DiffView.module.css";
 import { useAnchorSeek } from "./useAnchorSeek.ts";
 import { useCloseOnEscape } from "./useCloseOnEscape.ts";
 import { useOneSidedSelection } from "./useOneSidedSelection.ts";
-import { useRowVirtualizer } from "./useRowVirtualizer.ts";
+import {
+	offsetInEstimatedRows,
+	useRowVirtualizer,
+} from "./useRowVirtualizer.ts";
 import { useScrollMemory } from "./useScrollMemory.ts";
 
 export interface DiffViewProps {
@@ -80,7 +83,10 @@ export function DiffView({
 				ref={scroller}
 				data-testid="diff-scroller"
 				onScroll={(event) => {
-					scrollTopRef.current = event.currentTarget.scrollTop;
+					scrollTopRef.current = offsetInEstimatedRows(
+						virtualizer,
+						event.currentTarget.scrollTop,
+					);
 				}}
 			>
 				<table className={styles.sizer} aria-label={path} style={{ height }}>
@@ -134,7 +140,7 @@ export function DiffView({
 					</tbody>
 				</table>
 			</div>
-			<DiffScrollbar
+			<FileScrollbar
 				autohide={autohideScrollbar}
 				file={file}
 				scrollerRef={scroller}

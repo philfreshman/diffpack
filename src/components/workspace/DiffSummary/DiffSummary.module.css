@@ -90,3 +90,9 @@
 .hint {
 	color: var(--color-muted);
 }
+
+.lead {
+	display: flex;
+	justify-content: center;
+	padding-block: var(--space-6) var(--space-4);
+}
