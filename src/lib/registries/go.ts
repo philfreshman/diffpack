@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { PROXY_ORIGIN } from "#/lib/proxy/origin.ts";
 import { getJson, getText } from "./http.ts";
+import { compareVersionsDesc } from "./semver.ts";
 import type { Fetcher, RegistryAdapter, SearchResult } from "./types.ts";
 
 const PROXY_URL = "https://proxy.golang.org";
@@ -31,33 +32,6 @@ export const MODULE_VERSION = /^v\d+\.\d+\.\d+/;
 // The proxy 404s unless uppercase is escaped: `Masterminds` → `!masterminds`.
 function escapeModulePath(name: string): string {
 	return name.replace(/[A-Z]/g, (char) => `!${char.toLowerCase()}`);
-}
-
-function parseVersion(version: string): { numbers: number[]; suffix: string } {
-	// Build metadata ("+incompatible") plays no part in ordering.
-	const [withoutBuild = ""] = version.replace(/^v/, "").split("+");
-	const [core = "", ...suffix] = withoutBuild.split("-");
-
-	return {
-		numbers: core.split(".").map((part) => Number.parseInt(part, 10) || 0),
-		suffix: suffix.join("-"),
-	};
-}
-
-function compareVersionsDesc(a: string, b: string): number {
-	const left = parseVersion(a);
-	const right = parseVersion(b);
-
-	for (let i = 0; i < 3; i++) {
-		const diff = (right.numbers[i] ?? 0) - (left.numbers[i] ?? 0);
-		if (diff !== 0) return diff;
-	}
-
-	// A release outranks any pre-release of the same version.
-	if (left.suffix === right.suffix) return 0;
-	if (!left.suffix) return -1;
-	if (!right.suffix) return 1;
-	return right.suffix.localeCompare(left.suffix);
 }
 
 function moduleDescription(packages: FoundPackage[]): string | undefined {
