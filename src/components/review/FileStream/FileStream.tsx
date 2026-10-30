@@ -4,6 +4,7 @@ import {
 	useImperativeHandle,
 	useRef,
 } from "react";
+import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
 import { FileCard } from "#/components/review/FileCard/FileCard.tsx";
 import { ReviewBar } from "#/components/review/ReviewBar/ReviewBar.tsx";
 import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
@@ -28,6 +29,7 @@ export interface FileStreamProps {
 	onSelectLine(path: string, anchor: LineAnchor): void;
 	split: boolean;
 	showSigns: boolean;
+	autohideScrollbar: boolean;
 	highlightTheme: string | null;
 }
 
@@ -43,6 +45,7 @@ export function FileStream({
 	onSelectLine,
 	split,
 	showSigns,
+	autohideScrollbar,
 	highlightTheme,
 }: FileStreamProps) {
 	const scrollerRef = useRef<HTMLDivElement>(null);
@@ -68,44 +71,56 @@ export function FileStream({
 	}));
 
 	return (
-		<div
-			className={styles.stream}
-			data-current={files[navigation.currentIndex]?.path}
-			data-testid="file-stream"
-			ref={scrollerRef}
-		>
-			<div className={styles.content} ref={contentRef}>
-				<div className={styles.header}>{header}</div>
-				<ReviewBar
-					barRef={barRef}
-					currentIndex={navigation.currentIndex}
-					files={files}
-					onJump={navigation.scrollToFile}
-					onStepFile={navigation.stepFile}
-					onViewedChange={changeViewed}
-					viewed={viewed}
-				/>
-				<div className={styles.cards} ref={cardsRef}>
-					{files.map((entry) => (
-						<FileCard
-							display={display}
-							entry={entry}
-							key={entry.path}
-							layout={layout}
-							onCollapse={() => navigation.keepPlace(entry.path, "self")}
-							onOpenFile={() => onOpenFile(entry.path)}
-							onSelectLine={(anchor) => onSelectLine(entry.path, anchor)}
-							onViewedChange={(isViewed) => changeViewed(entry.path, isViewed)}
-							readFile={readFile}
-							viewed={viewed.has(entry.path)}
-						/>
-					))}
+		<div className={styles.frame}>
+			<div
+				className={styles.stream}
+				data-current={files[navigation.currentIndex]?.path}
+				data-testid="file-stream"
+				ref={scrollerRef}
+			>
+				<div className={styles.content} ref={contentRef}>
+					<div className={styles.header}>{header}</div>
+					<ReviewBar
+						barRef={barRef}
+						currentIndex={navigation.currentIndex}
+						files={files}
+						onJump={navigation.scrollToFile}
+						onStepFile={navigation.stepFile}
+						onViewedChange={changeViewed}
+						viewed={viewed}
+					/>
+					<div className={styles.cards} ref={cardsRef}>
+						{files.map((entry) => (
+							<FileCard
+								display={display}
+								entry={entry}
+								key={entry.path}
+								layout={layout}
+								onCollapse={() => navigation.keepPlace(entry.path, "self")}
+								onOpenFile={() => onOpenFile(entry.path)}
+								onSelectLine={(anchor) => onSelectLine(entry.path, anchor)}
+								onViewedChange={(isViewed) =>
+									changeViewed(entry.path, isViewed)
+								}
+								readFile={readFile}
+								viewed={viewed.has(entry.path)}
+							/>
+						))}
+					</div>
+					<StreamEnd fileCount={files.length} />
 				</div>
-				<p className={styles.end}>
-					End of the changes · {files.length}{" "}
-					{files.length === 1 ? "file" : "files"}
-				</p>
+			</div>
+			<div className={styles.rail}>
+				<DiffScrollbar autohide={autohideScrollbar} scrollerRef={scrollerRef} />
 			</div>
 		</div>
+	);
+}
+
+function StreamEnd({ fileCount }: { fileCount: number }) {
+	return (
+		<p className={styles.end}>
+			End of the changes · {fileCount} {fileCount === 1 ? "file" : "files"}
+		</p>
 	);
 }

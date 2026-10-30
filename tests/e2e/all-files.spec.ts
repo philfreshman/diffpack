@@ -212,3 +212,24 @@ test("jumps to the next file not yet viewed", async ({ page }) => {
 	await expect(stream(page)).toHaveAttribute("data-current", fourth);
 	await expect(card(page, fourth)).toBeInViewport();
 });
+
+test("the stream's scrollbar sits beside the cards and scrolls the stream", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const scrollbar = page.getByTestId("diff-scrollbar");
+	await expect(scrollbar).toHaveAttribute("data-shown", "true");
+
+	const track = await scrollbar.boundingBox();
+	const first = await cards(page).first().boundingBox();
+	const bar = await progress(page).boundingBox();
+	if (!track || !first || !bar) throw new Error("no scrollbar or card");
+	expect(track.x).toBeGreaterThanOrEqual(first.x + first.width);
+	expect(track.x).toBeGreaterThanOrEqual(bar.x + bar.width);
+
+	await page.mouse.click(track.x + track.width / 2, track.y + track.height - 8);
+
+	await expect
+		.poll(() => stream(page).evaluate((element) => element.scrollTop))
+		.toBeGreaterThan(0);
+});

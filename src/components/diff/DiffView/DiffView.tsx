@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { useRef } from "react";
 import { CollapsedRow } from "#/components/diff/CollapsedRow/CollapsedRow.tsx";
 import { DiffRow } from "#/components/diff/DiffRow/DiffRow.tsx";
-import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
+import { FileScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
 import { SplitDiffRow } from "#/components/diff/SplitDiffRow/SplitDiffRow.tsx";
 import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import { gutterChars } from "#/lib/diff/gutter.ts";
@@ -140,7 +140,7 @@ export function DiffView({
 					</tbody>
 				</table>
 			</div>
-			<DiffScrollbar
+			<FileScrollbar
 				autohide={autohideScrollbar}
 				file={file}
 				scrollerRef={scroller}

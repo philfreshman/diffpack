@@ -140,6 +140,7 @@
 	--workspace-header-height: 4.5rem;
 	--workspace-inset: var(--space-4);
 	--control-height: 2.25rem;
+	--scrollbar-width: 0.875rem;
 
 	/* `@media` cannot read custom properties: media queries repeat these literals. */
 	--breakpoint-sm: 53rem;

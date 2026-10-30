@@ -273,7 +273,7 @@ function paneOf(
 
 type StreamProps = Omit<
 	FileStreamProps,
-	"header" | "showSigns" | "highlightTheme"
+	"header" | "showSigns" | "autohideScrollbar" | "highlightTheme"
 >;
 
 interface ComparisonPaneProps extends FilePaneProps {
@@ -324,6 +324,7 @@ function ComparisonPane({
 				{...stream}
 				header={header}
 				showSigns={filePane.showSigns}
+				autohideScrollbar={filePane.autohideScrollbar}
 				highlightTheme={filePane.highlight.theme}
 			/>
 		);

@@ -1,23 +1,38 @@
 import type { RefObject } from "react";
-import { useMemo } from "react";
 import { useDiffScrollbar } from "#/components/diff/useDiffScrollbar.ts";
 import type { FileModel } from "#/lib/diff/fileModel.ts";
-import type { RowSpan } from "#/lib/diff/scrollbar.ts";
+import type { Marker, RowSpan } from "#/lib/diff/scrollbar.ts";
 import styles from "./DiffScrollbar.module.css";
+
+const NO_MARKERS: readonly Marker[] = [];
 
 export interface DiffScrollbarProps {
 	scrollerRef: RefObject<HTMLElement | null>;
+	autohide: boolean;
+	markers?: readonly Marker[];
+}
+
+export interface FileScrollbarProps extends Omit<
+	DiffScrollbarProps,
+	"markers"
+> {
 	file: Pick<FileModel, "markers">;
 	/** Every row's span, estimated until drawn; not just the rendered items. */
 	spans: readonly RowSpan[];
-	autohide: boolean;
+}
+
+export function FileScrollbar({
+	file,
+	spans,
+	...scrollbar
+}: FileScrollbarProps) {
+	return <DiffScrollbar {...scrollbar} markers={file.markers(spans)} />;
 }
 
 export function DiffScrollbar({
 	scrollerRef,
-	file,
-	spans,
 	autohide,
+	markers = NO_MARKERS,
 }: DiffScrollbarProps) {
 	const {
 		thumb,
@@ -28,7 +43,6 @@ export function DiffScrollbar({
 		onTrackMouseEnter,
 		onTrackMouseLeave,
 	} = useDiffScrollbar(scrollerRef, autohide);
-	const markers = useMemo(() => file.markers(spans), [file, spans]);
 
 	return (
 		<div
