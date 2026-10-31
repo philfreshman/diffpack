@@ -10,6 +10,7 @@ Clean. Fast. Source-aware.
 [**diffpack.io**](https://diffpack.io) · [Contributing](CONTRIBUTING.md) · [Agent guide](AGENTS.md)
 
 [![Codebase health](.github/badges/fallow-health.svg)](CONTRIBUTING.md#what-fallow-enforces-here)
+[![Unit test coverage](.github/badges/coverage.svg)](CONTRIBUTING.md#the-coverage-badge)
 
 </div>
 
