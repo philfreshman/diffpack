@@ -7,18 +7,10 @@ import {
 	UnfoldIcon,
 } from "#/components/ui/icons.tsx";
 import { diffStat, type StatBlock } from "#/lib/review/fileStream.ts";
-import type { DiffFileEntry, DiffStatus } from "#/lib/worker/protocol.ts";
+import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./FileHeader.module.css";
 
 const LINE_COUNT = new Intl.NumberFormat("en-US");
-
-const STATUS_LABELS: Record<DiffStatus, string> = {
-	added: "Added",
-	removed: "Removed",
-	modified: "Modified",
-	renamed: "Renamed",
-	unchanged: "Unchanged",
-};
 
 const STAT_KINDS: readonly StatBlock[] = ["added", "removed", "neutral"];
 
@@ -58,9 +50,6 @@ export function FileHeader({
 			>
 				<ChevronDownIcon height="16" width="16" />
 			</IconButton>
-			<span className={styles.status} data-status={entry.status}>
-				{STATUS_LABELS[entry.status]}
-			</span>
 			<FilePath entry={entry} />
 			<LineCounts added={entry.added ?? 0} removed={entry.removed ?? 0} />
 			<div className={styles.actions}>
