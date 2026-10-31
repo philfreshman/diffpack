@@ -136,7 +136,7 @@
 	--header-height-md: 8rem;
 	--header-height-lg: calc(var(--header-height-md) + 2.25rem);
 	/* Fixed, so the sidebar's head, in another box, can line up with the top bar. */
-	--workspace-header-height: 4.5rem;
+	--workspace-header-height: 4.75rem;
 	--workspace-inset: var(--space-4);
 	--control-height: 2.25rem;
 	--tree-row-height: 30px;

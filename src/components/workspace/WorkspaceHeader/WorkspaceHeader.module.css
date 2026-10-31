@@ -4,8 +4,7 @@
 	align-items: flex-end;
 	justify-content: center;
 	height: var(--workspace-header-height);
-	/* Reserved for the expand button even when hidden, so controls never shift. */
-	padding: var(--space-2) var(--space-6) var(--space-2) var(--space-12);
+	padding: var(--space-2) var(--space-6) var(--space-4) var(--space-12);
 	border-bottom: 1px solid var(--color-border);
 	background-color: var(--color-canvas);
 }
