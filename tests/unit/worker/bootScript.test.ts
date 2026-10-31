@@ -79,89 +79,59 @@ async function boot(
 	return { posted, spawned, fetched, window };
 }
 
-describe("the diff boot script", () => {
-	test("posts the build-tree request a crates deep link names", async () => {
-		const { posted } = await boot(
-			"/crates/linux-raw-sys/0.6.5/0.12.1/Cargo.toml",
-		);
+interface NamedArchives {
+	registry: string;
+	pkg: string;
+	from: string;
+	to: string;
+}
 
-		expect(posted).toEqual([
-			{
-				id: 0,
-				type: "build-tree",
-				registry: "crates",
-				pkg: "linux-raw-sys",
-				from: "0.6.5",
-				to: "0.12.1",
-				ignoreWhitespace: false,
-			},
-		]);
-	});
+async function expectBuildTreeFor(
+	pathname: string,
+	comparison: NamedArchives,
+): Promise<void> {
+	const { posted } = await boot(pathname);
 
-	test("starts nothing where the URL names no comparison", async () => {
-		for (const pathname of [
-			"/",
-			"/crates",
-			"/crates/linux-raw-sys",
-			"/crates/linux-raw-sys/0.6.5",
-		]) {
-			const { spawned, posted, window } = await boot(pathname);
+	expect(posted).toEqual([
+		{ id: 0, type: "build-tree", ...comparison, ignoreWhitespace: false },
+	]);
+}
 
-			expect(spawned).toEqual([]);
-			expect(posted).toEqual([]);
-			expect(window).toEqual({});
-		}
-	});
+describe("the diff boot script, reading the URL", () => {
+	test("posts the build-tree request a crates deep link names", () =>
+		expectBuildTreeFor("/crates/linux-raw-sys/0.6.5/0.12.1/Cargo.toml", {
+			registry: "crates",
+			pkg: "linux-raw-sys",
+			from: "0.6.5",
+			to: "0.12.1",
+		}));
 
-	test("reads a scoped npm name as the two segments it spans", async () => {
-		const { posted } = await boot("/npm/@types/node/26.0.0/26.7.0/index.d.ts");
+	test("reads a scoped npm name as the two segments it spans", () =>
+		expectBuildTreeFor("/npm/@types/node/26.0.0/26.7.0/index.d.ts", {
+			registry: "npm",
+			pkg: "@types/node",
+			from: "26.0.0",
+			to: "26.7.0",
+		}));
 
-		expect(posted).toEqual([
-			{
-				id: 0,
-				type: "build-tree",
-				registry: "npm",
-				pkg: "@types/node",
-				from: "26.0.0",
-				to: "26.7.0",
-				ignoreWhitespace: false,
-			},
-		]);
-	});
+	test("reads a go module name as everything up to the first version", () =>
+		expectBuildTreeFor("/go/github.com/go-chi/chi/v5/v5.0.0/v5.3.1", {
+			registry: "go",
+			pkg: "github.com/go-chi/chi/v5",
+			from: "v5.0.0",
+			to: "v5.3.1",
+		}));
 
-	test("reads a go module name as everything up to the first version", async () => {
-		const { posted } = await boot("/go/github.com/go-chi/chi/v5/v5.0.0/v5.3.1");
-
-		expect(posted).toEqual([
-			{
-				id: 0,
-				type: "build-tree",
-				registry: "go",
-				pkg: "github.com/go-chi/chi/v5",
-				from: "v5.0.0",
-				to: "v5.3.1",
-				ignoreWhitespace: false,
-			},
-		]);
-	});
-
-	test("reads a composer name as its vendor and package, lowercased", async () => {
-		const { posted } = await boot(
+	test("reads a composer name as its vendor and package, lowercased", () =>
+		expectBuildTreeFor(
 			"/composer/Monolog/Monolog/3.12.0/3.12.1/src/Monolog/Logger.php",
-		);
-
-		expect(posted).toEqual([
 			{
-				id: 0,
-				type: "build-tree",
 				registry: "composer",
 				pkg: "monolog/monolog",
 				from: "3.12.0",
 				to: "3.12.1",
-				ignoreWhitespace: false,
 			},
-		]);
-	});
+		));
 
 	test("agrees with parseSlug on every composer URL", async () => {
 		for (const pathname of [
@@ -181,7 +151,33 @@ describe("the diff boot script", () => {
 			]);
 		}
 	});
+});
 
+describe("the diff boot script, where the URL names no comparison", () => {
+	test("starts nothing where the URL names no comparison", async () => {
+		for (const pathname of [
+			"/",
+			"/crates",
+			"/crates/linux-raw-sys",
+			"/crates/linux-raw-sys/0.6.5",
+		]) {
+			const { spawned, posted, window } = await boot(pathname);
+
+			expect(spawned).toEqual([]);
+			expect(posted).toEqual([]);
+			expect(window).toEqual({});
+		}
+	});
+
+	test("starts nothing where the first segment names no registry", async () => {
+		const { spawned, window } = await boot("/about/express/4.18.2/5.1.0");
+
+		expect(spawned).toEqual([]);
+		expect(window).toEqual({});
+	});
+});
+
+describe("the diff boot script, handing over to the client", () => {
 	test("leaves behind a request the client adopts as the same comparison", async () => {
 		const { posted, window } = await boot("/npm/@types/node/26.0.0/26.7.0");
 		const booted = window.__diffpackDiffBoot as DiffBoot;
@@ -204,14 +200,9 @@ describe("the diff boot script", () => {
 			{ id: booted.id, type: "build-tree", ...booted.comparison },
 		]);
 	});
+});
 
-	test("starts nothing where the first segment names no registry", async () => {
-		const { spawned, window } = await boot("/about/express/4.18.2/5.1.0");
-
-		expect(spawned).toEqual([]);
-		expect(window).toEqual({});
-	});
-
+describe("the diff boot script, and the stored whitespace answer", () => {
 	test("builds the tree with the stored whitespace answer", async () => {
 		const { posted } = await boot("/crates/serde/1.0.0/1.0.1", {
 			stored: { "ignore-whitespace-preference": "true" },
@@ -259,7 +250,7 @@ function pathOf(input: (typeof vectorFile.vectors)[number]["input"]): string {
 	return `/${input.registry}/${input.package}/${input.from}/${input.to}`;
 }
 
-describe("the diff boot script, in front of the server's cache", () => {
+describe("the diff boot script, when the server's cache answers", () => {
 	test("asks the cache before it starts a worker, and starts none on a hit", async () => {
 		const { spawned, posted, window } = await boot(
 			"/npm/@types/node/20.11.0/22.0.0",
@@ -273,6 +264,21 @@ describe("the diff boot script, in front of the server's cache", () => {
 		);
 	});
 
+	test("lets an answer that has begun to arrive finish, and starts no worker", async () => {
+		const slowBody: Fetch = async (_url, init) =>
+			new Response(
+				bodyArrivingAfter(120, JSON.stringify(servedEntry), init?.signal),
+			);
+
+		const { spawned } = await boot("/crates/serde/1.0.0/1.0.1", {
+			fetch: slowBody,
+		});
+
+		expect(spawned).toEqual([]);
+	});
+});
+
+describe("the diff boot script, when the server's cache cannot answer", () => {
 	test("starts the worker when the cache misses, fails or stalls", async () => {
 		const stalling: Fetch = (_url, init) =>
 			new Promise((_resolve, reject) =>
@@ -287,19 +293,6 @@ describe("the diff boot script, in front of the server's cache", () => {
 
 			expect(posted).toMatchObject([{ type: "build-tree", pkg: "serde" }]);
 		}
-	});
-
-	test("lets an answer that has begun to arrive finish, and starts no worker", async () => {
-		const slowBody: Fetch = async (_url, init) =>
-			new Response(
-				bodyArrivingAfter(120, JSON.stringify(servedEntry), init?.signal),
-			);
-
-		const { spawned } = await boot("/crates/serde/1.0.0/1.0.1", {
-			fetch: slowBody,
-		});
-
-		expect(spawned).toEqual([]);
 	});
 
 	test("starts no worker for a comparison the page has moved on from", async () => {
@@ -331,7 +324,9 @@ describe("the diff boot script, in front of the server's cache", () => {
 		expect(fetched).toEqual([]);
 		expect(posted).toMatchObject([{ type: "build-tree", pkg: "serde" }]);
 	});
+});
 
+describe("the diff boot script's question to the server's cache", () => {
 	test("sends only the diff_id, with no cookies and no referrer", async () => {
 		const { fetched } = await boot("/npm/@types/node/20.11.0/22.0.0", {
 			engine: "0.3.0",

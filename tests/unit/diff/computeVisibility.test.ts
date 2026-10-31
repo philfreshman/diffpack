@@ -38,7 +38,7 @@ function folds(lines: DiffLine[]) {
 
 const NOTHING_EXPANDED = { expanded: new Set<number>(), expandAll: false };
 
-describe("computeVisibility", () => {
+describe("computeVisibility folding unchanged lines", () => {
 	test("keeps three lines either side of a change and folds the rest away", () => {
 		const rows = computeVisibility(changeSurroundedBy(10), NOTHING_EXPANDED);
 
@@ -88,7 +88,9 @@ describe("computeVisibility", () => {
 
 		expect(rows.map((row) => row.kind)).toEqual(["line", "line", "line"]);
 	});
+});
 
+describe("computeVisibility expanders on a fold", () => {
 	test("a fold in the middle of a file opens from either end, 20 at a time", () => {
 		const middle = folds(TWO_CHANGES_FAR_APART)[1];
 

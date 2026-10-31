@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { collapseAliases } from "#/lib/vulnerabilities/aliases.ts";
 import { advisory } from "./advisoryStub.ts";
 
-describe("collapseAliases", () => {
+describe("collapseAliases, merging records that share a name", () => {
 	test("keeps advisories that share no name apart", () => {
 		const list = [advisory({ id: "A" }), advisory({ id: "B" })];
 		expect(collapseAliases(list)).toEqual(list);
@@ -59,7 +59,9 @@ describe("collapseAliases", () => {
 			expect.arrayContaining(["CVE-1", "CVE-2", "Y", "Z"]),
 		);
 	});
+});
 
+describe("collapseAliases, choosing the lead record", () => {
 	test("keeps the first record as the lead when both are rated the same", () => {
 		const [lead] = collapseAliases([
 			advisory({ id: "A", aliases: ["CVE-1"], severity: "low" }),

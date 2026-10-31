@@ -8,7 +8,7 @@ function engineError(
 	return Object.assign(new Error(message), properties);
 }
 
-describe("failureOf", () => {
+describe("failureOf an Error", () => {
 	test("reads the code, reset time and status an engine error carries", () => {
 		const thrown = engineError("Composer diffs are paused", {
 			code: "quota_exhausted",
@@ -30,6 +30,18 @@ describe("failureOf", () => {
 		});
 	});
 
+	test("drops a code it does not know, and fields of the wrong type", () => {
+		const thrown = engineError("Refused", {
+			code: "origin_not_allowed",
+			resetsAt: 0,
+			status: "403",
+		});
+
+		expect(failureOf(thrown)).toEqual({ message: "Refused" });
+	});
+});
+
+describe("failureOf anything else thrown", () => {
 	test("takes a thrown string as the message", () => {
 		expect(failureOf("Package not found")).toEqual({
 			message: "Package not found",
@@ -58,16 +70,6 @@ describe("failureOf", () => {
 
 	test("survives nothing being thrown at all", () => {
 		expect(failureOf(undefined)).toEqual({ message: "undefined" });
-	});
-
-	test("drops a code it does not know, and fields of the wrong type", () => {
-		const thrown = engineError("Refused", {
-			code: "origin_not_allowed",
-			resetsAt: 0,
-			status: "403",
-		});
-
-		expect(failureOf(thrown)).toEqual({ message: "Refused" });
 	});
 });
 

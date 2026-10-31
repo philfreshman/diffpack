@@ -761,15 +761,16 @@ async function openPosition(page: Page) {
 	await expect(option(page, "Right")).toBeVisible();
 }
 
-test("moved to the right, the whole sidebar mirrors, and it is there before the first paint", async ({
-	page,
-}) => {
-	await page.goto(EXPRESS);
-	await ready(page);
-	const panel = page.getByTestId("tree-panel");
+const treePanel = (page: Page) => page.getByTestId("tree-panel");
+const resizeHandle = (page: Page) =>
+	page.getByRole("separator", { name: "Resize file tree" });
+const sidebarToggle = (page: Page) =>
+	page.getByRole("button", { name: "Toggle sidebar" });
+const viewportOf = (page: Page) =>
+	page.viewportSize() ?? { width: 0, height: 0 };
+
+async function moveTreeRight(page: Page) {
 	const diff = page.getByTestId("diff-file");
-	const width = () =>
-		panel.evaluate((node) => node.getBoundingClientRect().width);
 	await openPosition(page);
 	await expect(page.getByTestId("position-fold")).toContainText("Left");
 
@@ -784,10 +785,12 @@ test("moved to the right, the whole sidebar mirrors, and it is there before the 
 	await openTreeOptions(page);
 	await expect(page.getByTestId("position-fold")).toContainText("Right");
 	await page.keyboard.press("Escape");
-	expect((await boxOf(panel)).x).toBeGreaterThanOrEqual(
+	expect((await boxOf(treePanel(page))).x).toBeGreaterThanOrEqual(
 		(await boxOf(diff)).x + (await boxOf(diff)).width,
 	);
+}
 
+async function expectTreeRightBeforeFirstPaint(page: Page) {
 	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		await page.evaluate(() =>
@@ -795,10 +798,16 @@ test("moved to the right, the whole sidebar mirrors, and it is there before the 
 		),
 	).toBe("right");
 	await ready(page);
-	const viewport = page.viewportSize() ?? { width: 0, height: 0 };
-	expect(await boxOf(panel)).toMatchObject({ x: viewport.width - 320 });
+	expect(await boxOf(treePanel(page))).toMatchObject({
+		x: viewportOf(page).width - 320,
+	});
+}
 
-	const handle = page.getByRole("separator", { name: "Resize file tree" });
+async function widenRightTreeFromItsLeftEdge(page: Page): Promise<number> {
+	const width = () =>
+		treePanel(page).evaluate((node) => node.getBoundingClientRect().width);
+	const viewport = viewportOf(page);
+	const handle = resizeHandle(page);
 	const edge = await boxOf(handle);
 	expect(edge.x).toBeLessThan(viewport.width - 320);
 	expect(edge.x + edge.width).toBeGreaterThan(viewport.width - 320);
@@ -812,29 +821,40 @@ test("moved to the right, the whole sidebar mirrors, and it is there before the 
 	await page.keyboard.press("ArrowLeft");
 	expect(await width()).toBe(456);
 	await expect(handle).toHaveAttribute("aria-valuenow", "456");
+	return grip.y;
+}
 
-	const held = await boxOf(handle);
-	await page.mouse.move(held.x + held.width / 2, grip.y);
+async function dragRightTreeShut(page: Page, gripY: number) {
+	const viewport = viewportOf(page);
+	const held = await boxOf(resizeHandle(page));
+	await page.mouse.move(held.x + held.width / 2, gripY);
 	await page.mouse.down();
-	await page.mouse.move(viewport.width - 100, grip.y, { steps: 5 });
+	await page.mouse.move(viewport.width - 100, gripY, { steps: 5 });
 	expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
 		viewport.width,
 	);
 	await page.mouse.up();
-	await expect(panel).toBeHidden();
-	const expand = page.getByRole("button", { name: "Toggle sidebar" });
+	await expect(treePanel(page)).toBeHidden();
+	const expand = sidebarToggle(page);
 	expect((await boxOf(expand)).x).toBeGreaterThan(viewport.width / 2);
 	await expand.click();
-	await expect(panel).toHaveCSS("width", "456px");
+	await expect(treePanel(page)).toHaveCSS("width", "456px");
+}
 
+async function collapseAndExpandRightTree(page: Page) {
+	const panel = treePanel(page);
 	const collapse = page.getByRole("button", { name: "Collapse sidebar" });
 	await collapse.hover();
 	await collapse.click();
 	await expect(panel).toBeHidden();
-	await expand.click();
+	await sidebarToggle(page).click();
 	await expect(panel).toBeVisible();
-	expect(await boxOf(panel)).toMatchObject({ x: viewport.width - 456 });
+	expect(await boxOf(panel)).toMatchObject({
+		x: viewportOf(page).width - 456,
+	});
+}
 
+async function moveTreeBackLeft(page: Page) {
 	await openPosition(page);
 	const fold = await boxOf(page.getByTestId("position-fold"));
 	const foldOut = await boxOf(page.getByTestId("position-popup"));
@@ -843,6 +863,22 @@ test("moved to the right, the whole sidebar mirrors, and it is there before the 
 	await option(page, "Left").click();
 
 	await expect(page.locator("html")).not.toHaveAttribute("data-tree-position");
-	expect(await boxOf(panel)).toMatchObject({ x: 0, width: 456 });
-	expect((await boxOf(diff)).x).toBeGreaterThanOrEqual(456);
+	expect(await boxOf(treePanel(page))).toMatchObject({ x: 0, width: 456 });
+	expect((await boxOf(page.getByTestId("diff-file"))).x).toBeGreaterThanOrEqual(
+		456,
+	);
+}
+
+test("moved to the right, the whole sidebar mirrors, and it is there before the first paint", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+
+	await moveTreeRight(page);
+	await expectTreeRightBeforeFirstPaint(page);
+	const gripY = await widenRightTreeFromItsLeftEdge(page);
+	await dragRightTreeShut(page, gripY);
+	await collapseAndExpandRightTree(page);
+	await moveTreeBackLeft(page);
 });
