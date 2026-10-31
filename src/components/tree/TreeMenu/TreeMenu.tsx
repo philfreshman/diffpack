@@ -22,12 +22,16 @@ const AWAY_FROM_EDGE: Record<TreePosition, FoldOutSide> = {
 export interface TreeMenuProps {
 	onlyModified: boolean;
 	onOnlyModifiedChange(onlyModified: boolean): void;
+	lineCounts: boolean;
+	onLineCountsChange(lineCounts: boolean): void;
 	position: TreePosition;
 	onPositionChange(position: TreePosition): void;
 }
 export function TreeMenu({
 	onlyModified,
 	onOnlyModifiedChange,
+	lineCounts,
+	onLineCountsChange,
 	position,
 	onPositionChange,
 }: TreeMenuProps) {
@@ -43,6 +47,11 @@ export function TreeMenu({
 				label="Only modified"
 				on={onlyModified}
 				onChange={onOnlyModifiedChange}
+			/>
+			<ToggleOption
+				label="Line counts"
+				on={lineCounts}
+				onChange={onLineCountsChange}
 			/>
 
 			<FoldOutOption

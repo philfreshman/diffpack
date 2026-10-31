@@ -4,7 +4,11 @@ import { FileTree } from "#/components/tree/FileTree/FileTree.tsx";
 import { TreeFilter } from "#/components/tree/TreeFilter/TreeFilter.tsx";
 import { TreeMenu } from "#/components/tree/TreeMenu/TreeMenu.tsx";
 import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
-import { ONLY_MODIFIED, TREE_WIDTH } from "#/lib/storage/settings.ts";
+import {
+	ONLY_MODIFIED,
+	TREE_LINE_COUNTS,
+	TREE_WIDTH,
+} from "#/lib/storage/settings.ts";
 import { folderReducer, foldersFor } from "#/lib/tree/folders.ts";
 import { sidebar } from "#/lib/tree/sidebar.ts";
 import { visibleRows } from "#/lib/tree/visibility.ts";
@@ -30,6 +34,8 @@ export function TreePanel({
 	const [filter, setFilter] = useState("");
 	const { value: onlyModified, set: setOnlyModified } =
 		useSetting(ONLY_MODIFIED);
+	const { value: lineCounts, set: setLineCounts } =
+		useSetting(TREE_LINE_COUNTS);
 
 	const [folders, dispatch] = useReducer(folderReducer, comparison, foldersFor);
 	// Reset during render: an effect would render once with the old comparison's folders.
@@ -68,6 +74,8 @@ export function TreePanel({
 					<TreeMenu
 						onlyModified={onlyModified}
 						onOnlyModifiedChange={(next) => narrow(() => setOnlyModified(next))}
+						lineCounts={lineCounts}
+						onLineCountsChange={setLineCounts}
 						position={position}
 						onPositionChange={sidebar.place}
 					/>
@@ -76,6 +84,7 @@ export function TreePanel({
 					rows={rows}
 					selectedPath={selectedPath}
 					viewedPaths={viewedPaths}
+					lineCounts={lineCounts}
 					onOpenFile={onOpenFile}
 					onToggleFolder={toggleFolder}
 				/>

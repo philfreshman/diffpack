@@ -3,6 +3,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import {
 	ONLY_MODIFIED,
 	TREE_COLLAPSED,
+	TREE_LINE_COUNTS,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
 
@@ -119,6 +120,7 @@ test("marks each changed file with a coloured status file icon, and keeps names 
 	await expect(removedIcon).toHaveCSS("color", removedColour);
 	await expect(manifest.getByTestId("name")).toHaveCSS("color", foreground);
 	await expect(removed.getByTestId("name")).toHaveCSS("color", foreground);
+	await expect(manifest.getByTestId("added")).toHaveCount(0);
 });
 
 async function tokenColour(page: Page, token: string): Promise<string> {
@@ -197,6 +199,42 @@ test("only modified, in the tree's menu, brings the unchanged files back, and re
 		"aria-pressed",
 		"false",
 	);
+});
+
+test("line counts, in the tree's menu, show how much each file changed, and are remembered", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+	const manifest = row(page, "package.json");
+	await openTreeOptions(page);
+	await expect(option(page, "Line counts")).toHaveAttribute(
+		"aria-pressed",
+		"false",
+	);
+
+	await option(page, "Line counts").click();
+
+	await expect(option(page, "Line counts")).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	// Shape, not numbers: the counts come from the engine and real archives.
+	await expect(manifest.getByTestId("added")).toHaveText(/^\+\d+$/);
+	await expect(manifest.getByTestId("removed")).toHaveText(/^-\d+$/);
+	await expect(row(page, "lib").first().getByTestId("removed")).toHaveText(
+		/^-\d+$/,
+	);
+	expect(
+		await page.evaluate(
+			(key) => localStorage.getItem(key),
+			TREE_LINE_COUNTS.key,
+		),
+	).toBe("true");
+
+	await page.reload();
+	await ready(page);
+	await expect(manifest.getByTestId("added")).toHaveText(/^\+\d+$/);
 });
 
 test("a folder opens and shuts on click, and stays shut", async ({ page }) => {

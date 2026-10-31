@@ -3,6 +3,7 @@ import {
 	HIGHLIGHT_THEME,
 	IGNORE_WHITESPACE,
 	SPLIT_VIEW,
+	TREE_LINE_COUNTS,
 } from "#/lib/storage/settings.ts";
 
 const MANIFEST = "/npm/express/4.18.2/5.1.0/package.json";
@@ -147,6 +148,9 @@ test("the gear opens the settings, whitespace among them", async ({ page }) => {
 test("ignoring whitespace takes a reformatted line out of the diff", async ({
 	page,
 }) => {
+	await page.addInitScript((key) => {
+		localStorage.setItem(key, "true");
+	}, TREE_LINE_COUNTS.key);
 	await open(page, UTILS);
 	const exact = await counts(page, "lib/utils.js");
 

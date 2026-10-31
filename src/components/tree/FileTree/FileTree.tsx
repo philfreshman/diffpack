@@ -12,13 +12,14 @@ import {
 } from "#/components/ui/icons.tsx";
 import { treeCommand } from "#/lib/tree/keymap.ts";
 import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
-import type { DiffStatus } from "#/lib/worker/protocol.ts";
+import type { DiffFileEntry, DiffStatus } from "#/lib/worker/protocol.ts";
 import styles from "./FileTree.module.css";
 
 export interface FileTreeProps {
 	rows: readonly TreeRow[];
 	selectedPath: string;
 	viewedPaths?: ReadonlySet<string>;
+	lineCounts?: boolean;
 	onOpenFile(path: string): void;
 	onToggleFolder(path: string, expanded: boolean): void;
 }
@@ -33,6 +34,7 @@ export function FileTree({
 	rows,
 	selectedPath,
 	viewedPaths = NONE_VIEWED,
+	lineCounts = false,
 	onOpenFile,
 	onToggleFolder,
 }: FileTreeProps) {
@@ -83,6 +85,7 @@ export function FileTree({
 				<FileTreeRow
 					active={rowKey(row.entry) === activeKey}
 					key={rowKey(row.entry)}
+					lineCounts={lineCounts}
 					onActivate={activate}
 					onFocus={setFocusedKey}
 					register={elements}
@@ -108,6 +111,7 @@ interface FileTreeRowProps {
 	active: boolean;
 	selected: boolean;
 	viewed: boolean;
+	lineCounts: boolean;
 	onActivate(row: TreeRow): void;
 	onFocus(key: string): void;
 	register: RefObject<Map<string, HTMLElement>>;
@@ -117,6 +121,7 @@ function FileTreeRow({
 	active,
 	selected,
 	viewed,
+	lineCounts,
 	onActivate,
 	onFocus,
 	register,
@@ -170,6 +175,14 @@ function FileTreeRow({
 					<CheckIcon width="12" height="12" />
 				</span>
 			)}
+			{lineCounts && <LineCounts entry={entry} />}
+		</div>
+	);
+}
+
+function LineCounts({ entry }: { entry: DiffFileEntry }) {
+	return (
+		<>
 			{entry.added ? (
 				<span className={styles.added} data-testid="added">
 					+{entry.added}
@@ -180,7 +193,7 @@ function FileTreeRow({
 					-{entry.removed}
 				</span>
 			) : null}
-		</div>
+		</>
 	);
 }
 

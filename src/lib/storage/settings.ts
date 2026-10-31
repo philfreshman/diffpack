@@ -68,6 +68,11 @@ export const ONLY_MODIFIED = flag({
 	fallback: true,
 });
 
+export const TREE_LINE_COUNTS = flag({
+	key: "tree_show_line_counts",
+	fallback: false,
+});
+
 export const TREE_POSITION = oneOf({
 	key: "tree_position",
 	values: TREE_POSITIONS,
