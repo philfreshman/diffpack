@@ -75,9 +75,10 @@ test("heads the open file with its path, counts and viewed toggle", async ({
 	expect(headerBox?.height).toBe(toolbarBox?.height);
 	const viewed = view.getByTestId("viewed-toggle");
 	await expect(viewed).not.toBeChecked();
+	await expect(viewed.locator("kbd")).toHaveText("V");
 	await expect(view.getByTestId("open-file")).toHaveCount(0);
 
-	await viewed.check();
+	await page.keyboard.press("v");
 
 	await expect(viewed).toBeChecked();
 	await expect(

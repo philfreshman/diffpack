@@ -19,6 +19,7 @@ import {
 } from "#/components/review/useViewedFiles.ts";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
+import { useKeyShortcut } from "#/components/ui/useKeyShortcut.ts";
 import { formatLineAnchor, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import { failureOf } from "#/lib/failure/failure.ts";
 import { requireAdapter } from "#/lib/registries/index.ts";
@@ -430,6 +431,7 @@ function SingleFile({
 }: SingleFileProps) {
 	const viewed = review.viewed.has(shown.path);
 	const [open, setOpen] = useStateResetOn(() => !viewed, [viewed]);
+	useKeyShortcut("v", () => review.setViewed(shown.path, !viewed));
 
 	return (
 		<DiffView

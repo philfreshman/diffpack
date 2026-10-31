@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
+import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
 import {
 	ChevronDownIcon,
 	CloseIcon,
@@ -12,6 +13,8 @@ import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./FileHeader.module.css";
 
 const LINE_COUNT = new Intl.NumberFormat("en-US");
+
+const VIEWED_SHORTCUT = "V";
 
 const STAT_KINDS: readonly StatBlock[] = ["added", "removed", "neutral"];
 
@@ -97,19 +100,20 @@ export function FileHeader({
 						<FileIcon height="16" width="16" />
 					</IconButton>
 				)}
-				<label className={styles.viewed} data-checked={viewed ? "" : undefined}>
-					<input
-						checked={viewed}
-						className={styles.checkbox}
-						data-testid="viewed-toggle"
-						onChange={(event) => {
-							releasePointerFocus(event.currentTarget);
-							onViewedChange(event.currentTarget.checked);
-						}}
-						type="checkbox"
-					/>
+				<button
+					aria-checked={viewed}
+					aria-keyshortcuts={VIEWED_SHORTCUT}
+					aria-label="Viewed"
+					className={styles.viewed}
+					data-testid="viewed-toggle"
+					onClick={() => onViewedChange(!viewed)}
+					role="checkbox"
+					title={`Mark as viewed (${VIEWED_SHORTCUT})`}
+					type="button"
+				>
 					Viewed
-				</label>
+					<Kbd className={styles.key} keys={VIEWED_SHORTCUT} />
+				</button>
 			</div>
 		</header>
 	);
@@ -167,10 +171,6 @@ const CONTROL_SELECTOR = "button, input, label";
 
 function isInsideControl(target: EventTarget): boolean {
 	return target instanceof Element && target.closest(CONTROL_SELECTOR) !== null;
-}
-
-function releasePointerFocus(input: HTMLInputElement): void {
-	if (!input.matches(":focus-visible")) input.blur();
 }
 
 function countOf(blocks: readonly StatBlock[], kind: StatBlock): number {
