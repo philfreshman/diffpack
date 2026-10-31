@@ -323,6 +323,25 @@ test("a path that is a file in one version and a folder in the other is two rows
 	await expect(row(page, "index.js")).toBeFocused();
 });
 
+test("every row is 30px high", async ({ page }) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+
+	await expect(row(page, "package.json")).toHaveCSS("height", "30px");
+	await expect(row(page, "lib").first()).toHaveCSS("height", "30px");
+});
+
+test("rows appear at once, without a rise-in animation", async ({ page }) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+
+	const animation = await row(page, "package.json").evaluate(
+		(node) => getComputedStyle(node).animationName,
+	);
+
+	expect(animation).toBe("none");
+});
+
 test("shows at a glance which rows open and which are files", async ({
 	page,
 }) => {

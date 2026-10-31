@@ -7,7 +7,6 @@ import {
 	FolderIcon,
 	FolderOpenIcon,
 } from "#/components/ui/icons.tsx";
-import { risesIn } from "#/components/ui/RiseIn/riseIn.ts";
 import { treeCommand } from "#/lib/tree/keymap.ts";
 import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
 import styles from "./FileTree.module.css";
@@ -76,13 +75,12 @@ export function FileTree({
 			aria-label="Changed files"
 			onKeyDown={handleKeyDown}
 		>
-			{rows.map((row, position) => (
+			{rows.map((row) => (
 				<FileTreeRow
 					active={rowKey(row.entry) === activeKey}
 					key={rowKey(row.entry)}
 					onActivate={activate}
 					onFocus={setFocusedKey}
-					position={position}
 					register={elements}
 					row={row}
 					selected={isSelected(row, selectedPath)}
@@ -108,8 +106,6 @@ interface FileTreeRowProps {
 	viewed: boolean;
 	onActivate(row: TreeRow): void;
 	onFocus(key: string): void;
-	/** Read only at mount, for the fade-in delay. */
-	position: number;
 	register: RefObject<Map<string, HTMLElement>>;
 }
 function FileTreeRow({
@@ -119,29 +115,23 @@ function FileTreeRow({
 	viewed,
 	onActivate,
 	onFocus,
-	position,
 	register,
 }: FileTreeRowProps) {
 	const { entry, expanded, hasChildren } = row;
 	const key = rowKey(entry);
-	// Pinned at mount: a later delay on a settled row would replay its animation.
-	const [riseIn] = useState(() => risesIn(styles.row, position));
 
 	return (
 		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- the tree owns the keyboard, per the ARIA practices guide
 		<div
 			role="treeitem"
-			className={riseIn.className}
+			className={styles.row}
 			ref={(element) => {
 				if (element) register.current.set(key, element);
 				else register.current.delete(key);
 			}}
 			tabIndex={active ? 0 : -1}
 			onFocus={() => onFocus(key)}
-			style={{
-				...riseIn.style,
-				paddingLeft: `${row.depth * 18 + 4}px`,
-			}}
+			style={{ paddingLeft: `${row.depth * 18 + 4}px` }}
 			aria-level={row.depth + 1}
 			aria-expanded={hasChildren ? expanded : undefined}
 			aria-selected={selected}
