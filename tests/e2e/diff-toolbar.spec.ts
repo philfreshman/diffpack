@@ -454,3 +454,54 @@ test("switches the color mode from the last item of the settings menu", async ({
 	await modeSwitch.getByRole("button", { name: "System" }).click();
 	await expect(html).toHaveAttribute("data-theme-selection", "system");
 });
+
+const header = (page: Page) => page.getByTestId("diff-view").locator("header");
+const diffBody = (page: Page) =>
+	page.getByTestId("diff-view").getByTestId("diff-scroller");
+
+test("a double click on a control in the header leaves the file open", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	await header(page).getByTestId("collapse-file").dblclick();
+	await expect(diffBody(page)).toBeVisible();
+
+	await header(page)
+		.getByRole("button", { name: "Expand all lines" })
+		.dblclick();
+	await expect(diffBody(page)).toBeVisible();
+
+	await header(page).getByTestId("viewed-toggle").dblclick();
+	await expect(header(page).getByTestId("viewed-toggle")).not.toBeChecked();
+	await expect(diffBody(page)).toBeVisible();
+});
+
+test("expanding every line of the folded file leaves it folded", async ({
+	page,
+}) => {
+	await open(page, LODASH);
+	await header(page).getByTestId("collapse-file").click();
+	await expect(diffBody(page)).toBeHidden();
+
+	await header(page).getByRole("button", { name: "Expand all lines" }).click();
+
+	await expect(
+		header(page).getByRole("button", { name: "Fold all lines" }),
+	).toHaveAttribute("aria-pressed", "true");
+	await expect(diffBody(page)).toBeHidden();
+});
+
+test("v typed into the tree filter is just typing", async ({ page }) => {
+	await open(page, MANIFEST);
+	const filter = page.getByRole("searchbox", {
+		name: "Filter files and folders",
+	});
+
+	await filter.click();
+	await page.keyboard.press("v");
+
+	await expect(filter).toHaveValue("v");
+	await expect(header(page).getByTestId("viewed-toggle")).not.toBeChecked();
+	await expect(diffBody(page)).toBeVisible();
+});
