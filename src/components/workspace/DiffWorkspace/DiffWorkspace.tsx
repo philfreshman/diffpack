@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { DiffToolbar } from "#/components/diff/DiffToolbar/DiffToolbar.tsx";
 import { DiffView } from "#/components/diff/DiffView/DiffView.tsx";
 import {
@@ -11,7 +12,11 @@ import {
 	FileStream,
 	type FileStreamProps,
 } from "#/components/review/FileStream/FileStream.tsx";
-import { useViewedFiles } from "#/components/review/useViewedFiles.ts";
+import { FileHeader } from "#/components/review/FileHeader/FileHeader.tsx";
+import {
+	useViewedFiles,
+	type ViewedFiles,
+} from "#/components/review/useViewedFiles.ts";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
 import { formatLineAnchor, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
@@ -29,6 +34,7 @@ import {
 } from "#/lib/session/diffSession.ts";
 import {
 	changedFiles,
+	findFile,
 	summarizeTree,
 	type TreeSummary,
 } from "#/lib/session/tree.ts";
@@ -148,7 +154,6 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								fileIndex={files.currentIndex}
 								fileCount={changed.length}
 								onStepFile={files.stepFile}
-								onClose={closeFile}
 								file={shown}
 								split={split.value}
 								onSplitChange={split.set}
@@ -196,6 +201,8 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 								lineLink={lineLink}
 								onClose={closeFile}
 								shown={shown}
+								tree={session.tree}
+								review={review}
 								vulnerabilities={vulnerabilities}
 								fileLink={fileLink}
 							/>
@@ -333,6 +340,8 @@ function ComparisonPane({
 interface FilePaneProps {
 	file: OpenFile | null;
 	shown: FileModelControls | null;
+	tree: DiffFileEntry | null;
+	review: ViewedFiles;
 	onClose(): void;
 	highlight: HighlightThemeControls;
 	showSigns: boolean;
@@ -344,6 +353,8 @@ interface FilePaneProps {
 function FilePane({
 	file,
 	shown,
+	tree,
+	review,
 	onClose,
 	highlight,
 	showSigns,
@@ -369,15 +380,16 @@ function FilePane({
 			{shown && (
 				<>
 					{/* Keyed by path, so restoring scroll is a plain mount effect. */}
-					<DiffView
-						file={shown}
+					<SingleFile
+						shown={shown}
 						key={shown.path}
+						entry={findFile(tree, shown.path)}
+						review={review}
 						onClose={onClose}
 						pending={file?.status === "loading"}
 						showSigns={showSigns}
 						autohideScrollbar={autohideScrollbar}
-						anchor={lineLink.anchorIn(shown.path)}
-						onSelectLine={lineLink.select}
+						lineLink={lineLink}
 						highlightTheme={highlight.theme}
 					/>
 					<VulnerabilityNotice
@@ -390,5 +402,62 @@ function FilePane({
 				</>
 			)}
 		</>
+	);
+}
+
+interface SingleFileProps {
+	shown: FileModelControls;
+	entry: DiffFileEntry | undefined;
+	review: ViewedFiles;
+	onClose(): void;
+	pending: boolean;
+	showSigns: boolean;
+	autohideScrollbar: boolean;
+	lineLink: LineLink;
+	highlightTheme: string | null;
+}
+
+function SingleFile({
+	shown,
+	entry,
+	review,
+	onClose,
+	pending,
+	showSigns,
+	autohideScrollbar,
+	lineLink,
+	highlightTheme,
+}: SingleFileProps) {
+	const viewed = review.viewed.has(shown.path);
+	const [open, setOpen] = useStateResetOn(() => !viewed, [viewed]);
+
+	return (
+		<DiffView
+			file={shown}
+			header={
+				entry && (
+					<FileHeader
+						entry={entry}
+						expandAll={shown.rows.length > 0 ? shown.expandAll : null}
+						onClose={onClose}
+						onExpandAllChange={shown.setExpandAll}
+						onOpenChange={setOpen}
+						onViewedChange={(isViewed) =>
+							review.setViewed(shown.path, isViewed)
+						}
+						open={open}
+						viewed={viewed}
+					/>
+				)
+			}
+			folded={!open}
+			onClose={onClose}
+			pending={pending}
+			showSigns={showSigns}
+			autohideScrollbar={autohideScrollbar}
+			anchor={lineLink.anchorIn(shown.path)}
+			onSelectLine={lineLink.select}
+			highlightTheme={highlightTheme}
+		/>
 	);
 }

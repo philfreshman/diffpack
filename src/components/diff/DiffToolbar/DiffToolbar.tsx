@@ -9,7 +9,6 @@ import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
 	ArrowUpIcon,
-	CloseIcon,
 	FileIcon,
 	FilesIcon,
 	FoldIcon,
@@ -26,7 +25,6 @@ export interface DiffToolbarProps {
 	fileIndex: number;
 	fileCount: number;
 	onStepFile(direction: 1 | -1): void;
-	onClose(): void;
 	file: Pick<
 		FileModelControls,
 		"differences" | "stepDifference" | "expandAll" | "setExpandAll"
@@ -43,7 +41,6 @@ export function DiffToolbar({
 	fileIndex,
 	fileCount,
 	onStepFile,
-	onClose,
 	file,
 	split,
 	onSplitChange,
@@ -52,7 +49,6 @@ export function DiffToolbar({
 	settings,
 }: DiffToolbarProps) {
 	const open = path !== "";
-	const closable = open && layout === "single";
 
 	return (
 		<div className={styles.toolbar} data-testid="diff-toolbar">
@@ -94,14 +90,6 @@ export function DiffToolbar({
 					onClick={() => onStepFile(1)}
 				>
 					<ArrowRightIcon width="16" height="16" />
-				</IconButton>
-				<IconButton
-					aria-label="Close file"
-					title="Close file"
-					disabled={!closable}
-					onClick={onClose}
-				>
-					<CloseIcon width="16" height="16" />
 				</IconButton>
 			</div>
 

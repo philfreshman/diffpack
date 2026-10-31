@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import {
 	ChevronDownIcon,
+	CloseIcon,
 	FileIcon,
 	FoldIcon,
 	UnfoldIcon,
@@ -20,7 +21,8 @@ interface FileHeaderProps {
 	onOpenChange(open: boolean): void;
 	viewed: boolean;
 	onViewedChange(viewed: boolean): void;
-	onOpenFile(): void;
+	onOpenFile?(): void;
+	onClose?(): void;
 	expandAll: boolean | null;
 	onExpandAllChange(expandAll: boolean): void;
 }
@@ -32,6 +34,7 @@ export function FileHeader({
 	viewed,
 	onViewedChange,
 	onOpenFile,
+	onClose,
 	expandAll,
 	onExpandAllChange,
 }: FileHeaderProps) {
@@ -56,6 +59,17 @@ export function FileHeader({
 				<ChevronDownIcon height="16" width="16" />
 			</IconButton>
 			<FilePath entry={entry} />
+			{onClose && (
+				<IconButton
+					aria-label="Close file"
+					className={styles.close}
+					data-testid="close-file"
+					onClick={onClose}
+					title="Close file"
+				>
+					<CloseIcon height="16" width="16" />
+				</IconButton>
+			)}
 			<LineCounts added={entry.added ?? 0} removed={entry.removed ?? 0} />
 			<div className={styles.actions}>
 				<IconButton
@@ -72,15 +86,17 @@ export function FileHeader({
 						<UnfoldIcon height="16" width="16" />
 					)}
 				</IconButton>
-				<IconButton
-					aria-label="Open file"
-					className={styles.action}
-					data-testid="open-file"
-					onClick={onOpenFile}
-					title="Open this file on its own"
-				>
-					<FileIcon height="16" width="16" />
-				</IconButton>
+				{onOpenFile && (
+					<IconButton
+						aria-label="Open file"
+						className={styles.action}
+						data-testid="open-file"
+						onClick={onOpenFile}
+						title="Open this file on its own"
+					>
+						<FileIcon height="16" width="16" />
+					</IconButton>
+				)}
 				<label className={styles.viewed} data-checked={viewed ? "" : undefined}>
 					<input
 						checked={viewed}

@@ -38,7 +38,7 @@ test("stands whether or not a file is open", async ({ page }) => {
 	).toBeDisabled();
 	await expect(
 		toolbar(page).getByRole("button", { name: "Close file" }),
-	).toBeDisabled();
+	).toHaveCount(0);
 });
 
 test("walks the changed files, and closes the one it is on", async ({
@@ -57,10 +57,41 @@ test("walks the changed files, and closes the one it is on", async ({
 	await expect(page).toHaveURL(`${EXPRESS}/lib/view.js`);
 	await expect(page.getByTestId("file-counter")).toHaveText("13/14 files");
 
-	await toolbar(page).getByRole("button", { name: "Close file" }).click();
+	await page.getByTestId("diff-view").getByTestId("close-file").click();
 
 	await expect(page).toHaveURL(EXPRESS);
 	await expect(page.getByTestId("diff-view")).toHaveCount(0);
+});
+
+test("heads the open file with its path, counts and viewed toggle", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+	const view = page.getByTestId("diff-view");
+
+	await expect(view.getByRole("heading")).toHaveText("package.json");
+	const headerBox = await view.locator("header").boundingBox();
+	const toolbarBox = await toolbar(page).boundingBox();
+	expect(headerBox?.height).toBe(toolbarBox?.height);
+	const viewed = view.getByTestId("viewed-toggle");
+	await expect(viewed).not.toBeChecked();
+	await expect(view.getByTestId("open-file")).toHaveCount(0);
+
+	await viewed.check();
+
+	await expect(viewed).toBeChecked();
+	await expect(
+		page.getByRole("treeitem").and(page.locator('[data-path="package.json"]')),
+	).toHaveAttribute("data-viewed");
+	await expect(view.getByTestId("diff-scroller")).toBeHidden();
+
+	await view.getByRole("heading").dblclick();
+
+	await expect(view.getByTestId("diff-scroller")).toBeVisible();
+
+	await viewed.uncheck();
+
+	await expect(viewed).not.toBeChecked();
 });
 
 test("blurs the file it is holding rather than emptying the pane", async ({
