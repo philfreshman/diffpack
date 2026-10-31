@@ -11,7 +11,7 @@ function bodyOf(init: RequestInit | undefined): unknown {
 	return JSON.parse(String(init?.body));
 }
 
-describe("the OSV.dev client", () => {
+describe("the OSV.dev client's request", () => {
 	test("posts the package, its ecosystem and the version to the query endpoint", async () => {
 		const { fetcher, calls } = stubFetch(() => json({}));
 		const signal = new AbortController().signal;
@@ -47,7 +47,9 @@ describe("the OSV.dev client", () => {
 
 		for (const call of calls) expect(call.url).toBe(QUERY_URL);
 	});
+});
 
+describe("the OSV.dev client, across pages", () => {
 	test("follows the page token until the last page", async () => {
 		const pages = [
 			{ vulns: [goHtml], next_page_token: "second" },
@@ -86,7 +88,9 @@ describe("the OSV.dev client", () => {
 		).rejects.toThrow("OSV.dev");
 		expect(calls).toHaveLength(20);
 	});
+});
 
+describe("the OSV.dev client's answer", () => {
 	test("answers an empty list when nothing is known", async () => {
 		const { fetcher } = stubFetch(() => json({}));
 		expect(await createOsvClient(fetcher).query("npm", "x", "1.0.0")).toEqual(

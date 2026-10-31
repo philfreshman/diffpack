@@ -1,12 +1,9 @@
 import { type RefObject, useEffect, useEffectEvent, useRef } from "react";
-import {
-	isOffTarget,
-	offsetWithin,
-} from "#/components/review/streamGeometry.ts";
+import { offsetWithin } from "#/components/review/streamGeometry.ts";
 import type { StreamRefs } from "./streamRefs.ts";
+import { cardAt, usePinnedCard } from "./usePinnedCard.ts";
 
 const USER_SCROLL_EVENTS = ["wheel", "touchstart", "pointerdown"] as const;
-const PIN_RELEASE_DELAY_MS = 1500;
 const SMOOTH_REACH_IN_VIEWPORTS = 2;
 
 export interface ScrollAim {
@@ -15,99 +12,86 @@ export interface ScrollAim {
 	scrollToTop(behavior: ScrollBehavior): void;
 }
 
-export function useScrollAim({
-	scrollerRef,
-	contentRef,
-	cardsRef,
-}: StreamRefs): ScrollAim {
+interface ScrollerReactions {
+	onScrollEnd(): void;
+	onUserScroll(): void;
+	onContentResize(): void;
+}
+
+export function useScrollAim(refs: StreamRefs): ScrollAim {
+	const { scrollerRef, contentRef, cardsRef } = refs;
 	const aimedIndexRef = useRef<number | null>(null);
-	const pinnedIndexRef = useRef<number | null>(null);
-	const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pinned = usePinnedCard(refs);
 
-	function cardAt(index: number): Element | null {
-		return cardsRef.current?.children.item(index) ?? null;
-	}
-
-	function releasePinLater() {
-		if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current);
-		releaseTimerRef.current = setTimeout(() => {
-			pinnedIndexRef.current = null;
-		}, PIN_RELEASE_DELAY_MS);
-	}
-
-	function realign(behavior: ScrollBehavior) {
-		const scroller = scrollerRef.current;
-		const pinned = pinnedIndexRef.current;
-		const card = pinned === null ? null : cardAt(pinned);
-		if (!scroller || !card) return;
-
-		const target = offsetWithin(scroller, card);
-		if (isOffTarget(scroller, target))
-			scroller.scrollTo({ top: target, behavior });
+	function forgetAim() {
+		aimedIndexRef.current = null;
+		pinned.unpin();
 	}
 
 	const settle = useEffectEvent(() => {
 		aimedIndexRef.current = null;
-		realign("instant");
-		releasePinLater();
+		pinned.realign("instant");
+		pinned.releaseLater();
 	});
 
 	const followResize = useEffectEvent(() => {
 		const moving = aimedIndexRef.current !== null;
-		realign(moving ? "smooth" : "instant");
-		if (!moving && pinnedIndexRef.current !== null) releasePinLater();
+		pinned.realign(moving ? "smooth" : "instant");
+		if (!moving && pinned.isPinned()) pinned.releaseLater();
 	});
+
+	const release = useEffectEvent(forgetAim);
 
 	useEffect(() => {
 		const scroller = scrollerRef.current;
 		const content = contentRef.current;
 		if (!scroller || !content) return;
 
-		const release = () => {
-			aimedIndexRef.current = null;
-			pinnedIndexRef.current = null;
-		};
-		scroller.addEventListener("scrollend", settle);
-		for (const type of USER_SCROLL_EVENTS) {
-			scroller.addEventListener(type, release, { passive: true });
-		}
-		const resizes = new ResizeObserver(followResize);
-		resizes.observe(content);
-
-		return () => {
-			scroller.removeEventListener("scrollend", settle);
-			for (const type of USER_SCROLL_EVENTS) {
-				scroller.removeEventListener(type, release);
-			}
-			resizes.disconnect();
-		};
+		return watchScroller(scroller, content, {
+			onScrollEnd: settle,
+			onUserScroll: release,
+			onContentResize: followResize,
+		});
 	}, [scrollerRef, contentRef]);
-
-	useEffect(
-		() => () => {
-			if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current);
-		},
-		[],
-	);
 
 	function scrollToIndex(index: number, behavior: ScrollBehavior) {
 		const scroller = scrollerRef.current;
-		const card = cardAt(index);
+		const card = cardAt(cardsRef.current, index);
 		if (!scroller || !card) return;
 
 		const top = offsetWithin(scroller, card);
 		aimedIndexRef.current = index;
-		pinnedIndexRef.current = index;
+		pinned.pin(index);
 		scroller.scrollTo({ top, behavior: withinReach(scroller, top, behavior) });
 	}
 
 	function scrollToTop(behavior: ScrollBehavior) {
-		aimedIndexRef.current = null;
-		pinnedIndexRef.current = null;
+		forgetAim();
 		scrollerRef.current?.scrollTo({ top: 0, behavior });
 	}
 
 	return { aimedIndexRef, scrollToIndex, scrollToTop };
+}
+
+function watchScroller(
+	scroller: HTMLElement,
+	content: HTMLElement,
+	{ onScrollEnd, onUserScroll, onContentResize }: ScrollerReactions,
+): () => void {
+	scroller.addEventListener("scrollend", onScrollEnd);
+	for (const type of USER_SCROLL_EVENTS) {
+		scroller.addEventListener(type, onUserScroll, { passive: true });
+	}
+	const resizes = new ResizeObserver(onContentResize);
+	resizes.observe(content);
+
+	return () => {
+		scroller.removeEventListener("scrollend", onScrollEnd);
+		for (const type of USER_SCROLL_EVENTS) {
+			scroller.removeEventListener(type, onUserScroll);
+		}
+		resizes.disconnect();
+	};
 }
 
 function withinReach(

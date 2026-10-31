@@ -7,6 +7,14 @@ function unchanged(content: string, number: number): DiffLine {
 	return { type: "unchanged", content, oldNumber: number, newNumber: number };
 }
 
+function removed(content: string, number: number): DiffLine {
+	return { type: "removed", content, oldNumber: number, newNumber: null };
+}
+
+function added(content: string, number: number): DiffLine {
+	return { type: "added", content, oldNumber: null, newNumber: number };
+}
+
 function file(fields: Partial<AffectedFile>): AffectedFile {
 	return {
 		path: "x",
@@ -65,25 +73,15 @@ describe("a symbol", () => {
 	});
 });
 
-describe("a fix commit's lines", () => {
-	const lines: DiffLine[] = [
-		unchanged("var reWhitespace = /\\s/;", 1),
-		{
-			type: "removed",
-			content: "  while (index-- && reWhitespace.test(x)) {}",
-			oldNumber: 2,
-			newNumber: null,
-		},
-		{
-			type: "added",
-			content: "  while (index-- && reWhitespace.test(x)) {",
-			oldNumber: null,
-			newNumber: 2,
-		},
-		unchanged("  }", 3),
-		unchanged("  return index;", 4),
-	];
+const lines: DiffLine[] = [
+	unchanged("var reWhitespace = /\\s/;", 1),
+	removed("  while (index-- && reWhitespace.test(x)) {}", 2),
+	added("  while (index-- && reWhitespace.test(x)) {", 2),
+	unchanged("  }", 3),
+	unchanged("  return index;", 4),
+];
 
+describe("a fix commit's lines", () => {
 	test("mark old-side lines a removal matches and new-side lines an addition matches", () => {
 		const marks = markLines(
 			lines,
@@ -124,7 +122,9 @@ describe("a fix commit's lines", () => {
 		);
 		expect(marks).toEqual([]);
 	});
+});
 
+describe("a fix commit's lines, where more than one line could match", () => {
 	test("mark a line once when a symbol and a snippet both match", () => {
 		const marks = markLines(
 			[unchanged("function trimEnd(string) {", 1)],
@@ -142,12 +142,7 @@ describe("a fix commit's lines", () => {
 	test("ignore a snippet that matches more than two lines on its side", () => {
 		const common = [
 			unchanged("  return result;", 1),
-			{
-				type: "added" as const,
-				content: "  return result;",
-				oldNumber: null,
-				newNumber: 2,
-			},
+			added("  return result;", 2),
 			unchanged("  return result;", 3),
 		];
 		expect(markLines(common, file({ addedLines: ["return result;"] }))).toEqual(
@@ -170,12 +165,7 @@ describe("a fix commit's lines", () => {
 	test("prefer the changed line over a context line with the same text", () => {
 		const both: DiffLine[] = [
 			unchanged("  value = trim(value);", 1),
-			{
-				type: "removed",
-				content: "  value = trim(value);",
-				oldNumber: 2,
-				newNumber: null,
-			},
+			removed("  value = trim(value);", 2),
 		];
 		expect(
 			markLines(both, file({ removedLines: ["value = trim(value);"] })),

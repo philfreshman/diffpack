@@ -1,4 +1,4 @@
-import { type RefObject, useRef, useState } from "react";
+import type { RefObject } from "react";
 import {
 	CheckIcon,
 	ChevronDownIcon,
@@ -10,10 +10,10 @@ import {
 	FolderIcon,
 	FolderOpenIcon,
 } from "#/components/ui/icons.tsx";
-import { treeCommand } from "#/lib/tree/keymap.ts";
 import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry, DiffStatus } from "#/lib/worker/protocol.ts";
 import styles from "./FileTree.module.css";
+import { useTreeNavigation } from "./useTreeNavigation.ts";
 
 export interface FileTreeProps {
 	rows: readonly TreeRow[];
@@ -38,40 +38,9 @@ export function FileTree({
 	onOpenFile,
 	onToggleFolder,
 }: FileTreeProps) {
-	// By key, not index: filtering and expanding renumber the rows.
-	const [focusedKey, setFocusedKey] = useState("");
-	const elements = useRef(new Map<string, HTMLElement>());
-
-	const index = rows.findIndex((row) => rowKey(row.entry) === focusedKey);
 	const selectedIndex = rows.findIndex((row) => isSelected(row, selectedPath));
-	const activeIndex = index >= 0 ? index : Math.max(selectedIndex, 0);
-	const activeRow = rows[activeIndex];
-	const activeKey = activeRow ? rowKey(activeRow.entry) : "";
-
-	function focusRow(row: TreeRow) {
-		setFocusedKey(rowKey(row.entry));
-		const element = elements.current.get(rowKey(row.entry));
-		element?.focus({ preventScroll: true });
-		element?.scrollIntoView({ block: "nearest" });
-	}
-
-	function activate(row: TreeRow) {
-		setFocusedKey(rowKey(row.entry));
-		if (row.hasChildren) onToggleFolder(row.entry.path, !row.expanded);
-		else onOpenFile(row.entry.path);
-	}
-
-	function handleKeyDown(event: React.KeyboardEvent) {
-		const command = treeCommand(event.key, rows, activeIndex);
-		const row = command && rows[command.index];
-		if (!command || !row) return;
-
-		if (command.kind === "focus") focusRow(row);
-		else if (command.kind === "activate") activate(row);
-		else onToggleFolder(row.entry.path, command.expanded);
-
-		event.preventDefault();
-	}
+	const { activeKey, elementsRef, setFocusedKey, activate, handleKeyDown } =
+		useTreeNavigation(rows, selectedIndex, { onOpenFile, onToggleFolder });
 
 	return (
 		// oxlint-disable-next-line jsx-a11y/interactive-supports-focus -- focus moves between the treeitems, which carry the tabindex
@@ -88,7 +57,7 @@ export function FileTree({
 					lineCounts={lineCounts}
 					onActivate={activate}
 					onFocus={setFocusedKey}
-					register={elements}
+					register={elementsRef}
 					row={row}
 					selected={isSelected(row, selectedPath)}
 					viewed={isViewed(row, viewedPaths)}
@@ -148,11 +117,7 @@ function FileTreeRow({
 			data-type={entry.type}
 			data-status={entry.status}
 			data-viewed={viewed || undefined}
-			title={
-				entry.status === "renamed" && entry.oldPath
-					? `Renamed from ${entry.oldPath}`
-					: entry.path
-			}
+			title={rowTitle(entry)}
 			onClick={() => onActivate(row)}
 		>
 			<RowChevron expanded={expanded} hasChildren={hasChildren} />
@@ -164,19 +129,29 @@ function FileTreeRow({
 			<span className={styles.name} data-testid="name">
 				{nameOf(entry.path)}
 			</span>
-			{viewed && (
-				<span
-					className={styles.viewed}
-					role="img"
-					aria-label="Viewed"
-					title="Viewed"
-					data-testid="viewed-mark"
-				>
-					<CheckIcon width="12" height="12" />
-				</span>
-			)}
+			{viewed && <ViewedMark />}
 			{lineCounts && <LineCounts entry={entry} />}
 		</div>
+	);
+}
+
+function rowTitle(entry: DiffFileEntry): string {
+	return entry.status === "renamed" && entry.oldPath
+		? `Renamed from ${entry.oldPath}`
+		: entry.path;
+}
+
+function ViewedMark() {
+	return (
+		<span
+			className={styles.viewed}
+			role="img"
+			aria-label="Viewed"
+			title="Viewed"
+			data-testid="viewed-mark"
+		>
+			<CheckIcon width="12" height="12" />
+		</span>
 	);
 }
 

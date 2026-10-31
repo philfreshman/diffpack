@@ -60,7 +60,7 @@ describe("inlineChange", () => {
 	});
 });
 
-describe("inlineChanges", () => {
+describe("inlineChanges within one run of changes", () => {
 	test("marks only the first removal of a run with fewer additions", () => {
 		expect(
 			inlineChanges([
@@ -101,7 +101,9 @@ describe("inlineChanges", () => {
 			]),
 		).toEqual(new Map([[2, { start: 4, end: 5 }]]));
 	});
+});
 
+describe("inlineChanges across a file", () => {
 	test("marks exactly the lines split view sets opposite each other", () => {
 		const lines = [
 			line("unchanged", "ctx"),

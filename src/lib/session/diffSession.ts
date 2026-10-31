@@ -75,150 +75,189 @@ function shownFailure(error: unknown): ShownFailure {
 	};
 }
 
-// A store, not component state: replies must outlive any one route match.
-export function createDiffSession(client: DiffClient) {
-	const store = new Store<DiffSessionState>(IDLE);
-	const prefetched = new Set<string>();
-	let address: DiffSlug | null = null;
-	/** `null` until the stored answer has been read. */
-	let ignoreWhitespace: boolean | null = null;
+type SessionStore = Store<DiffSessionState>;
 
-	function isCurrent(key: string): boolean {
-		return store.state.key === key;
-	}
+interface Session {
+	store: SessionStore;
+	client: DiffClient;
+	namedPath: () => string;
+}
 
-	// Nothing until the whitespace answer is known: guessing would build a deep
-	// link's tree twice when the stored answer is the other one.
-	function wanted(): Comparison | null {
-		if (!address || ignoreWhitespace === null) return null;
-		const { registry, package: pkg, from, to } = address;
-		if (!pkg || !from || !to) return null;
+// Nothing until the whitespace answer is known: guessing would build a deep
+// link's tree twice when the stored answer is the other one.
+function comparisonOf(
+	address: DiffSlug | null,
+	ignoreWhitespace: boolean | null,
+): Comparison | null {
+	if (!address || ignoreWhitespace === null) return null;
+	const { registry, package: pkg, from, to } = address;
+	if (!pkg || !from || !to) return null;
 
-		return { registry, pkg, from, to, ignoreWhitespace };
-	}
+	return { registry, pkg, from, to, ignoreWhitespace };
+}
 
-	function settle(): void {
-		const comparison = wanted();
-		if (!comparison) {
-			reset();
-			return;
-		}
+function isCurrent(store: SessionStore, key: string): boolean {
+	return store.state.key === key;
+}
 
-		// Told again on every input change, so the comparison on screen must cost
-		// nothing.
-		if (isCurrent(comparisonKey(comparison))) void openNamedFile(comparison);
-		else void build(comparison);
-	}
+function updateProgress(
+	store: SessionStore,
+	change: (progress: BuildProgress) => BuildProgress,
+): void {
+	store.setState((state) => ({
+		...state,
+		progress: state.progress && change(state.progress),
+	}));
+}
 
-	function updateProgress(
-		change: (progress: BuildProgress) => BuildProgress,
-	): void {
+function showFile(store: SessionStore, next: OpenFile): void {
+	store.setState((state) => ({ ...state, file: next }));
+}
+
+function closeFile(store: SessionStore): void {
+	if (store.state.file) store.setState((state) => ({ ...state, file: null }));
+}
+
+function reset(store: SessionStore): void {
+	if (store.state.key === null) return;
+	store.setState(() => IDLE);
+}
+
+async function build(session: Session, comparison: Comparison): Promise<void> {
+	const { store, client } = session;
+	const key = comparisonKey(comparison);
+	store.setState(() => ({
+		...IDLE,
+		key,
+		status: "loading",
+		progress: FETCHING,
+	}));
+
+	const report = (fetched: ArchiveFetched) => {
+		if (isCurrent(store, key))
+			updateProgress(store, (progress) => archiveFetched(progress, fetched));
+	};
+
+	try {
+		const tree = await client.buildTree(comparison, report);
+		if (!isCurrent(store, key)) return;
+		store.setState((state) => ({ ...state, status: "ready", tree }));
+	} catch (error) {
+		if (!isCurrent(store, key)) return;
 		store.setState((state) => ({
 			...state,
-			progress: state.progress && change(state.progress),
+			status: "error",
+			...shownFailure(error),
 		}));
+		updateProgress(store, (progress) =>
+			buildFailed(progress, failureOf(error)),
+		);
+		return;
 	}
 
-	async function build(comparison: Comparison): Promise<void> {
-		const key = comparisonKey(comparison);
-		store.setState(() => ({
-			...IDLE,
-			key,
-			status: "loading",
-			progress: FETCHING,
-		}));
+	// The file the URL names now, not when the build began.
+	await openNamedFile(session, comparison);
+}
 
-		const report = (fetched: ArchiveFetched) => {
-			if (isCurrent(key))
-				updateProgress((progress) => archiveFetched(progress, fetched));
-		};
-
-		try {
-			const tree = await client.buildTree(comparison, report);
-			if (!isCurrent(key)) return;
-			store.setState((state) => ({ ...state, status: "ready", tree }));
-		} catch (error) {
-			if (!isCurrent(key)) return;
-			store.setState((state) => ({
-				...state,
-				status: "error",
-				...shownFailure(error),
-			}));
-			updateProgress((progress) => buildFailed(progress, failureOf(error)));
-			return;
-		}
-
-		// The file the URL names now, not when the build began.
-		await openNamedFile(comparison);
+// Needs the active diff `build` leaves behind, so `build` calls it when done.
+async function openNamedFile(
+	{ store, client, namedPath }: Session,
+	comparison: Comparison,
+): Promise<void> {
+	const path = namedPath();
+	const { key, status, tree, file } = store.state;
+	if (!path) {
+		closeFile(store);
+		return;
 	}
+	if (!key || status !== "ready" || file?.path === path) return;
+
+	const entry = findFile(tree, path);
+	if (!entry) {
+		showFile(store, {
+			path,
+			status: "error",
+			diff: null,
+			...NO_FAILURE,
+			error: `${path} is not in this comparison`,
+		});
+		return;
+	}
+
+	showFile(store, { path, status: "loading", diff: null, ...NO_FAILURE });
+
+	const stillOpen = () =>
+		isCurrent(store, key) && store.state.file?.path === path;
+
+	try {
+		const diff = await client.getFile(comparison, entry.path, entry.oldPath);
+		if (!stillOpen()) return;
+		showFile(store, { path, status: "ready", diff, ...NO_FAILURE });
+	} catch (error) {
+		if (!stillOpen()) return;
+		showFile(store, {
+			path,
+			status: "error",
+			diff: null,
+			...shownFailure(error),
+		});
+	}
+}
+
+function createPrefetcher(client: DiffClient) {
+	const prefetched = new Set<string>();
 
 	// Failures are silent: the click that follows is where an error is shown.
-	function prefetch(request: DiffRequest): void {
+	return function prefetch(request: DiffRequest): void {
 		// The same downloads serve either whitespace answer.
 		const warming = archives(request);
 		const key = comparisonKey({ ...warming, ignoreWhitespace: false });
 		if (prefetched.has(key)) return;
 		prefetched.add(key);
 		client.prefetch(warming).catch(() => prefetched.delete(key));
+	};
+}
+
+// A store, not component state: replies must outlive any one route match.
+export function createDiffSession(client: DiffClient) {
+	const store = new Store<DiffSessionState>(IDLE);
+	const prefetch = createPrefetcher(client);
+	let address: DiffSlug | null = null;
+	/** `null` until the stored answer has been read. */
+	let ignoreWhitespace: boolean | null = null;
+	const session: Session = {
+		store,
+		client,
+		namedPath: () => address?.file ?? "",
+	};
+
+	function wanted(): Comparison | null {
+		return comparisonOf(address, ignoreWhitespace);
 	}
 
-	// Needs the active diff `build` leaves behind, so `build` calls it when done.
-	async function openNamedFile(comparison: Comparison): Promise<void> {
-		const path = address?.file ?? "";
-		const { key, status, tree, file } = store.state;
-		if (!path) {
-			closeFile();
-			return;
-		}
-		if (!key || status !== "ready" || file?.path === path) return;
-
-		const entry = findFile(tree, path);
-		const open = (next: OpenFile) =>
-			store.setState((state) => ({ ...state, file: next }));
-
-		if (!entry) {
-			open({
-				path,
-				status: "error",
-				diff: null,
-				...NO_FAILURE,
-				error: `${path} is not in this comparison`,
-			});
+	function settle(): void {
+		const comparison = wanted();
+		if (!comparison) {
+			reset(store);
 			return;
 		}
 
-		open({ path, status: "loading", diff: null, ...NO_FAILURE });
-
-		const stillOpen = () => isCurrent(key) && store.state.file?.path === path;
-
-		try {
-			const diff = await client.getFile(comparison, entry.path, entry.oldPath);
-			if (!stillOpen()) return;
-			open({ path, status: "ready", diff, ...NO_FAILURE });
-		} catch (error) {
-			if (!stillOpen()) return;
-			open({ path, status: "error", diff: null, ...shownFailure(error) });
-		}
+		// Told again on every input change, so the comparison on screen must cost
+		// nothing.
+		if (isCurrent(store, comparisonKey(comparison)))
+			void openNamedFile(session, comparison);
+		else void build(session, comparison);
 	}
 
 	async function readFile(entry: DiffFileEntry): Promise<FileDiff> {
 		const comparison = wanted();
 		const ready =
 			comparison !== null &&
-			isCurrent(comparisonKey(comparison)) &&
+			isCurrent(store, comparisonKey(comparison)) &&
 			store.state.status === "ready";
 		if (!ready) throw new Error(`${entry.path} is not in this comparison`);
 
 		return client.getFile(comparison, entry.path, entry.oldPath);
-	}
-
-	function closeFile(): void {
-		if (store.state.file) store.setState((state) => ({ ...state, file: null }));
-	}
-
-	function reset(): void {
-		if (store.state.key === null) return;
-		store.setState(() => IDLE);
 	}
 
 	function follow(slug: DiffSlug): void {

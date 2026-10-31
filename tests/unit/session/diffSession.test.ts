@@ -140,6 +140,17 @@ describe("a comparison", () => {
 		expect(session.store.state.tree).toBe(TREE);
 	});
 
+	test("asking again for the comparison on screen costs nothing", async () => {
+		const { stub, session } = await readySession();
+
+		session.follow({ ...SLUG });
+		session.answerWhitespace(false);
+
+		expect(stub.built).toHaveLength(1);
+	});
+});
+
+describe("a comparison's download progress", () => {
 	test("reports each archive as it arrives", () => {
 		const { stub, session } = toldOf(SLUG);
 
@@ -176,16 +187,9 @@ describe("a comparison", () => {
 			diff: { state: "waiting" },
 		});
 	});
+});
 
-	test("asking again for the comparison on screen costs nothing", async () => {
-		const { stub, session } = await readySession();
-
-		session.follow({ ...SLUG });
-		session.answerWhitespace(false);
-
-		expect(stub.built).toHaveLength(1);
-	});
-
+describe("a comparison that fails", () => {
 	test("surfaces the engine's own message when it fails", async () => {
 		const { stub, session } = toldOf(SLUG);
 
@@ -227,7 +231,9 @@ describe("a comparison", () => {
 			resetsAt: null,
 		});
 	});
+});
 
+describe("a comparison asked for again before it lands", () => {
 	test("a superseded comparison never lands", async () => {
 		const { stub, session } = toldOf(SLUG);
 		session.follow({ ...SLUG, to: "5.2.0" });
@@ -430,6 +436,23 @@ describe("the file the URL names", () => {
 		]);
 	});
 
+	test("on screen is the one the URL named last", async () => {
+		const { stub, session } = await readySession();
+
+		session.follow({ ...SLUG, file: "index.js" });
+		session.follow({ ...SLUG, file: "lib/router.js" });
+		take(stub.fileReplies, 1).resolve({ data: "second", isDiff: true });
+		take(stub.fileReplies, 0).resolve({ data: "first", isDiff: true });
+		await settled();
+
+		expect(session.store.state.file).toMatchObject({
+			path: "lib/router.js",
+			diff: { data: "second", isDiff: true },
+		});
+	});
+});
+
+describe("the file the URL names, told again", () => {
 	test("is not read again when the URL is told again", async () => {
 		const { stub, session } = await readySession();
 		session.follow({ ...SLUG, file: "index.js" });
@@ -456,7 +479,9 @@ describe("the file the URL names", () => {
 
 		expect(session.store.state.file).toBeNull();
 	});
+});
 
+describe("the file the URL names, when it cannot be read", () => {
 	test("is an error when this comparison does not contain it", async () => {
 		const { stub, session } = await readySession();
 
@@ -486,21 +511,6 @@ describe("the file the URL names", () => {
 			error: "diffpack couldn't reach its proxy",
 			errorCode: "proxy_unreachable",
 			resetsAt: null,
-		});
-	});
-
-	test("on screen is the one the URL named last", async () => {
-		const { stub, session } = await readySession();
-
-		session.follow({ ...SLUG, file: "index.js" });
-		session.follow({ ...SLUG, file: "lib/router.js" });
-		take(stub.fileReplies, 1).resolve({ data: "second", isDiff: true });
-		take(stub.fileReplies, 0).resolve({ data: "first", isDiff: true });
-		await settled();
-
-		expect(session.store.state.file).toMatchObject({
-			path: "lib/router.js",
-			diff: { data: "second", isDiff: true },
 		});
 	});
 });

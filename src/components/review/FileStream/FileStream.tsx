@@ -1,11 +1,13 @@
-import { type RefObject, useImperativeHandle, useRef } from "react";
+import { type RefObject, useImperativeHandle } from "react";
 import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
-import { FileCard } from "#/components/review/FileCard/FileCard.tsx";
+import {
+	FileCard,
+	type FileCardProps,
+} from "#/components/review/FileCard/FileCard.tsx";
 import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { DiffFileEntry, FileDiff } from "#/lib/worker/protocol.ts";
 import styles from "./FileStream.module.css";
-import { useStreamNavigation } from "./useStreamNavigation.ts";
-import { useStreamShortcuts } from "./useStreamShortcuts.ts";
+import { useFileStream } from "./useFileStream.ts";
 
 export interface FileStreamHandle {
 	scrollToFile(path: string): void;
@@ -41,23 +43,8 @@ export function FileStream({
 	autohideScrollbar,
 	highlightTheme,
 }: FileStreamProps) {
-	const scrollerRef = useRef<HTMLDivElement>(null);
-	const contentRef = useRef<HTMLDivElement>(null);
-	const cardsRef = useRef<HTMLDivElement>(null);
-	const navigation = useStreamNavigation(
-		files,
-		{ scrollerRef, contentRef, cardsRef },
-		onCurrentFileChange,
-	);
-	const layout = { scrollerRef, contentRef };
-	const display = { split, showSigns, highlightTheme };
-
-	function changeViewed(path: string, isViewed: boolean) {
-		if (isViewed) navigation.keepPlace(path);
-		onViewedChange(path, isViewed);
-	}
-
-	useStreamShortcuts(files, viewed, navigation, changeViewed);
+	const { scrollerRef, contentRef, cardsRef, navigation, changeViewed } =
+		useFileStream(files, viewed, onViewedChange, onCurrentFileChange);
 
 	useImperativeHandle(streamRef, () => ({
 		scrollToFile: navigation.scrollToFile,
@@ -73,30 +60,71 @@ export function FileStream({
 				ref={scrollerRef}
 			>
 				<div className={styles.content} ref={contentRef}>
-					<div className={styles.cards} ref={cardsRef}>
-						{files.map((entry) => (
-							<FileCard
-								display={display}
-								entry={entry}
-								key={entry.path}
-								layout={layout}
-								onCollapse={() => navigation.keepPlace(entry.path)}
-								onOpenFile={() => onOpenFile(entry.path)}
-								onSelectLine={(anchor) => onSelectLine(entry.path, anchor)}
-								onViewedChange={(isViewed) =>
-									changeViewed(entry.path, isViewed)
-								}
-								readFile={readFile}
-								viewed={viewed.has(entry.path)}
-							/>
-						))}
-					</div>
+					<StreamCards
+						cardsRef={cardsRef}
+						display={{ split, showSigns, highlightTheme }}
+						files={files}
+						layout={{ scrollerRef, contentRef }}
+						onCollapse={navigation.keepPlace}
+						onOpenFile={onOpenFile}
+						onSelectLine={onSelectLine}
+						onViewedChange={changeViewed}
+						readFile={readFile}
+						viewed={viewed}
+					/>
 					<StreamEnd fileCount={files.length} />
 				</div>
 			</div>
 			<div className={styles.rail}>
 				<DiffScrollbar autohide={autohideScrollbar} scrollerRef={scrollerRef} />
 			</div>
+		</div>
+	);
+}
+
+interface StreamCardsProps extends Pick<
+	FileStreamProps,
+	| "files"
+	| "readFile"
+	| "viewed"
+	| "onViewedChange"
+	| "onOpenFile"
+	| "onSelectLine"
+> {
+	cardsRef: RefObject<HTMLDivElement | null>;
+	layout: FileCardProps["layout"];
+	display: FileCardProps["display"];
+	onCollapse(path: string): void;
+}
+
+function StreamCards({
+	cardsRef,
+	files,
+	layout,
+	display,
+	readFile,
+	viewed,
+	onViewedChange,
+	onCollapse,
+	onOpenFile,
+	onSelectLine,
+}: StreamCardsProps) {
+	return (
+		<div className={styles.cards} ref={cardsRef}>
+			{files.map((entry) => (
+				<FileCard
+					display={display}
+					entry={entry}
+					key={entry.path}
+					layout={layout}
+					onCollapse={() => onCollapse(entry.path)}
+					onOpenFile={() => onOpenFile(entry.path)}
+					onSelectLine={(anchor) => onSelectLine(entry.path, anchor)}
+					onViewedChange={(isViewed) => onViewedChange(entry.path, isViewed)}
+					readFile={readFile}
+					viewed={viewed.has(entry.path)}
+				/>
+			))}
 		</div>
 	);
 }

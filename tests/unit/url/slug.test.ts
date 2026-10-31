@@ -164,74 +164,74 @@ describe("buildPath", () => {
 	});
 });
 
-describe("a URL built by diffpack", () => {
-	const cases = [
-		{
-			adapter: npmAdapter,
-			slug: {
-				package: "express",
-				from: "4.18.2",
-				to: "5.1.0",
-				file: "lib/router/index.js",
-			},
+const COMPARISONS_DIFFPACK_LINKS_TO = [
+	{
+		adapter: npmAdapter,
+		slug: {
+			package: "express",
+			from: "4.18.2",
+			to: "5.1.0",
+			file: "lib/router/index.js",
 		},
-		{
-			adapter: npmAdapter,
-			slug: {
-				package: "@types/node",
-				from: "26.6.0",
-				to: "26.7.0",
-				file: "index.d.ts",
-			},
+	},
+	{
+		adapter: npmAdapter,
+		slug: {
+			package: "@types/node",
+			from: "26.6.0",
+			to: "26.7.0",
+			file: "index.d.ts",
 		},
-		{
-			adapter: cratesAdapter,
-			slug: {
-				package: "serde",
-				from: "1.0.1",
-				to: "1.0.2",
-				file: "src/lib.rs",
-			},
+	},
+	{
+		adapter: cratesAdapter,
+		slug: {
+			package: "serde",
+			from: "1.0.1",
+			to: "1.0.2",
+			file: "src/lib.rs",
 		},
-		{
-			adapter: goAdapter,
-			slug: {
-				package: "github.com/go-chi/chi/v5",
-				from: "v5.3.1",
-				to: "v5.3.2",
-				file: "tree.go",
-			},
+	},
+	{
+		adapter: goAdapter,
+		slug: {
+			package: "github.com/go-chi/chi/v5",
+			from: "v5.3.1",
+			to: "v5.3.2",
+			file: "tree.go",
 		},
-		{
-			adapter: npmAdapter,
-			slug: {
-				package: "express",
-				from: "4.18.2",
-				to: "5.1.0",
-				file: "test/a b#c.js",
-			},
+	},
+	{
+		adapter: npmAdapter,
+		slug: {
+			package: "express",
+			from: "4.18.2",
+			to: "5.1.0",
+			file: "test/a b#c.js",
 		},
-		{
-			adapter: composerAdapter,
-			slug: {
-				package: "monolog/monolog",
-				from: "3.12.0",
-				to: "3.12.1",
-				file: "src/Monolog/Logger.php",
-			},
+	},
+	{
+		adapter: composerAdapter,
+		slug: {
+			package: "monolog/monolog",
+			from: "3.12.0",
+			to: "3.12.1",
+			file: "src/Monolog/Logger.php",
 		},
-		{
-			adapter: composerAdapter,
-			slug: {
-				package: "symfony/console",
-				from: "v7.3.0",
-				to: "v7.3.1",
-				file: "Application.php",
-			},
+	},
+	{
+		adapter: composerAdapter,
+		slug: {
+			package: "symfony/console",
+			from: "v7.3.0",
+			to: "v7.3.1",
+			file: "Application.php",
 		},
-	];
+	},
+];
 
-	for (const { adapter, slug } of cases) {
+describe("a URL built by diffpack", () => {
+	for (const { adapter, slug } of COMPARISONS_DIFFPACK_LINKS_TO) {
 		test(`reads back as itself: ${adapter.id} ${slug.package}/${slug.file}`, () => {
 			const path = buildPath(adapter, slug);
 			const splat = path.slice(`/${adapter.id}/`.length);

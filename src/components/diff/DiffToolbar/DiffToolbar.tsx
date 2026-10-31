@@ -43,50 +43,16 @@ export function DiffToolbar({
 	onLayoutChange,
 	settings,
 }: DiffToolbarProps) {
-	const open = path !== "";
-
 	return (
 		<div className={styles.toolbar} data-testid="diff-toolbar">
-			<div className={styles.group}>
-				<IconButton
-					aria-label="Previous difference"
-					title="Previous difference"
-					disabled={!file}
-					onClick={() => file?.stepDifference(-1)}
-				>
-					<ArrowUpIcon width="16" height="16" />
-				</IconButton>
-				<IconButton
-					aria-label="Next difference"
-					title="Next difference"
-					disabled={!file}
-					onClick={() => file?.stepDifference(1)}
-				>
-					<ArrowDownIcon width="16" height="16" />
-				</IconButton>
-			</div>
+			<DifferenceControls file={file} />
 
-			<div className={styles.group}>
-				<IconButton
-					aria-label="Previous file"
-					title="Previous file"
-					disabled={fileIndex <= 0}
-					onClick={() => onStepFile(-1)}
-				>
-					<ArrowLeftIcon width="16" height="16" />
-				</IconButton>
-				<span className={styles.counter} data-testid="file-counter">
-					{open ? `${fileIndex + 1}/${fileCount}` : fileCount} files
-				</span>
-				<IconButton
-					aria-label="Next file"
-					title="Next file"
-					disabled={fileIndex < 0 || fileIndex >= fileCount - 1}
-					onClick={() => onStepFile(1)}
-				>
-					<ArrowRightIcon width="16" height="16" />
-				</IconButton>
-			</div>
+			<FileStepControls
+				path={path}
+				fileIndex={fileIndex}
+				fileCount={fileCount}
+				onStepFile={onStepFile}
+			/>
 
 			<span className={styles.spacer} />
 
@@ -95,6 +61,62 @@ export function DiffToolbar({
 			<LayoutControls layout={layout} onLayoutChange={onLayoutChange} />
 
 			<SettingsMenu {...settings} />
+		</div>
+	);
+}
+
+function DifferenceControls({ file }: Pick<DiffToolbarProps, "file">) {
+	return (
+		<div className={styles.group}>
+			<IconButton
+				aria-label="Previous difference"
+				title="Previous difference"
+				disabled={!file}
+				onClick={() => file?.stepDifference(-1)}
+			>
+				<ArrowUpIcon width="16" height="16" />
+			</IconButton>
+			<IconButton
+				aria-label="Next difference"
+				title="Next difference"
+				disabled={!file}
+				onClick={() => file?.stepDifference(1)}
+			>
+				<ArrowDownIcon width="16" height="16" />
+			</IconButton>
+		</div>
+	);
+}
+
+function FileStepControls({
+	path,
+	fileIndex,
+	fileCount,
+	onStepFile,
+}: Pick<DiffToolbarProps, "path" | "fileIndex" | "fileCount" | "onStepFile">) {
+	const open = path !== "";
+
+	return (
+		<div className={styles.group}>
+			<IconButton
+				aria-label="Previous file"
+				title="Previous file"
+				disabled={fileIndex <= 0}
+				onClick={() => onStepFile(-1)}
+			>
+				<ArrowLeftIcon width="16" height="16" />
+			</IconButton>
+			<span className={styles.counter} data-testid="file-counter">
+				{open ? `${fileIndex + 1}/${fileCount}` : fileCount} files
+			</span>
+			<IconButton
+				aria-label="Next file"
+				title="Next file"
+				disabled={fileIndex < 0 || fileIndex >= fileCount - 1}
+				onClick={() => onStepFile(1)}
+			>
+				<ArrowRightIcon width="16" height="16" />
+			</IconButton>
 		</div>
 	);
 }

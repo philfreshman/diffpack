@@ -7,6 +7,7 @@ import {
 	documentHead,
 	documentMeta,
 } from "#/lib/url/documentMeta.ts";
+import type { DiffSlug } from "#/lib/url/slug.ts";
 
 describe("documentMeta", () => {
 	test("names the comparison being viewed", () => {
@@ -69,17 +70,38 @@ describe("documentMeta", () => {
 	});
 });
 
+const EXPRESS_COMPARISON: DiffSlug = {
+	registry: "npm",
+	package: "express",
+	from: "4.18.2",
+	to: "5.1.0",
+	file: "",
+};
+
+const EXPRESS_ROUTER_FILE: DiffSlug = {
+	...EXPRESS_COMPARISON,
+	file: "lib/router/index.js",
+};
+
+const CRATES_LANDING: DiffSlug = {
+	registry: "crates",
+	package: "",
+	from: "",
+	to: "",
+	file: "",
+};
+
+function sharedTags(slug: DiffSlug): Record<string, string> {
+	return Object.fromEntries(
+		documentHead(npmAdapter, slug)
+			.meta.filter((tag) => "property" in tag)
+			.map((tag) => [tag.property, tag.content]),
+	);
+}
+
 describe("documentHead", () => {
 	test("gives a route the title and description tags to render", () => {
-		expect(
-			documentHead(npmAdapter, {
-				registry: "npm",
-				package: "express",
-				from: "4.18.2",
-				to: "5.1.0",
-				file: "",
-			}).meta,
-		).toEqual(
+		expect(documentHead(npmAdapter, EXPRESS_COMPARISON).meta).toEqual(
 			expect.arrayContaining([
 				{ title: "express 4.18.2 → 5.1.0 | diffpack" },
 				{
@@ -91,18 +113,7 @@ describe("documentHead", () => {
 	});
 
 	test("a shared comparison previews as that comparison", () => {
-		const tags = documentHead(npmAdapter, {
-			registry: "npm",
-			package: "express",
-			from: "4.18.2",
-			to: "5.1.0",
-			file: "lib/router/index.js",
-		}).meta;
-		const shared = Object.fromEntries(
-			tags
-				.filter((tag) => "property" in tag)
-				.map((tag) => [tag.property, tag.content]),
-		);
+		const shared = sharedTags(EXPRESS_ROUTER_FILE);
 
 		expect(shared["og:title"]).toBe(
 			"express 4.18.2 → 5.1.0 · lib/router/index.js | diffpack",
@@ -115,13 +126,7 @@ describe("documentHead", () => {
 	});
 
 	test("shares the comparison, not the home page", () => {
-		const tags = documentHead(npmAdapter, {
-			registry: "npm",
-			package: "express",
-			from: "4.18.2",
-			to: "5.1.0",
-			file: "",
-		}).meta;
+		const tags = documentHead(npmAdapter, EXPRESS_COMPARISON).meta;
 
 		expect(tags).toEqual(
 			expect.arrayContaining([
@@ -138,15 +143,9 @@ describe("documentHead", () => {
 	});
 
 	test("names the canonical address of the page", () => {
-		expect(
-			documentHead(cratesAdapter, {
-				registry: "crates",
-				package: "",
-				from: "",
-				to: "",
-				file: "",
-			}).links,
-		).toEqual([{ rel: "canonical", href: "https://diffpack.io/crates" }]);
+		expect(documentHead(cratesAdapter, CRATES_LANDING).links).toEqual([
+			{ rel: "canonical", href: "https://diffpack.io/crates" },
+		]);
 	});
 });
 

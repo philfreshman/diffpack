@@ -75,19 +75,59 @@ interface Press {
 	dragged: boolean;
 }
 
+interface TrailAnimation {
+	wake(): void;
+	stop(): void;
+}
+
+type Stir = (
+	point: PointerSample,
+	motion: PointerMotion,
+	radiusPx: number,
+) => void;
+
 export function startAsciiTrail(canvas: HTMLCanvasElement): () => void {
 	const context = canvas.getContext("2d");
 	if (!context) return () => {};
 
 	const cell = measureCell(canvas, context);
 	let trail = fitCanvas(canvas, context, cell);
-	let previous: PointerSample | null = null;
-	let press: Press | null = null;
+	const currentTrail = () => trail;
+	const animation = animateTrail(canvas, context, cell, currentTrail);
+
+	const resize = new ResizeObserver(() => {
+		trail = fitCanvas(canvas, context, cell);
+	});
+
+	resize.observe(canvas);
+	const stopFollowing = followPointer(
+		canvas,
+		currentTrail,
+		(point, motion, radiusPx) => {
+			stirAt(trail, point, motion, radiusPx);
+			animation.wake();
+		},
+	);
+
+	return () => {
+		animation.stop();
+		resize.disconnect();
+		stopFollowing();
+	};
+}
+
+function animateTrail(
+	canvas: HTMLCanvasElement,
+	context: CanvasRenderingContext2D,
+	cell: CellLayout,
+	currentTrail: () => Trail,
+): TrailAnimation {
 	let frame = 0;
 	let lastStepAt = 0;
 
 	const tick = (now: number) => {
 		frame = 0;
+		const trail = currentTrail();
 		if (now - lastStepAt >= FRAME_INTERVAL_MS) {
 			stepFluid(trail.fluid, (now - lastStepAt) / 1000, TRAIL_FLUID);
 			lastStepAt = now;
@@ -97,15 +137,29 @@ export function startAsciiTrail(canvas: HTMLCanvasElement): () => void {
 			frame = requestAnimationFrame(tick);
 	};
 
-	const wake = () => {
-		if (frame) return;
-		lastStepAt = performance.now();
-		frame = requestAnimationFrame(tick);
+	return {
+		wake() {
+			if (frame) return;
+			lastStepAt = performance.now();
+			frame = requestAnimationFrame(tick);
+		},
+		stop() {
+			cancelAnimationFrame(frame);
+		},
 	};
+}
+
+function followPointer(
+	canvas: HTMLCanvasElement,
+	currentTrail: () => Trail,
+	stir: Stir,
+): () => void {
+	let previous: PointerSample | null = null;
+	let press: Press | null = null;
 
 	const onPointerDown = (event: PointerEvent) => {
 		const point = pointerPosition(canvas, event);
-		if (!event.isPrimary || !isInside(trail, point)) return;
+		if (!event.isPrimary || !isInside(currentTrail(), point)) return;
 		press = { id: event.pointerId, x: point.x, y: point.y, dragged: false };
 		previous = point;
 	};
@@ -113,7 +167,7 @@ export function startAsciiTrail(canvas: HTMLCanvasElement): () => void {
 	const onPointerMove = (event: PointerEvent) => {
 		if (!isMouse(event) && press?.id !== event.pointerId) return;
 		const point = pointerPosition(canvas, event);
-		if (!isInside(trail, point)) {
+		if (!isInside(currentTrail(), point)) {
 			previous = null;
 			return;
 		}
@@ -123,27 +177,19 @@ export function startAsciiTrail(canvas: HTMLCanvasElement): () => void {
 		const motion = motionSince(previous, point, event);
 		previous = point;
 		if (motion.deltaX === 0 && motion.deltaY === 0) return;
-		stirAt(trail, point, motion, stirRadiusPx(motion, dragging?.dragged));
-		wake();
+		stir(point, motion, stirRadiusPx(motion, dragging?.dragged));
 	};
 
 	const onPointerRelease = (event: PointerEvent) => {
 		if (press?.id === event.pointerId) press = null;
 	};
 
-	const resize = new ResizeObserver(() => {
-		trail = fitCanvas(canvas, context, cell);
-	});
-
-	resize.observe(canvas);
 	window.addEventListener("pointerdown", onPointerDown, { passive: true });
 	window.addEventListener("pointermove", onPointerMove, { passive: true });
 	window.addEventListener("pointerup", onPointerRelease, { passive: true });
 	window.addEventListener("pointercancel", onPointerRelease, { passive: true });
 
 	return () => {
-		cancelAnimationFrame(frame);
-		resize.disconnect();
 		window.removeEventListener("pointerdown", onPointerDown);
 		window.removeEventListener("pointermove", onPointerMove);
 		window.removeEventListener("pointerup", onPointerRelease);

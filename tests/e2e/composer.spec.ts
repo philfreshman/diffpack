@@ -216,7 +216,7 @@ test("ignoring whitespace rebuilds the Composer comparison that way", async ({
 	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
 });
 
-test.describe("when the proxy cannot serve, a state no real package produces, so only the proxy is stubbed", () => {
+test.describe("when the proxy refuses, a state no real package produces, so only the proxy is stubbed", () => {
 	test.use({ locale: "en-US", timezoneId: "Europe/Warsaw" });
 
 	test("a used-up daily quota pauses Composer until a local time", async ({
@@ -252,6 +252,10 @@ test.describe("when the proxy cannot serve, a state no real package produces, so
 			"Versions unavailable",
 		);
 	});
+});
+
+test.describe("when the proxy is out of reach or refuses the version list, so only the proxy is stubbed", () => {
+	test.use({ locale: "en-US", timezoneId: "Europe/Warsaw" });
 
 	test("a proxy that does not answer says so", async ({ page }) => {
 		await page.route(`${PROXY}/v1/composer/**`, (route) => route.abort());

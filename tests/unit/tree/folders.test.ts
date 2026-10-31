@@ -93,29 +93,51 @@ describe("folderReducer", () => {
 	});
 });
 
-describe("the folders chosen, as a tree that is one folder deep shows them", () => {
-	const ONE_FOLDER: DiffFileEntry = {
-		path: "",
-		type: "directory",
-		status: "modified",
-		children: [
-			{
-				path: "src",
-				type: "directory",
-				status: "modified",
-				children: [{ path: "src/index.js", type: "file", status: "modified" }],
-			},
-		],
-	};
+const ONE_FOLDER: DiffFileEntry = {
+	path: "",
+	type: "directory",
+	status: "modified",
+	children: [
+		{
+			path: "src",
+			type: "directory",
+			status: "modified",
+			children: [{ path: "src/index.js", type: "file", status: "modified" }],
+		},
+	],
+};
 
-	const rows = (folders: FolderState) =>
-		visibleRows(ONE_FOLDER, {
-			filter: "",
-			onlyModified: false,
-			hiddenPaths: new Set(),
-			expandedKeys: folders.expandedKeys,
-			collapsedKeys: folders.collapsedKeys,
-		}).map((row) => row.entry.path);
+const ONE_FOLDER_WITH_A_FOLDER_INSIDE: DiffFileEntry = {
+	...ONE_FOLDER,
+	children: [
+		{
+			path: "src",
+			type: "directory",
+			status: "modified",
+			children: [
+				{
+					path: "src/a",
+					type: "directory",
+					status: "modified",
+					children: [{ path: "src/a/x.js", type: "file", status: "modified" }],
+				},
+			],
+		},
+	],
+};
+
+function pathsShown(tree: DiffFileEntry, folders: FolderState): string[] {
+	return visibleRows(tree, {
+		filter: "",
+		onlyModified: false,
+		hiddenPaths: new Set(),
+		expandedKeys: folders.expandedKeys,
+		collapsedKeys: folders.collapsedKeys,
+	}).map((row) => row.entry.path);
+}
+
+describe("the folders chosen, as a tree that is one folder deep shows them", () => {
+	const rows = (folders: FolderState) => pathsShown(ONE_FOLDER, folders);
 
 	test("with nothing chosen, the only folder opens itself", () => {
 		expect(rows(after())).toEqual(["src", "src/index.js"]);
@@ -137,35 +159,9 @@ describe("the folders chosen, as a tree that is one folder deep shows them", () 
 	});
 
 	test("opening a folder inside the only folder leaves the only folder open", () => {
-		const nested: DiffFileEntry = {
-			...ONE_FOLDER,
-			children: [
-				{
-					path: "src",
-					type: "directory",
-					status: "modified",
-					children: [
-						{
-							path: "src/a",
-							type: "directory",
-							status: "modified",
-							children: [
-								{ path: "src/a/x.js", type: "file", status: "modified" },
-							],
-						},
-					],
-				},
-			],
-		};
 		const folders = after(open("src/a"));
 
-		const shown = visibleRows(nested, {
-			filter: "",
-			onlyModified: false,
-			hiddenPaths: new Set(),
-			expandedKeys: folders.expandedKeys,
-			collapsedKeys: folders.collapsedKeys,
-		}).map((row) => row.entry.path);
+		const shown = pathsShown(ONE_FOLDER_WITH_A_FOLDER_INSIDE, folders);
 
 		expect(shown).toEqual(["src", "src/a", "src/a/x.js"]);
 	});

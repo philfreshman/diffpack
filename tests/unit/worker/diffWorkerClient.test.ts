@@ -106,7 +106,7 @@ function clientOver(engine: FakeEngine) {
 	);
 }
 
-describe("createDiffClient", () => {
+describe("createDiffClient, finding its worker", () => {
 	test("adopts the request the boot script already has in flight", async () => {
 		const booted = new FakeWorker();
 		const { client, spawned } = clientWith(bootOf(booted));
@@ -129,6 +129,23 @@ describe("createDiffClient", () => {
 		expect(await client.buildTree(COMPARISON)).toEqual(TREE);
 	});
 
+	test("spawns its own worker where nothing was booted", async () => {
+		const { client, spawned } = clientWith(null);
+
+		const tree = client.buildTree(COMPARISON);
+		await settled();
+
+		expect(spawned).toHaveLength(1);
+		expect(spawned[0]?.posted).toEqual([
+			{ id: 0, type: "build-tree", ...COMPARISON },
+		]);
+
+		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
+		expect(await tree).toEqual(TREE);
+	});
+});
+
+describe("createDiffClient, when the boot script started another comparison", () => {
 	test("asks for itself, once the boot's build is done, when the boot script started another comparison", async () => {
 		const booted = new FakeWorker();
 		const { client, spawned } = clientWith(bootOf(booted));
@@ -161,21 +178,6 @@ describe("createDiffClient", () => {
 			{ id: 1, type: "build-tree", ...ANOTHER },
 			{ id: 2, type: "build-tree", ...COMPARISON },
 		]);
-	});
-
-	test("spawns its own worker where nothing was booted", async () => {
-		const { client, spawned } = clientWith(null);
-
-		const tree = client.buildTree(COMPARISON);
-		await settled();
-
-		expect(spawned).toHaveLength(1);
-		expect(spawned[0]?.posted).toEqual([
-			{ id: 0, type: "build-tree", ...COMPARISON },
-		]);
-
-		spawned[0]?.reply({ id: 0, ok: true, data: TREE });
-		expect(await tree).toEqual(TREE);
 	});
 });
 
@@ -270,7 +272,9 @@ describe("the engine's one active diff", () => {
 			client.getFile(COMPARISON, "Cargo.toml", undefined),
 		).rejects.toThrow("no longer loaded");
 	});
+});
 
+describe("the engine's active diff, after a build fails or is overtaken", () => {
 	test("a failed build leaves no comparison to read from", async () => {
 		const { client, spawned } = clientWith(null);
 		const built = client.buildTree(COMPARISON);
