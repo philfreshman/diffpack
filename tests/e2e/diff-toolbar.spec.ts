@@ -516,3 +516,12 @@ test("a double click on the header folds the file without selecting its name", a
 	await expect(diffBody(page)).toBeHidden();
 	expect(await page.evaluate(() => String(window.getSelection()))).toBe("");
 });
+
+test("the folded file's header draws no rule under itself", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+	await header(page).getByTestId("collapse-file").click();
+
+	await expect(header(page)).toHaveCSS("border-bottom-width", "0px");
+});

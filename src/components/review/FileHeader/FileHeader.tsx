@@ -47,6 +47,7 @@ export function FileHeader({
 	return (
 		<header
 			className={styles.header}
+			data-open={open ? "" : undefined}
 			onDoubleClick={(event) => {
 				if (isInsideControl(event.target)) return;
 				clearTextSelection();

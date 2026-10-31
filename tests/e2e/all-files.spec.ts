@@ -398,3 +398,15 @@ test("a double click on a file's header leaves nothing selected", async ({
 	await expect(target).toHaveAttribute("data-collapsed");
 	expect(await page.evaluate(() => String(window.getSelection()))).toBe("");
 });
+
+test("an open card's header draws a rule above its rows, a folded one none", async ({
+	page,
+}) => {
+	const { target } = await firstReadyCard(page);
+	const header = target.locator("header");
+	await expect(header).toHaveCSS("border-bottom-width", "1px");
+
+	await target.getByTestId("collapse-file").click();
+
+	await expect(header).toHaveCSS("border-bottom-width", "0px");
+});
