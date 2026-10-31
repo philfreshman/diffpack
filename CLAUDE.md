@@ -27,6 +27,7 @@ bun run test:e2e         # Playwright: production build + real registries, slow 
 bun run generate-routes  # tsr generate, after adding or renaming a file in src/routes/
 bun run generate-emphasis # rewrite themeEmphasis.gen.ts, after a highlight.js upgrade or a theme change
 bun run badge            # regenerate .github/badges/fallow-health.svg when the score moves
+bun run badge:coverage   # regenerate .github/badges/coverage.svg when unit test coverage moves
 bun run check:coverage-gaps # fail if a file or export in src/lib has no unit test importing it
 bun run ci-failure 258   # why a PR's CI failed: error excerpts, plus Playwright's errors for e2e (--run <id> for a run)
 ```
@@ -379,4 +380,5 @@ server function).
 - E2e tests use real registries. Only a tree shape no real package has may be stubbed with
   `page.route` (see `tests/e2e/file-tree.spec.ts`), and the real wasm still does the diffing.
 - If a change moves the fallow health score, `bun run check:badge` fails in CI. Run `bun run badge`
-  and commit the SVG.
+  and commit the SVG. The same goes for unit test coverage: `bun run check:coverage-badge` fails, and
+  `bun run badge:coverage` fixes it.
