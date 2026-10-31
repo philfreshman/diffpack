@@ -109,15 +109,8 @@ test("blurs the file it is holding rather than emptying the pane", async ({
 	await expect(view.locator("tr").first()).toBeVisible();
 });
 
-test("counts the differences, and scrolls to them one at a time", async ({
-	page,
-}) => {
+test("scrolls to the differences one at a time", async ({ page }) => {
 	await open(page, LODASH);
-
-	// A run of touched lines is one difference, however many lines it is.
-	await expect(page.getByTestId("difference-count")).toContainText(
-		/^\d+ differences$/,
-	);
 
 	const scroller = page.getByTestId("diff-scroller");
 	const top = async () => scroller.evaluate((it) => it.scrollTop);
@@ -220,10 +213,14 @@ test("the choice survives a reload, the way the layout does", async ({
 	).toBe("true");
 });
 
-test("names the file being read", async ({ page }) => {
+test("names the file in its header, not in the toolbar", async ({ page }) => {
 	await open(page, MANIFEST);
 
-	await expect(toolbar(page)).toContainText("package.json");
+	await expect(page.getByTestId("diff-view").getByRole("heading")).toHaveText(
+		"package.json",
+	);
+	await expect(toolbar(page)).not.toContainText("package.json");
+	await expect(page.getByTestId("difference-count")).toHaveCount(0);
 });
 
 test("opens the whole file, and folds it back up", async ({ page }) => {
@@ -231,12 +228,16 @@ test("opens the whole file, and folds it back up", async ({ page }) => {
 
 	const viewer = page.getByTestId("diff-view");
 	const folded = await viewer.getAttribute("data-rows");
-	await toolbar(page).getByRole("button", { name: "Expand all" }).click();
+	await expect(
+		toolbar(page).getByRole("button", { name: "Expand all" }),
+	).toHaveCount(0);
+	const header = viewer.locator("header");
+	await header.getByRole("button", { name: "Expand all lines" }).click();
 
 	await expect(page.getByTestId("fold")).toHaveCount(0);
 	await expect(viewer).not.toHaveAttribute("data-rows", folded ?? "");
 
-	await toolbar(page).getByRole("button", { name: "Fold all" }).click();
+	await header.getByRole("button", { name: "Fold all lines" }).click();
 
 	await expect(viewer).toHaveAttribute("data-rows", folded ?? "");
 });
@@ -268,25 +269,6 @@ test("puts the old file beside the new one, and remembers that it was asked", as
 	expect(
 		await page.evaluate((key) => localStorage.getItem(key), SPLIT_VIEW.key),
 	).toBe("false");
-});
-
-test("counts the same differences however the file is shown", async ({
-	page,
-}) => {
-	await open(page, LODASH);
-	const count = page.getByTestId("difference-count");
-	const folded = await count.innerText();
-
-	// The count comes from the rows on screen; neither expanding nor splitting may split or join a difference.
-	await toolbar(page).getByRole("button", { name: "Expand all" }).click();
-	await expect(page.getByTestId("fold")).toHaveCount(0);
-	await expect(count).toHaveText(folded);
-
-	await toolbar(page)
-		.getByRole("button", { name: "Switch to split view" })
-		.click();
-	await expect(splitRows(page).first()).toBeVisible();
-	await expect(count).toHaveText(folded);
 });
 
 const themeLink = (page: Page) => page.locator("link#highlight-theme");
