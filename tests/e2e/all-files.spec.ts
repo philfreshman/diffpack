@@ -220,6 +220,21 @@ test("a card opens its file on its own", async ({ page }) => {
 	);
 });
 
+test("v folds the file being read and stays on it", async ({ page }) => {
+	await showAllFiles(page);
+	const [first = ""] = await cardPaths(page);
+	const target = card(page, first);
+	await expect(target).toHaveAttribute("data-state", "ready", ENGINE);
+	await stream(page).evaluate((element) => element.scrollBy(0, 600));
+	await expect(stream(page)).toHaveAttribute("data-current", first);
+
+	await page.keyboard.press("v");
+
+	await expect(target).toHaveAttribute("data-collapsed");
+	await expect(target).toBeInViewport();
+	await expect(stream(page)).toHaveAttribute("data-current", first);
+});
+
 test("n jumps to the next file not yet viewed", async ({ page }) => {
 	await showAllFiles(page);
 	const [first = "", second = "", third = "", fourth = ""] =

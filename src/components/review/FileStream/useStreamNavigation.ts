@@ -11,7 +11,7 @@ export interface StreamNavigation {
 	currentIndex: number;
 	scrollToFile(path: string): void;
 	stepFile(direction: 1 | -1): void;
-	keepPlace(path: string, landOn: "self" | "next"): void;
+	keepPlace(path: string): void;
 }
 
 export function useStreamNavigation(
@@ -37,16 +37,14 @@ export function useStreamNavigation(
 		scrollToTop(preferredScrollBehavior());
 	}
 
-	function keepPlace(path: string, landOn: "self" | "next") {
+	function keepPlace(path: string) {
 		const scroller = refs.scrollerRef.current;
 		const index = indexOf(files, path);
 		const card = refs.cardsRef.current?.children.item(index);
 		if (!scroller || !card) return;
 		if (!hasScrolledPast(scroller, card)) return;
 
-		const hasNext = index + 1 < files.length;
-		const landing = landOn === "next" && hasNext ? index + 1 : index;
-		requestAnimationFrame(() => scrollToIndex(landing, "instant"));
+		requestAnimationFrame(() => scrollToIndex(index, "instant"));
 	}
 
 	return { currentIndex, scrollToFile, stepFile, keepPlace };

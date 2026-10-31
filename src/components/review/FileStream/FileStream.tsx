@@ -53,7 +53,7 @@ export function FileStream({
 	const display = { split, showSigns, highlightTheme };
 
 	function changeViewed(path: string, isViewed: boolean) {
-		if (isViewed) navigation.keepPlace(path, "next");
+		if (isViewed) navigation.keepPlace(path);
 		onViewedChange(path, isViewed);
 	}
 
@@ -80,7 +80,7 @@ export function FileStream({
 								entry={entry}
 								key={entry.path}
 								layout={layout}
-								onCollapse={() => navigation.keepPlace(entry.path, "self")}
+								onCollapse={() => navigation.keepPlace(entry.path)}
 								onOpenFile={() => onOpenFile(entry.path)}
 								onSelectLine={(anchor) => onSelectLine(entry.path, anchor)}
 								onViewedChange={(isViewed) =>
