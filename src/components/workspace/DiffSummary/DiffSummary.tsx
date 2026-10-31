@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Panel } from "#/components/ui/Panel/Panel.tsx";
 import { risesIn } from "#/components/ui/RiseIn/riseIn.ts";
-import type { FileLayout } from "#/lib/review/fileStream.ts";
 import type { TreeSummary } from "#/lib/session/tree.ts";
 import { ViewportCenter } from "../ViewportCenter/ViewportCenter.tsx";
 import styles from "./DiffSummary.module.css";
@@ -10,61 +9,42 @@ const LINE_COUNT = new Intl.NumberFormat("en-US");
 
 interface DiffSummaryProps {
 	summary: TreeSummary;
-	layout: FileLayout;
 	children: ReactNode;
 }
 
-export function DiffSummary({ summary, layout, children }: DiffSummaryProps) {
-	if (layout === "all")
-		return (
-			<div className={styles.lead}>
-				<SummaryPanel summary={summary} layout={layout}>
-					{children}
-				</SummaryPanel>
-			</div>
-		);
+export function DiffSummary({ summary, children }: DiffSummaryProps) {
+	const { addedLines, removedLines, changedCount } = summary;
 
 	return (
 		<ViewportCenter>
-			<SummaryPanel summary={summary} layout={layout}>
+			<Panel className={styles.box} data-testid="diff-summary">
+				<div className={styles.overview}>
+					<dl {...risesIn(styles.stats, 0)}>
+						<LineStat
+							label="Lines added"
+							value={`+${LINE_COUNT.format(addedLines)}`}
+							kind="added"
+						/>
+						<LineStat
+							label="Lines removed"
+							value={`-${LINE_COUNT.format(removedLines)}`}
+							kind="removed"
+						/>
+					</dl>
+					<ChangeBar added={addedLines} removed={removedLines} />
+					<p {...risesIn(styles.files, 2)} data-testid="summary-files">
+						{describeFileCount(summary)}
+					</p>
+					<p {...risesIn(styles.hint, 3)}>{hintFor(changedCount)}</p>
+				</div>
 				{children}
-			</SummaryPanel>
+			</Panel>
 		</ViewportCenter>
 	);
 }
 
-function SummaryPanel({ summary, layout, children }: DiffSummaryProps) {
-	const { addedLines, removedLines, changedCount } = summary;
-
-	return (
-		<Panel className={styles.box} data-testid="diff-summary">
-			<div className={styles.overview}>
-				<dl {...risesIn(styles.stats, 0)}>
-					<LineStat
-						label="Lines added"
-						value={`+${LINE_COUNT.format(addedLines)}`}
-						kind="added"
-					/>
-					<LineStat
-						label="Lines removed"
-						value={`-${LINE_COUNT.format(removedLines)}`}
-						kind="removed"
-					/>
-				</dl>
-				<ChangeBar added={addedLines} removed={removedLines} />
-				<p {...risesIn(styles.files, 2)} data-testid="summary-files">
-					{describeFileCount(summary)}
-				</p>
-				<p {...risesIn(styles.hint, 3)}>{hintFor(changedCount, layout)}</p>
-			</div>
-			{children}
-		</Panel>
-	);
-}
-
-function hintFor(changedCount: number, layout: FileLayout): string {
+function hintFor(changedCount: number): string {
 	if (changedCount === 0) return "Nothing changed between these versions.";
-	if (layout === "all") return "Every changed file follows below.";
 	return "Pick a file in the tree to see its diff.";
 }
 

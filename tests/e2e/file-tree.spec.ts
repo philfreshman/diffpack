@@ -3,6 +3,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import {
 	ONLY_MODIFIED,
 	TREE_COLLAPSED,
+	TREE_LINE_COUNTS,
 	TREE_WIDTH,
 } from "#/lib/storage/settings.ts";
 
@@ -97,19 +98,41 @@ test("shows the comparison as a tree of folders and files", async ({
 	await expect(row(page, "lib").first()).toBeVisible();
 });
 
-test("says what changed in each file, and how much", async ({ page }) => {
+test("marks each changed file with a coloured status file icon, and keeps names plain", async ({
+	page,
+}) => {
 	await page.goto(EXPRESS);
 	await ready(page);
 
 	const manifest = row(page, "package.json");
-	// Shape, not numbers: the counts come from the engine and real archives.
-	await expect(manifest.getByTestId("added")).toHaveText(/^\+\d+$/);
-	await expect(manifest.getByTestId("removed")).toHaveText(/^-\d+$/);
+	const removed = row(page, "query.js");
+	const modifiedIcon = manifest.getByTestId("icon");
+	const removedIcon = removed.getByTestId("icon");
+	await expect(modifiedIcon).toHaveAttribute("data-icon", "file-diff");
+	await expect(modifiedIcon).toHaveAccessibleName("Modified");
+	await expect(removedIcon).toHaveAttribute("data-icon", "file-removed");
+	await expect(removedIcon).toHaveAccessibleName("Removed");
 
-	await expect(row(page, "lib").first().getByTestId("removed")).toHaveText(
-		/^-\d+$/,
-	);
+	const modifiedColour = await tokenColour(page, "--color-renamed");
+	const removedColour = await tokenColour(page, "--color-removed");
+	const foreground = await tokenColour(page, "--color-foreground");
+	await expect(modifiedIcon).toHaveCSS("color", modifiedColour);
+	await expect(removedIcon).toHaveCSS("color", removedColour);
+	await expect(manifest.getByTestId("name")).toHaveCSS("color", foreground);
+	await expect(removed.getByTestId("name")).toHaveCSS("color", foreground);
+	await expect(manifest.getByTestId("added")).toHaveCount(0);
 });
+
+async function tokenColour(page: Page, token: string): Promise<string> {
+	return page.evaluate((name) => {
+		const probe = document.createElement("span");
+		probe.style.color = `var(${name})`;
+		document.querySelector("[role='tree']")?.append(probe);
+		const colour = getComputedStyle(probe).color;
+		probe.remove();
+		return colour;
+	}, token);
+}
 
 test("opens on what changed, without the untouched files", async ({ page }) => {
 	await page.goto(EXPRESS);
@@ -121,21 +144,6 @@ test("opens on what changed, without the untouched files", async ({ page }) => {
 	await expect(
 		page.locator("[role='treeitem'][data-status='unchanged']"),
 	).toHaveCount(0);
-});
-
-test("colours a file by what happened to it", async ({ page }) => {
-	await page.goto(EXPRESS);
-	await ready(page);
-
-	const removed = await row(page, "query.js")
-		.getByTestId("name")
-		.evaluate((node) => getComputedStyle(node).color);
-	const modified = await row(page, "package.json")
-		.getByTestId("name")
-		.evaluate((node) => getComputedStyle(node).color);
-
-	expect(removed).toBe("rgb(248, 113, 113)");
-	expect(modified).toBe("rgb(251, 191, 36)");
 });
 
 test("filtering narrows the tree to what matches, and opens the way to it", async ({
@@ -191,6 +199,42 @@ test("only modified, in the tree's menu, brings the unchanged files back, and re
 		"aria-pressed",
 		"false",
 	);
+});
+
+test("line counts, in the tree's menu, show how much each file changed, and are remembered", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+	const manifest = row(page, "package.json");
+	await openTreeOptions(page);
+	await expect(option(page, "Line counts")).toHaveAttribute(
+		"aria-pressed",
+		"false",
+	);
+
+	await option(page, "Line counts").click();
+
+	await expect(option(page, "Line counts")).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	// Shape, not numbers: the counts come from the engine and real archives.
+	await expect(manifest.getByTestId("added")).toHaveText(/^\+\d+$/);
+	await expect(manifest.getByTestId("removed")).toHaveText(/^-\d+$/);
+	await expect(row(page, "lib").first().getByTestId("removed")).toHaveText(
+		/^-\d+$/,
+	);
+	expect(
+		await page.evaluate(
+			(key) => localStorage.getItem(key),
+			TREE_LINE_COUNTS.key,
+		),
+	).toBe("true");
+
+	await page.reload();
+	await ready(page);
+	await expect(manifest.getByTestId("added")).toHaveText(/^\+\d+$/);
 });
 
 test("a folder opens and shuts on click, and stays shut", async ({ page }) => {
@@ -323,6 +367,25 @@ test("a path that is a file in one version and a folder in the other is two rows
 	await expect(row(page, "index.js")).toBeFocused();
 });
 
+test("every row is 30px high", async ({ page }) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+
+	await expect(row(page, "package.json")).toHaveCSS("height", "30px");
+	await expect(row(page, "lib").first()).toHaveCSS("height", "30px");
+});
+
+test("rows appear at once, without a rise-in animation", async ({ page }) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+
+	const animation = await row(page, "package.json").evaluate(
+		(node) => getComputedStyle(node).animationName,
+	);
+
+	expect(animation).toBe("none");
+});
+
 test("shows at a glance which rows open and which are files", async ({
 	page,
 }) => {
@@ -352,7 +415,7 @@ test("shows at a glance which rows open and which are files", async ({
 	await expect(row(page, "package.json").getByTestId("chevron")).toHaveCount(0);
 	await expect(row(page, "package.json").getByTestId("icon")).toHaveAttribute(
 		"data-icon",
-		"file",
+		"file-diff",
 	);
 });
 
@@ -523,9 +586,10 @@ test("the sidebar collapses from its edge, reopens from the header, and stays ho
 	await page.goto(EXPRESS);
 	await ready(page);
 	const panel = page.getByTestId("tree-panel");
-	const expand = page.getByRole("button", { name: "Expand sidebar" });
+	const toggle = page.getByRole("button", { name: "Toggle sidebar" });
 
-	await expect(expand).toBeHidden();
+	await expect(toggle).toBeVisible();
+	await expect(toggle).toHaveAttribute("aria-expanded", "true");
 
 	const collapse = page.getByRole("button", { name: "Collapse sidebar" });
 	await expect(collapse).toHaveCSS("opacity", "0");
@@ -534,18 +598,25 @@ test("the sidebar collapses from its edge, reopens from the header, and stays ho
 	await collapse.click();
 
 	await expect(panel).toBeHidden();
-	await expect(expand).toBeVisible();
+	await expect(toggle).toBeVisible();
+	await expect(toggle).toHaveAttribute("aria-expanded", "false");
+	await expect(toggle).toHaveAttribute("title", "Expand sidebar");
 
 	await page.reload();
 	await ready(page);
 	await expect(panel).toBeHidden();
 
-	await expand.click();
+	await toggle.click();
 	await expect(panel).toBeVisible();
-	await expect(expand).toBeHidden();
+	await expect(toggle).toBeVisible();
+	await expect(toggle).toHaveAttribute("title", "Collapse sidebar");
 	expect(
 		await page.evaluate((key) => localStorage.getItem(key), TREE_COLLAPSED.key),
 	).toBe("false");
+
+	await toggle.click();
+	await expect(panel).toBeHidden();
+	await expect(toggle).toHaveAttribute("aria-expanded", "false");
 });
 
 test("a collapsed sidebar is applied before the first paint", async ({
@@ -621,7 +692,7 @@ test("dragged past its minimum the sidebar slides out, and let go there it snaps
 	await page.mouse.up();
 	await expect(panel).toBeHidden();
 
-	await page.getByRole("button", { name: "Expand sidebar" }).click();
+	await page.getByRole("button", { name: "Toggle sidebar" }).click();
 	// Back at its width before the drag, not the sliver it was left at.
 	await expect(panel).toHaveCSS("width", "320px");
 	await expect(content).toHaveCSS("opacity", "1");
@@ -751,7 +822,7 @@ test("moved to the right, the whole sidebar mirrors, and it is there before the 
 	);
 	await page.mouse.up();
 	await expect(panel).toBeHidden();
-	const expand = page.getByRole("button", { name: "Expand sidebar" });
+	const expand = page.getByRole("button", { name: "Toggle sidebar" });
 	expect((await boxOf(expand)).x).toBeGreaterThan(viewport.width / 2);
 	await expand.click();
 	await expect(panel).toHaveCSS("width", "456px");

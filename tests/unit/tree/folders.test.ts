@@ -112,6 +112,7 @@ describe("the folders chosen, as a tree that is one folder deep shows them", () 
 		visibleRows(ONE_FOLDER, {
 			filter: "",
 			onlyModified: false,
+			hiddenPaths: new Set(),
 			expandedKeys: folders.expandedKeys,
 			collapsedKeys: folders.collapsedKeys,
 		}).map((row) => row.entry.path);
@@ -161,6 +162,7 @@ describe("the folders chosen, as a tree that is one folder deep shows them", () 
 		const shown = visibleRows(nested, {
 			filter: "",
 			onlyModified: false,
+			hiddenPaths: new Set(),
 			expandedKeys: folders.expandedKeys,
 			collapsedKeys: folders.collapsedKeys,
 		}).map((row) => row.entry.path);

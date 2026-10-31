@@ -8,7 +8,8 @@
 	display: flex;
 	align-items: center;
 	gap: var(--space-1);
-	padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+	height: var(--tree-row-height);
+	padding: 0 var(--space-3) 0 var(--space-1);
 	border-radius: var(--radius-md);
 	cursor: pointer;
 	user-select: none;
@@ -42,6 +43,19 @@
 	color: var(--color-accent);
 }
 
+.fileIcon[data-status="added"] {
+	color: var(--color-added);
+}
+
+.fileIcon[data-status="removed"] {
+	color: var(--color-removed);
+}
+
+.fileIcon[data-status="modified"],
+.fileIcon[data-status="renamed"] {
+	color: var(--color-renamed);
+}
+
 .name {
 	flex: 1;
 	min-width: 0;
@@ -49,19 +63,7 @@
 	font-weight: 400;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-}
-
-.row[data-status="added"] .name {
-	color: var(--color-added);
-}
-
-.row[data-status="removed"] .name {
-	color: var(--color-removed);
-}
-
-.row[data-status="modified"] .name,
-.row[data-status="renamed"] .name {
-	color: var(--color-renamed);
+	color: var(--color-foreground);
 }
 
 .row[data-viewed] .name {
@@ -89,15 +91,4 @@
 
 .removed {
 	color: var(--color-removed);
-}
-
-.renamed {
-	flex-shrink: 0;
-	margin-right: var(--space-1);
-	padding-inline: var(--space-1);
-	border-radius: var(--radius-sm);
-	background: var(--color-renamed-surface);
-	color: var(--color-renamed);
-	font-size: 0.625rem;
-	font-weight: 700;
 }

@@ -1,5 +1,5 @@
 import {
-	hasScrolledUnderBar,
+	hasScrolledPast,
 	preferredScrollBehavior,
 } from "#/components/review/streamGeometry.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
@@ -42,7 +42,7 @@ export function useStreamNavigation(
 		const index = indexOf(files, path);
 		const card = refs.cardsRef.current?.children.item(index);
 		if (!scroller || !card) return;
-		if (!hasScrolledUnderBar(scroller, refs.barRef.current, card)) return;
+		if (!hasScrolledPast(scroller, card)) return;
 
 		const hasNext = index + 1 < files.length;
 		const landing = landOn === "next" && hasNext ? index + 1 : index;

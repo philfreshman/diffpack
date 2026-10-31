@@ -123,15 +123,15 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			data-to={slug.to}
 			data-file={slug.file}
 		>
-			<TreePanel
-				tree={session.tree}
-				comparison={comparisonPath}
-				selectedPath={files.selectedPath}
-				onOpenFile={files.showFile}
-				viewedPaths={review.viewed}
-			/>
-			<div className={styles.column}>
-				<WorkspaceHeader slug={slug} />
+			<WorkspaceHeader slug={slug} />
+			<div className={styles.panes}>
+				<TreePanel
+					tree={session.tree}
+					comparison={comparisonPath}
+					selectedPath={files.selectedPath}
+					onOpenFile={files.showFile}
+					viewedPaths={review.viewed}
+				/>
 				<main className={styles.body}>
 					{versionsFailure && pane !== "progress" && (
 						<FailureNotice
@@ -169,9 +169,10 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 									{workspaceIntro(adapter, slug)}
 								</p>
 							)}
-							{showsTrail(session.status, slug, progress, summary) && (
-								<AsciiTrail />
-							)}
+							{!files.streaming &&
+								showsTrail(session.status, slug, progress, summary) && (
+									<AsciiTrail />
+								)}
 							<ComparisonPane
 								slug={slug}
 								progress={progress}
@@ -273,7 +274,7 @@ function paneOf(
 
 type StreamProps = Omit<
 	FileStreamProps,
-	"header" | "showSigns" | "autohideScrollbar" | "highlightTheme"
+	"showSigns" | "autohideScrollbar" | "highlightTheme"
 >;
 
 interface ComparisonPaneProps extends FilePaneProps {
@@ -305,9 +306,18 @@ function ComparisonPane({
 				osv={scan.status}
 			/>
 		);
-	if (summary) {
-		const header = (
-			<DiffSummary summary={summary} layout={streaming ? "all" : "single"}>
+	if (summary && streaming)
+		return (
+			<FileStream
+				{...stream}
+				showSigns={filePane.showSigns}
+				autohideScrollbar={filePane.autohideScrollbar}
+				highlightTheme={filePane.highlight.theme}
+			/>
+		);
+	if (summary)
+		return (
+			<DiffSummary summary={summary}>
 				<VulnerabilityReport
 					scan={scan}
 					affected={affected}
@@ -317,18 +327,6 @@ function ComparisonPane({
 				/>
 			</DiffSummary>
 		);
-		if (!streaming) return header;
-
-		return (
-			<FileStream
-				{...stream}
-				header={header}
-				showSigns={filePane.showSigns}
-				autohideScrollbar={filePane.autohideScrollbar}
-				highlightTheme={filePane.highlight.theme}
-			/>
-		);
-	}
 	return <FilePane {...filePane} />;
 }
 

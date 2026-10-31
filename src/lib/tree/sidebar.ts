@@ -98,9 +98,14 @@ export function createSidebar({
 	// Settles a snap first: the panel can be reopened the moment a snap starts.
 	function setShut(shut: boolean): void {
 		settleSnap();
-		if (root().hasAttribute(COLLAPSED_ATTRIBUTE) === shut) return;
+		if (collapsed() === shut) return;
 		mark(COLLAPSED_ATTRIBUTE, shut);
 		writeSetting(TREE_COLLAPSED, shut, store);
+		notify();
+	}
+
+	function collapsed(): boolean {
+		return root().hasAttribute(COLLAPSED_ATTRIBUTE);
 	}
 
 	function open(): void {
@@ -109,6 +114,10 @@ export function createSidebar({
 
 	function close(): void {
 		setShut(true);
+	}
+
+	function toggle(): void {
+		setShut(!collapsed());
 	}
 
 	function startDrag(): void {
@@ -148,6 +157,8 @@ export function createSidebar({
 	return {
 		open,
 		close,
+		toggle,
+		collapsed,
 		resize,
 		width,
 		place,

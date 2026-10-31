@@ -3,25 +3,6 @@ import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 export const FILE_LAYOUTS = ["single", "all"] as const;
 export type FileLayout = (typeof FILE_LAYOUTS)[number];
 
-export interface ReviewProgress {
-	viewed: number;
-	total: number;
-	done: boolean;
-}
-
-export function reviewProgress(
-	files: readonly DiffFileEntry[],
-	viewed: ReadonlySet<string>,
-): ReviewProgress {
-	const viewedCount = files.filter((entry) => viewed.has(entry.path)).length;
-
-	return {
-		viewed: viewedCount,
-		total: files.length,
-		done: files.length > 0 && viewedCount === files.length,
-	};
-}
-
 export function nextUnviewed(
 	files: readonly DiffFileEntry[],
 	viewed: ReadonlySet<string>,

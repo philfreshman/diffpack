@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { GA_SCRIPT } from "#/lib/analytics.ts";
 import * as settings from "#/lib/storage/settings.ts";
 import {
+	HIDE_VIEWED,
 	AUTOHIDE_SCROLLBAR,
 	FILE_LAYOUT,
 	HIGHLIGHT_THEME,
@@ -12,6 +13,7 @@ import {
 	searchHistory,
 	THEME_SELECTION,
 	TREE_COLLAPSED,
+	TREE_LINE_COUNTS,
 	TREE_POSITION,
 	TREE_WIDTH,
 	VIEWED_FILES,
@@ -158,6 +160,28 @@ const CASES: Case[] = [
 			["nonsense", true],
 			["FALSE", true],
 			["", true],
+		],
+	),
+	reading(
+		HIDE_VIEWED,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["yes", false],
+			["", false],
+		],
+	),
+	reading(
+		TREE_LINE_COUNTS,
+		[
+			["true", true],
+			["false", false],
+		],
+		[
+			["yes", false],
+			["", false],
 		],
 	),
 	reading(

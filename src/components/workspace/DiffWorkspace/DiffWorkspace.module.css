@@ -2,17 +2,26 @@
    scroller shorter than its content. */
 .workspace {
 	display: flex;
+	flex-direction: column;
 	height: 100dvh;
+	padding-top: 10px;
 	overflow-x: clip;
+}
+
+.panes {
+	display: flex;
+	flex: 1;
+	min-height: 0;
 }
 
 .body {
 	display: flex;
 	flex: 1;
+	min-width: 0;
 	min-height: 0;
 	flex-direction: column;
 	gap: var(--space-3);
-	padding: var(--workspace-inset);
+	padding: var(--workspace-inset) var(--workspace-inset) 0;
 }
 
 .intro {
@@ -27,20 +36,12 @@
 	border: 0;
 }
 
-.column,
 .file {
 	display: flex;
 	flex: 1;
 	min-width: 0;
 	min-height: 0;
 	flex-direction: column;
-}
-
-.file {
 	position: relative;
 	isolation: isolate;
-}
-
-.column {
-	margin-top: 10px;
 }

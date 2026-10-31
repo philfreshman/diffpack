@@ -12,7 +12,6 @@ const card = (page: Page, path: string) =>
 	cards(page).and(page.locator(`[data-path="${path}"]`));
 const treeFile = (page: Page, path: string) =>
 	page.getByRole("treeitem").and(page.locator(`[data-path="${path}"]`));
-const progress = (page: Page) => page.getByTestId("review-progress");
 
 async function ready(page: Page) {
 	await expect(page.getByTestId("workspace")).toHaveAttribute(
@@ -59,7 +58,13 @@ test("one file at a time is the default", async ({ page }) => {
 	await expect(stream(page)).toHaveCount(0);
 });
 
-test("shows every changed file below the summary, and remembers the choice", async ({
+test("shows no ASCII trail behind the files", async ({ page }) => {
+	await showAllFiles(page);
+
+	await expect(page.getByTestId("ascii-trail")).toHaveCount(0);
+});
+
+test("shows every changed file without the summary, and remembers the choice", async ({
 	page,
 }) => {
 	await showAllFiles(page);
@@ -70,13 +75,8 @@ test("shows every changed file below the summary, and remembers the choice", asy
 	);
 	await expect(stream(page)).toBeVisible();
 
-	const summary = await page.getByTestId("diff-summary").boundingBox();
-	const first = await cards(page).first().boundingBox();
-	expect(summary).not.toBeNull();
-	expect(first).not.toBeNull();
-	expect(first?.y ?? 0).toBeGreaterThanOrEqual(
-		(summary?.y ?? 0) + (summary?.height ?? 0),
-	);
+	await expect(cards(page).first()).toBeVisible();
+	await expect(page.getByTestId("diff-summary")).toHaveCount(0);
 
 	const treePaths = await page
 		.getByRole("treeitem")
@@ -98,6 +98,7 @@ test("shows every changed file below the summary, and remembers the choice", asy
 
 	await page.getByTestId("layout-single").click();
 	await expect(stream(page)).toHaveCount(0);
+	await expect(page.getByTestId("diff-summary")).toBeVisible();
 	expect(await storedItem(page, FILE_LAYOUT.key)).toBe("single");
 });
 
@@ -112,15 +113,8 @@ test("loads the files at the top of the stream", async ({ page }) => {
 	).toBeVisible();
 });
 
-test("a viewed file folds away, counts toward the review, and stays viewed", async ({
-	page,
-}) => {
+test("a viewed file folds away and stays viewed", async ({ page }) => {
 	await showAllFiles(page);
-	await expect(progress(page)).toHaveAttribute("data-viewed", "0");
-	await expect(progress(page)).toHaveAttribute(
-		"data-total",
-		String(CHANGED_FILES),
-	);
 
 	const [path = ""] = await cardPaths(page);
 	const target = card(page, path);
@@ -129,8 +123,6 @@ test("a viewed file folds away, counts toward the review, and stays viewed", asy
 
 	await expect(target).toHaveAttribute("data-collapsed");
 	await expect(target.getByTestId("stream-rows")).toBeHidden();
-	await expect(progress(page)).toHaveAttribute("data-viewed", "1");
-	await expect(progress(page)).not.toHaveAttribute("data-done");
 	await expect(treeFile(page, path)).toHaveAttribute("data-viewed");
 	await expect(treeFile(page, path).getByTestId("viewed-mark")).toBeVisible();
 	expect(await storedItem(page, VIEWED_FILES.key)).toContain(path);
@@ -141,13 +133,37 @@ test("a viewed file folds away, counts toward the review, and stays viewed", asy
 	await expect(card(page, path)).toHaveAttribute("data-viewed");
 	await expect(card(page, path)).toHaveAttribute("data-collapsed");
 	await expect(card(page, path).getByTestId("viewed-toggle")).toBeChecked();
-	await expect(progress(page)).toHaveAttribute("data-viewed", "1");
 	await expect(treeFile(page, path)).toHaveAttribute("data-viewed");
 
 	await card(page, path).getByTestId("viewed-toggle").uncheck();
 	await expect(card(page, path)).not.toHaveAttribute("data-viewed");
-	await expect(progress(page)).toHaveAttribute("data-viewed", "0");
 	await expect(treeFile(page, path)).not.toHaveAttribute("data-viewed");
+});
+
+test("hide viewed, in the tree's menu, takes viewed files out of the tree", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const [path = ""] = await cardPaths(page);
+	await page.getByRole("button", { name: "File tree options" }).click();
+	const hideViewed = page.getByRole("button", {
+		name: "Hide viewed",
+		exact: true,
+	});
+	await expect(hideViewed).toHaveAttribute("aria-pressed", "false");
+	await hideViewed.click();
+	await expect(hideViewed).toHaveAttribute("aria-pressed", "true");
+	await page.keyboard.press("Escape");
+
+	const target = card(page, path);
+	await expect(target).toHaveAttribute("data-state", "ready", ENGINE);
+	await markViewed(target);
+
+	await expect(treeFile(page, path)).toHaveCount(0);
+	await expect(target).toBeVisible();
+
+	await target.getByTestId("viewed-toggle").uncheck();
+	await expect(treeFile(page, path)).toBeVisible();
 });
 
 test("a file picked in the tree scrolls into view without leaving the comparison", async ({
@@ -184,7 +200,7 @@ test("a card opens its file on its own", async ({ page }) => {
 	);
 });
 
-test("jumps to the next file not yet viewed", async ({ page }) => {
+test("n jumps to the next file not yet viewed", async ({ page }) => {
 	await showAllFiles(page);
 	const [first = "", second = "", third = "", fourth = ""] =
 		await cardPaths(page);
@@ -202,12 +218,12 @@ test("jumps to the next file not yet viewed", async ({ page }) => {
 	);
 	await markViewed(card(page, second));
 
-	await page.getByTestId("next-unviewed").click();
+	await page.keyboard.press("n");
 
 	await expect(stream(page)).toHaveAttribute("data-current", third);
 	await expect(card(page, third)).toBeInViewport();
 
-	await page.getByTestId("next-unviewed").click();
+	await page.keyboard.press("n");
 
 	await expect(stream(page)).toHaveAttribute("data-current", fourth);
 	await expect(card(page, fourth)).toBeInViewport();
@@ -222,10 +238,8 @@ test("the stream's scrollbar sits beside the cards and scrolls the stream", asyn
 
 	const track = await scrollbar.boundingBox();
 	const first = await cards(page).first().boundingBox();
-	const bar = await progress(page).boundingBox();
-	if (!track || !first || !bar) throw new Error("no scrollbar or card");
+	if (!track || !first) throw new Error("no scrollbar or card");
 	expect(track.x).toBeGreaterThanOrEqual(first.x + first.width);
-	expect(track.x).toBeGreaterThanOrEqual(bar.x + bar.width);
 
 	await page.mouse.click(track.x + track.width / 2, track.y + track.height - 8);
 

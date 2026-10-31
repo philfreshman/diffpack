@@ -3,19 +3,23 @@ import {
 	CheckIcon,
 	ChevronDownIcon,
 	ChevronRightIcon,
+	FileAddedIcon,
+	FileDiffIcon,
 	FileIcon,
+	FileRemovedIcon,
 	FolderIcon,
 	FolderOpenIcon,
 } from "#/components/ui/icons.tsx";
-import { risesIn } from "#/components/ui/RiseIn/riseIn.ts";
 import { treeCommand } from "#/lib/tree/keymap.ts";
 import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
+import type { DiffFileEntry, DiffStatus } from "#/lib/worker/protocol.ts";
 import styles from "./FileTree.module.css";
 
 export interface FileTreeProps {
 	rows: readonly TreeRow[];
 	selectedPath: string;
 	viewedPaths?: ReadonlySet<string>;
+	lineCounts?: boolean;
 	onOpenFile(path: string): void;
 	onToggleFolder(path: string, expanded: boolean): void;
 }
@@ -30,6 +34,7 @@ export function FileTree({
 	rows,
 	selectedPath,
 	viewedPaths = NONE_VIEWED,
+	lineCounts = false,
 	onOpenFile,
 	onToggleFolder,
 }: FileTreeProps) {
@@ -76,13 +81,13 @@ export function FileTree({
 			aria-label="Changed files"
 			onKeyDown={handleKeyDown}
 		>
-			{rows.map((row, position) => (
+			{rows.map((row) => (
 				<FileTreeRow
 					active={rowKey(row.entry) === activeKey}
 					key={rowKey(row.entry)}
+					lineCounts={lineCounts}
 					onActivate={activate}
 					onFocus={setFocusedKey}
-					position={position}
 					register={elements}
 					row={row}
 					selected={isSelected(row, selectedPath)}
@@ -106,10 +111,9 @@ interface FileTreeRowProps {
 	active: boolean;
 	selected: boolean;
 	viewed: boolean;
+	lineCounts: boolean;
 	onActivate(row: TreeRow): void;
 	onFocus(key: string): void;
-	/** Read only at mount, for the fade-in delay. */
-	position: number;
 	register: RefObject<Map<string, HTMLElement>>;
 }
 function FileTreeRow({
@@ -117,31 +121,26 @@ function FileTreeRow({
 	active,
 	selected,
 	viewed,
+	lineCounts,
 	onActivate,
 	onFocus,
-	position,
 	register,
 }: FileTreeRowProps) {
 	const { entry, expanded, hasChildren } = row;
 	const key = rowKey(entry);
-	// Pinned at mount: a later delay on a settled row would replay its animation.
-	const [riseIn] = useState(() => risesIn(styles.row, position));
 
 	return (
 		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- the tree owns the keyboard, per the ARIA practices guide
 		<div
 			role="treeitem"
-			className={riseIn.className}
+			className={styles.row}
 			ref={(element) => {
 				if (element) register.current.set(key, element);
 				else register.current.delete(key);
 			}}
 			tabIndex={active ? 0 : -1}
 			onFocus={() => onFocus(key)}
-			style={{
-				...riseIn.style,
-				paddingLeft: `${row.depth * 18 + 4}px`,
-			}}
+			style={{ paddingLeft: `${row.depth * 18 + 4}px` }}
 			aria-level={row.depth + 1}
 			aria-expanded={hasChildren ? expanded : undefined}
 			aria-selected={selected}
@@ -157,7 +156,11 @@ function FileTreeRow({
 			onClick={() => onActivate(row)}
 		>
 			<RowChevron expanded={expanded} hasChildren={hasChildren} />
-			<RowIcon expanded={expanded} folder={entry.type === "directory"} />
+			<RowIcon
+				expanded={expanded}
+				folder={entry.type === "directory"}
+				status={entry.status}
+			/>
 			<span className={styles.name} data-testid="name">
 				{nameOf(entry.path)}
 			</span>
@@ -172,9 +175,14 @@ function FileTreeRow({
 					<CheckIcon width="12" height="12" />
 				</span>
 			)}
-			{entry.status === "renamed" && (
-				<span className={styles.renamed}>RENAMED</span>
-			)}
+			{lineCounts && <LineCounts entry={entry} />}
+		</div>
+	);
+}
+
+function LineCounts({ entry }: { entry: DiffFileEntry }) {
+	return (
+		<>
 			{entry.added ? (
 				<span className={styles.added} data-testid="added">
 					+{entry.added}
@@ -185,7 +193,7 @@ function FileTreeRow({
 					-{entry.removed}
 				</span>
 			) : null}
-		</div>
+		</>
 	);
 }
 
@@ -209,19 +217,62 @@ function RowChevron({
 
 const GLYPHS = {
 	file: FileIcon,
+	"file-added": FileAddedIcon,
+	"file-removed": FileRemovedIcon,
+	"file-diff": FileDiffIcon,
 	folder: FolderIcon,
 	"folder-open": FolderOpenIcon,
 };
 
-function RowIcon({ expanded, folder }: { expanded: boolean; folder: boolean }) {
-	const name = folder ? (expanded ? "folder-open" : "folder") : "file";
+type GlyphName = keyof typeof GLYPHS;
+
+const FILE_GLYPHS: Record<DiffStatus, GlyphName> = {
+	added: "file-added",
+	removed: "file-removed",
+	modified: "file-diff",
+	renamed: "file-diff",
+	unchanged: "file",
+};
+
+const STATUS_LABELS: Record<DiffStatus, string | undefined> = {
+	added: "Added",
+	removed: "Removed",
+	modified: "Modified",
+	renamed: "Renamed",
+	unchanged: undefined,
+};
+
+function glyphNameOf(
+	folder: boolean,
+	expanded: boolean,
+	status: DiffStatus,
+): GlyphName {
+	if (folder) return expanded ? "folder-open" : "folder";
+	return FILE_GLYPHS[status];
+}
+
+function RowIcon({
+	expanded,
+	folder,
+	status,
+}: {
+	expanded: boolean;
+	folder: boolean;
+	status: DiffStatus;
+}) {
+	const name = glyphNameOf(folder, expanded, status);
 	const Glyph = GLYPHS[name];
+	const label = folder ? undefined : STATUS_LABELS[status];
 
 	return (
 		<span
 			className={folder ? styles.folderIcon : styles.fileIcon}
+			role={label && "img"}
+			aria-label={label}
+			title={label}
 			data-testid="icon"
 			data-icon={name}
+			data-status={folder ? undefined : status}
 		>
 			<Glyph />
 		</span>

@@ -1,16 +1,11 @@
-import {
-	type ReactNode,
-	type RefObject,
-	useImperativeHandle,
-	useRef,
-} from "react";
+import { type RefObject, useImperativeHandle, useRef } from "react";
 import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
 import { FileCard } from "#/components/review/FileCard/FileCard.tsx";
-import { ReviewBar } from "#/components/review/ReviewBar/ReviewBar.tsx";
 import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { DiffFileEntry, FileDiff } from "#/lib/worker/protocol.ts";
 import styles from "./FileStream.module.css";
 import { useStreamNavigation } from "./useStreamNavigation.ts";
+import { useStreamShortcuts } from "./useStreamShortcuts.ts";
 
 export interface FileStreamHandle {
 	scrollToFile(path: string): void;
@@ -20,7 +15,6 @@ export interface FileStreamHandle {
 export interface FileStreamProps {
 	streamRef: RefObject<FileStreamHandle | null>;
 	files: readonly DiffFileEntry[];
-	header: ReactNode;
 	readFile(entry: DiffFileEntry): Promise<FileDiff>;
 	viewed: ReadonlySet<string>;
 	onViewedChange(path: string, viewed: boolean): void;
@@ -36,7 +30,6 @@ export interface FileStreamProps {
 export function FileStream({
 	streamRef,
 	files,
-	header,
 	readFile,
 	viewed,
 	onViewedChange,
@@ -51,10 +44,9 @@ export function FileStream({
 	const scrollerRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const cardsRef = useRef<HTMLDivElement>(null);
-	const barRef = useRef<HTMLDivElement>(null);
 	const navigation = useStreamNavigation(
 		files,
-		{ scrollerRef, contentRef, cardsRef, barRef },
+		{ scrollerRef, contentRef, cardsRef },
 		onCurrentFileChange,
 	);
 	const layout = { scrollerRef, contentRef };
@@ -64,6 +56,8 @@ export function FileStream({
 		if (isViewed) navigation.keepPlace(path, "next");
 		onViewedChange(path, isViewed);
 	}
+
+	useStreamShortcuts(files, viewed, navigation, changeViewed);
 
 	useImperativeHandle(streamRef, () => ({
 		scrollToFile: navigation.scrollToFile,
@@ -79,16 +73,6 @@ export function FileStream({
 				ref={scrollerRef}
 			>
 				<div className={styles.content} ref={contentRef}>
-					<div className={styles.header}>{header}</div>
-					<ReviewBar
-						barRef={barRef}
-						currentIndex={navigation.currentIndex}
-						files={files}
-						onJump={navigation.scrollToFile}
-						onStepFile={navigation.stepFile}
-						onViewedChange={changeViewed}
-						viewed={viewed}
-					/>
 					<div className={styles.cards} ref={cardsRef}>
 						{files.map((entry) => (
 							<FileCard
@@ -117,10 +101,25 @@ export function FileStream({
 	);
 }
 
+const PUMPKIN = String.raw`
+      ___
+   ___)__|___
+  /  /\   /\  \
+ |  /__\ /__\  |
+ |     /\      |
+ |  \/\/\/\/\  |
+  \___________/
+`;
+
 function StreamEnd({ fileCount }: { fileCount: number }) {
 	return (
-		<p className={styles.end}>
-			End of the changes · {fileCount} {fileCount === 1 ? "file" : "files"}
-		</p>
+		<footer className={styles.end}>
+			<p className={styles.endText}>
+				End of the changes · {fileCount} {fileCount === 1 ? "file" : "files"}
+			</p>
+			<pre className={styles.pumpkin} aria-hidden="true">
+				{PUMPKIN.slice(1)}
+			</pre>
+		</footer>
 	);
 }

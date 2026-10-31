@@ -105,7 +105,11 @@ export function DiffToolbar({
 				</IconButton>
 			</div>
 
-			<h2 className={styles.filename}>{path}</h2>
+			{layout === "single" ? (
+				<h2 className={styles.filename}>{path}</h2>
+			) : (
+				<span className={styles.spacer} />
+			)}
 
 			{file && (
 				<span className={styles.differences} data-testid="difference-count">

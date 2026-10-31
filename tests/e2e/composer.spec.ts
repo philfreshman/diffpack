@@ -123,11 +123,9 @@ test("compares two monolog releases through the proxy", async ({ page }) => {
 	await page.goto(`${MONOLOG}/src/Monolog/Logger.php`);
 
 	await expect(page.getByTestId("diff-view")).toBeVisible(ENGINE);
-	await expect(treeRow(page, "Logger.php").getByTestId("added")).toHaveText(
-		"+7",
-	);
-	await expect(treeRow(page, "Logger.php").getByTestId("removed")).toHaveText(
-		"-7",
+	await expect(treeRow(page, "Logger.php")).toHaveAttribute(
+		"data-status",
+		"modified",
 	);
 
 	await page.getByRole("button", { name: "Close file" }).click();

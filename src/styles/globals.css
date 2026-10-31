@@ -70,7 +70,6 @@
 	--color-added: #16a34a;
 	--color-removed: #dc2626;
 	--color-renamed: #d97706;
-	--color-renamed-surface: #fef3c7;
 	--color-selected-surface: rgb(0 0 0 / 0.08);
 	--color-severity-critical: #9f1239;
 	--color-severity-high: #c2410c;
@@ -137,9 +136,10 @@
 	--header-height-md: 8rem;
 	--header-height-lg: calc(var(--header-height-md) + 2.25rem);
 	/* Fixed, so the sidebar's head, in another box, can line up with the top bar. */
-	--workspace-header-height: 4.5rem;
+	--workspace-header-height: 4.75rem;
 	--workspace-inset: var(--space-4);
 	--control-height: 2.25rem;
+	--tree-row-height: 30px;
 	--scrollbar-width: 0.875rem;
 
 	/* `@media` cannot read custom properties: media queries repeat these literals. */
@@ -170,7 +170,6 @@
 	--color-added: #4ade80;
 	--color-removed: #f87171;
 	--color-renamed: #fbbf24;
-	--color-renamed-surface: rgb(120 53 15 / 0.3);
 	--color-selected-surface: rgb(255 255 255 / 0.09);
 	--color-severity-critical: #fb7185;
 	--color-severity-high: #fb923c;

@@ -17,7 +17,6 @@
 .placeholder {
 	position: relative;
 	height: calc(var(--rows) * var(--diff-line-height));
-	border-top: 1px solid var(--color-border);
 	background:
 		linear-gradient(var(--color-surface), var(--color-surface)) 0 0 /
 			calc(2 * var(--gutter-min-width)) 100% no-repeat,
@@ -59,9 +58,7 @@
 
 .loading {
 	position: sticky;
-	top: calc(
-		var(--review-bar-height) + var(--file-header-height) + var(--space-3)
-	);
+	top: calc(var(--file-header-height) + var(--space-3));
 	z-index: 1;
 	display: inline-flex;
 	align-items: center;
@@ -82,7 +79,6 @@
 	justify-content: space-between;
 	gap: var(--space-3);
 	padding: var(--space-4);
-	border-top: 1px solid var(--color-border);
 	background: var(--color-surface);
 	color: var(--color-muted);
 	font-size: var(--text-sm);
@@ -101,7 +97,6 @@
 .quiet {
 	margin: 0;
 	padding: var(--space-4);
-	border-top: 1px solid var(--color-border);
 	color: var(--color-muted);
 	font-size: var(--text-sm);
 	font-style: italic;
