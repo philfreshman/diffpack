@@ -505,3 +505,14 @@ test("v typed into the tree filter is just typing", async ({ page }) => {
 	await expect(header(page).getByTestId("viewed-toggle")).not.toBeChecked();
 	await expect(diffBody(page)).toBeVisible();
 });
+
+test("a double click on the header folds the file without selecting its name", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	await header(page).getByRole("heading").dblclick();
+
+	await expect(diffBody(page)).toBeHidden();
+	expect(await page.evaluate(() => String(window.getSelection()))).toBe("");
+});

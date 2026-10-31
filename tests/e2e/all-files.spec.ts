@@ -387,3 +387,14 @@ test("a card's header is as tall as the toolbar, which counts no differences", a
 		0,
 	);
 });
+
+test("a double click on a file's header leaves nothing selected", async ({
+	page,
+}) => {
+	const { target } = await firstReadyCard(page);
+
+	await target.getByRole("heading").dblclick();
+
+	await expect(target).toHaveAttribute("data-collapsed");
+	expect(await page.evaluate(() => String(window.getSelection()))).toBe("");
+});

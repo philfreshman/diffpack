@@ -48,7 +48,9 @@ export function FileHeader({
 		<header
 			className={styles.header}
 			onDoubleClick={(event) => {
-				if (!isInsideControl(event.target)) onOpenChange(!open);
+				if (isInsideControl(event.target)) return;
+				clearTextSelection();
+				onOpenChange(!open);
 			}}
 		>
 			<IconButton
@@ -171,6 +173,10 @@ const CONTROL_SELECTOR = "button, input, label";
 
 function isInsideControl(target: EventTarget): boolean {
 	return target instanceof Element && target.closest(CONTROL_SELECTOR) !== null;
+}
+
+function clearTextSelection(): void {
+	document.getSelection()?.removeAllRanges();
 }
 
 function countOf(blocks: readonly StatBlock[], kind: StatBlock): number {
