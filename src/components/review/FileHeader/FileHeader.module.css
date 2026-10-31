@@ -7,10 +7,14 @@
 	align-items: center;
 	gap: var(--space-2);
 	min-height: var(--file-header-height);
-	padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
-	background: var(--color-surface);
+	padding: 0 var(--space-2) 0 var(--space-1);
+	background: var(--color-background);
 	color: var(--color-foreground);
 	font-size: var(--text-sm);
+}
+
+.header:not(:last-child) {
+	border-bottom: 1px solid var(--color-border);
 }
 
 .chevron {
