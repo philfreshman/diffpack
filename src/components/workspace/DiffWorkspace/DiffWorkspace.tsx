@@ -123,15 +123,15 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			data-to={slug.to}
 			data-file={slug.file}
 		>
-			<TreePanel
-				tree={session.tree}
-				comparison={comparisonPath}
-				selectedPath={files.selectedPath}
-				onOpenFile={files.showFile}
-				viewedPaths={review.viewed}
-			/>
-			<div className={styles.column}>
-				<WorkspaceHeader slug={slug} />
+			<WorkspaceHeader slug={slug} />
+			<div className={styles.panes}>
+				<TreePanel
+					tree={session.tree}
+					comparison={comparisonPath}
+					selectedPath={files.selectedPath}
+					onOpenFile={files.showFile}
+					viewedPaths={review.viewed}
+				/>
 				<main className={styles.body}>
 					{versionsFailure && pane !== "progress" && (
 						<FailureNotice

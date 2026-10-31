@@ -10,7 +10,6 @@
 .content {
 	position: absolute;
 	inset: 0 0 0 auto;
-	margin-top: 10px;
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);
@@ -60,9 +59,7 @@
 	display: flex;
 	align-items: center;
 	gap: var(--space-2);
-	margin-top: calc(
-		var(--workspace-header-height) + var(--space-4) - var(--space-2)
-	);
+	margin-top: calc(var(--workspace-inset) - var(--space-2));
 	margin-bottom: calc(var(--space-3) - var(--space-2));
 }
 
