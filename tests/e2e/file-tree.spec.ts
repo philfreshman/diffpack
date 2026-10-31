@@ -586,9 +586,10 @@ test("the sidebar collapses from its edge, reopens from the header, and stays ho
 	await page.goto(EXPRESS);
 	await ready(page);
 	const panel = page.getByTestId("tree-panel");
-	const expand = page.getByRole("button", { name: "Expand sidebar" });
+	const toggle = page.getByRole("button", { name: "Toggle sidebar" });
 
-	await expect(expand).toBeHidden();
+	await expect(toggle).toBeVisible();
+	await expect(toggle).toHaveAttribute("aria-expanded", "true");
 
 	const collapse = page.getByRole("button", { name: "Collapse sidebar" });
 	await expect(collapse).toHaveCSS("opacity", "0");
@@ -597,18 +598,25 @@ test("the sidebar collapses from its edge, reopens from the header, and stays ho
 	await collapse.click();
 
 	await expect(panel).toBeHidden();
-	await expect(expand).toBeVisible();
+	await expect(toggle).toBeVisible();
+	await expect(toggle).toHaveAttribute("aria-expanded", "false");
+	await expect(toggle).toHaveAttribute("title", "Expand sidebar");
 
 	await page.reload();
 	await ready(page);
 	await expect(panel).toBeHidden();
 
-	await expand.click();
+	await toggle.click();
 	await expect(panel).toBeVisible();
-	await expect(expand).toBeHidden();
+	await expect(toggle).toBeVisible();
+	await expect(toggle).toHaveAttribute("title", "Collapse sidebar");
 	expect(
 		await page.evaluate((key) => localStorage.getItem(key), TREE_COLLAPSED.key),
 	).toBe("false");
+
+	await toggle.click();
+	await expect(panel).toBeHidden();
+	await expect(toggle).toHaveAttribute("aria-expanded", "false");
 });
 
 test("a collapsed sidebar is applied before the first paint", async ({
@@ -684,7 +692,7 @@ test("dragged past its minimum the sidebar slides out, and let go there it snaps
 	await page.mouse.up();
 	await expect(panel).toBeHidden();
 
-	await page.getByRole("button", { name: "Expand sidebar" }).click();
+	await page.getByRole("button", { name: "Toggle sidebar" }).click();
 	// Back at its width before the drag, not the sliver it was left at.
 	await expect(panel).toHaveCSS("width", "320px");
 	await expect(content).toHaveCSS("opacity", "1");
@@ -814,7 +822,7 @@ test("moved to the right, the whole sidebar mirrors, and it is there before the 
 	);
 	await page.mouse.up();
 	await expect(panel).toBeHidden();
-	const expand = page.getByRole("button", { name: "Expand sidebar" });
+	const expand = page.getByRole("button", { name: "Toggle sidebar" });
 	expect((await boxOf(expand)).x).toBeGreaterThan(viewport.width / 2);
 	await expand.click();
 	await expect(panel).toHaveCSS("width", "456px");

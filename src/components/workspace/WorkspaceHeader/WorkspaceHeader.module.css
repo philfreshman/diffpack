@@ -10,7 +10,7 @@
 	background-color: var(--color-canvas);
 }
 
-.expand {
+.toggle {
 	position: absolute;
 	bottom: calc(var(--space-2) + 2px);
 	left: var(--space-2);
@@ -22,7 +22,7 @@
 	padding-left: var(--space-6);
 }
 
-:global(html[data-tree-position="right"]) .expand {
+:global(html[data-tree-position="right"]) .toggle {
 	right: var(--space-2);
 	left: auto;
 }
@@ -31,13 +31,8 @@
 	scale: -1 1;
 }
 
-.expand:hover {
+.toggle:hover {
 	color: var(--color-foreground);
-}
-
-/* Shown as soon as a drag snaps shut, not once the panel finishes closing. */
-:global(html:not([data-tree-collapsed], [data-tree-snapping])) .expand {
-	display: none;
 }
 
 .controls {

@@ -111,6 +111,38 @@ describe("opening and closing", () => {
 		expect(store.getItem(TREE_COLLAPSED.key)).toBeNull();
 	});
 
+	test("toggle shuts an open panel and opens a shut one", () => {
+		const { sidebar, store, shut } = page();
+
+		sidebar.toggle();
+		expect(shut()).toBe(true);
+		expect(sidebar.collapsed()).toBe(true);
+
+		sidebar.toggle();
+		expect(shut()).toBe(false);
+		expect(sidebar.collapsed()).toBe(false);
+		expect(store.getItem(TREE_COLLAPSED.key)).toBe("false");
+	});
+
+	test("reads a panel the pre-paint script left shut as collapsed", () => {
+		const { sidebar, loadShut } = page();
+		loadShut();
+
+		expect(sidebar.collapsed()).toBe(true);
+	});
+
+	test("tells its listeners when the panel opens or shuts", () => {
+		const { sidebar } = page();
+		const heard: boolean[] = [];
+		sidebar.subscribe(() => heard.push(sidebar.collapsed()));
+
+		sidebar.close();
+		sidebar.close();
+		sidebar.open();
+
+		expect(heard).toEqual([true, false]);
+	});
+
 	test("a store that refuses still opens and shuts it for the session", () => {
 		const { sidebar, shut } = page(REFUSING_STORE);
 
