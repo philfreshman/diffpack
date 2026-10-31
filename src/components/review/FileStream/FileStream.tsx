@@ -1,9 +1,4 @@
-import {
-	type ReactNode,
-	type RefObject,
-	useImperativeHandle,
-	useRef,
-} from "react";
+import { type RefObject, useImperativeHandle, useRef } from "react";
 import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
 import { FileCard } from "#/components/review/FileCard/FileCard.tsx";
 import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
@@ -20,7 +15,6 @@ export interface FileStreamHandle {
 export interface FileStreamProps {
 	streamRef: RefObject<FileStreamHandle | null>;
 	files: readonly DiffFileEntry[];
-	header: ReactNode;
 	readFile(entry: DiffFileEntry): Promise<FileDiff>;
 	viewed: ReadonlySet<string>;
 	onViewedChange(path: string, viewed: boolean): void;
@@ -36,7 +30,6 @@ export interface FileStreamProps {
 export function FileStream({
 	streamRef,
 	files,
-	header,
 	readFile,
 	viewed,
 	onViewedChange,
@@ -80,7 +73,6 @@ export function FileStream({
 				ref={scrollerRef}
 			>
 				<div className={styles.content} ref={contentRef}>
-					<div className={styles.header}>{header}</div>
 					<div className={styles.cards} ref={cardsRef}>
 						{files.map((entry) => (
 							<FileCard

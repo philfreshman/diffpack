@@ -58,7 +58,13 @@ test("one file at a time is the default", async ({ page }) => {
 	await expect(stream(page)).toHaveCount(0);
 });
 
-test("shows every changed file below the summary, and remembers the choice", async ({
+test("shows no ASCII trail behind the files", async ({ page }) => {
+	await showAllFiles(page);
+
+	await expect(page.getByTestId("ascii-trail")).toHaveCount(0);
+});
+
+test("shows every changed file without the summary, and remembers the choice", async ({
 	page,
 }) => {
 	await showAllFiles(page);
@@ -69,13 +75,8 @@ test("shows every changed file below the summary, and remembers the choice", asy
 	);
 	await expect(stream(page)).toBeVisible();
 
-	const summary = await page.getByTestId("diff-summary").boundingBox();
-	const first = await cards(page).first().boundingBox();
-	expect(summary).not.toBeNull();
-	expect(first).not.toBeNull();
-	expect(first?.y ?? 0).toBeGreaterThanOrEqual(
-		(summary?.y ?? 0) + (summary?.height ?? 0),
-	);
+	await expect(cards(page).first()).toBeVisible();
+	await expect(page.getByTestId("diff-summary")).toHaveCount(0);
 
 	const treePaths = await page
 		.getByRole("treeitem")
@@ -97,6 +98,7 @@ test("shows every changed file below the summary, and remembers the choice", asy
 
 	await page.getByTestId("layout-single").click();
 	await expect(stream(page)).toHaveCount(0);
+	await expect(page.getByTestId("diff-summary")).toBeVisible();
 	expect(await storedItem(page, FILE_LAYOUT.key)).toBe("single");
 });
 
