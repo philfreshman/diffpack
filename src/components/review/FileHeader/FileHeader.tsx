@@ -39,7 +39,12 @@ export function FileHeader({
 	const foldLabel = expandAll ? "Fold all lines" : "Expand all lines";
 
 	return (
-		<header className={styles.header}>
+		<header
+			className={styles.header}
+			onDoubleClick={(event) => {
+				if (!isInsideControl(event.target)) onOpenChange(!open);
+			}}
+		>
 			<IconButton
 				aria-expanded={open}
 				aria-label={toggleLabel}
@@ -140,6 +145,12 @@ function LineCounts({ added, removed }: { added: number; removed: number }) {
 			</span>
 		</span>
 	);
+}
+
+const CONTROL_SELECTOR = "button, input, label";
+
+function isInsideControl(target: EventTarget): boolean {
+	return target instanceof Element && target.closest(CONTROL_SELECTOR) !== null;
 }
 
 function releasePointerFocus(input: HTMLInputElement): void {

@@ -140,6 +140,26 @@ test("a viewed file folds away and stays viewed", async ({ page }) => {
 	await expect(treeFile(page, path)).not.toHaveAttribute("data-viewed");
 });
 
+test("a double click on a file's header folds and unfolds it", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const [path = ""] = await cardPaths(page);
+	const target = card(page, path);
+	await expect(target).toHaveAttribute("data-state", "ready", ENGINE);
+	await target.getByTestId("collapse-file").click();
+	await expect(target).toHaveAttribute("data-collapsed");
+
+	await target.getByRole("heading").dblclick();
+
+	await expect(target).not.toHaveAttribute("data-collapsed");
+	await expect(target.getByTestId("stream-rows")).toBeVisible();
+
+	await target.getByRole("heading").dblclick();
+
+	await expect(target).toHaveAttribute("data-collapsed");
+});
+
 test("hide viewed, in the tree's menu, takes viewed files out of the tree", async ({
 	page,
 }) => {
