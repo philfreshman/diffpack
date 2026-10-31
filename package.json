@@ -21,6 +21,8 @@
 		"typecheck": "tsc --noEmit",
 		"badge": "fallow health --format badge > .github/badges/fallow-health.svg",
 		"check:badge": "fallow health --format badge | diff -u .github/badges/fallow-health.svg -",
+		"badge:coverage": "bun scripts/coverage-badge.ts",
+		"check:coverage-badge": "bun scripts/coverage-badge.ts --check",
 		"check:coverage-gaps": "bun scripts/check-lib-coverage-gaps.ts",
 		"check:vectors": "bun scripts/check-cache-key-vectors.ts",
 		"check:vectors:development": "bun scripts/check-cache-key-vectors.ts development",

@@ -103,6 +103,10 @@ jobs:
       # When it fails: `bun run badge`, and commit the result.
       - run: bun run check:badge
 
+      # The coverage badge beside it is committed for the same reason.
+      # When it fails: `bun run badge:coverage`, and commit the result.
+      - run: bun run check:coverage-badge
+
       - run: bun run check:vectors
 
       - run: bun run check:vectors:development

@@ -165,7 +165,7 @@ five jobs — none of which needs a Rust toolchain, since the engine arrives pre
 | Job | Runs | Needs |
 | :--- | :--- | :--- |
 | `conventional commits` | fails on a commit in the PR whose message is not a Conventional Commit | git, PRs only |
-| `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge` | bun only |
+| `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge`, `check:coverage-badge` | bun only |
 | `end-to-end` | `test:e2e` | bun + Chromium |
 | `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, `check:coverage-gaps`, SARIF upload | bun, PRs only |
 | `fallow (full repo)` | full-repo `fallow`, the type-aware pass, `check:coverage-gaps`, the health grade, SARIF upload | bun, pushes to `development` only |
@@ -267,6 +267,22 @@ bun run badge   # then commit .github/badges/fallow-health.svg
 
 The same grade, with the per-threshold detail behind it, is also written to the job summary of every
 `fallow (full repo)` run. Locally: `bunx fallow health --format github-summary`.
+
+#### The coverage badge
+
+Beside the health grade sits the unit test coverage: the share of lines under `src/` that
+`bun run test` runs (generated `.gen.ts` files aside), rounded down to a whole percent. `scripts/coverage-badge.ts` runs the unit
+tests with Bun's coverage on, reads the lcov report and draws the SVG itself, so no coverage service
+is involved. Only files a unit test loads are measured, which is why `check:coverage-gaps` matters:
+it makes sure every file in `src/lib` is one of them. Components and routes are covered by the
+Playwright suite, which this number does not include.
+
+It is a committed SVG for the same reasons as the grade, and `bun run check:coverage-badge` checks it
+in the same job. When a change moves the whole percent:
+
+```bash
+bun run badge:coverage   # then commit .github/badges/coverage.svg
+```
 
 ## Development Workflow
 
