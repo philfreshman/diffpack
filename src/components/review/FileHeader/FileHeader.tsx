@@ -170,7 +170,7 @@ function LineCounts({ added, removed }: { added: number; removed: number }) {
 	);
 }
 
-const CONTROL_SELECTOR = "button, input, label";
+const CONTROL_SELECTOR = "button";
 
 function isInsideControl(target: EventTarget): boolean {
 	return target instanceof Element && target.closest(CONTROL_SELECTOR) !== null;
