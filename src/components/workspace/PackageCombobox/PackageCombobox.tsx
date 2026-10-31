@@ -24,38 +24,15 @@ export interface PackageComboboxProps {
 }
 
 export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
-	const navigate = useNavigate();
-	const [inputValue, setInputValue] = useStateResetOn(
-		() => selected,
-		[selected],
-	);
-	// localStorage, so history is empty until after hydration.
-	const history = useSetting(searchHistory(adapter.id));
-
-	const input = useShortcutFocus();
-	useEscapeToClear(input, reset);
-
-	const { results, loading, searching } = usePackageSearch(adapter, inputValue);
-	const items = searching ? results : history.value;
-
-	function choose(name: string) {
-		const trimmed = name.trim();
-		if (!trimmed) return;
-
-		const entry = results.find((result) => result.name === trimmed) ?? {
-			name: trimmed,
-		};
-		history.set(addToHistory(history.value, entry));
-
-		setInputValue(trimmed);
-		navigate({ to: buildPath(adapter, { package: trimmed }) });
-	}
-
-	function reset() {
-		setInputValue("");
-		navigate({ to: buildPath(adapter, {}) });
-	}
-
+	const {
+		input,
+		inputValue,
+		setInputValue,
+		items,
+		loading,
+		searching,
+		choose,
+	} = usePackagePicker(adapter, selected);
 	const state = selected ? "selected" : loading ? "searching" : "idle";
 
 	return (
@@ -94,6 +71,50 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 			</div>
 		</div>
 	);
+}
+
+function usePackagePicker(adapter: RegistryAdapter, selected: string) {
+	const navigate = useNavigate();
+	const [inputValue, setInputValue] = useStateResetOn(
+		() => selected,
+		[selected],
+	);
+	// localStorage, so history is empty until after hydration.
+	const history = useSetting(searchHistory(adapter.id));
+
+	const input = useShortcutFocus();
+	useEscapeToClear(input, reset);
+
+	const { results, loading, searching } = usePackageSearch(adapter, inputValue);
+	const items = searching ? results : history.value;
+
+	function choose(name: string) {
+		const trimmed = name.trim();
+		if (!trimmed) return;
+
+		const entry = results.find((result) => result.name === trimmed) ?? {
+			name: trimmed,
+		};
+		history.set(addToHistory(history.value, entry));
+
+		setInputValue(trimmed);
+		navigate({ to: buildPath(adapter, { package: trimmed }) });
+	}
+
+	function reset() {
+		setInputValue("");
+		navigate({ to: buildPath(adapter, {}) });
+	}
+
+	return {
+		input,
+		inputValue,
+		setInputValue,
+		items,
+		loading,
+		searching,
+		choose,
+	};
 }
 
 function useShortcutFocus() {
