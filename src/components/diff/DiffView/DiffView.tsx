@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
 import { useRef } from "react";
 import { CollapsedRow } from "#/components/diff/CollapsedRow/CollapsedRow.tsx";
 import { DiffRow } from "#/components/diff/DiffRow/DiffRow.tsx";
@@ -53,8 +53,6 @@ export function DiffView({
 }: DiffViewProps) {
 	"use no memo";
 
-	const { path, lines, language, rows } = file;
-
 	const scroller = useRef<HTMLDivElement>(null);
 	const virtualizer = useRowVirtualizer(file, scroller);
 
@@ -70,61 +68,20 @@ export function DiffView({
 		<div
 			className={styles.viewer}
 			data-testid="diff-view"
-			data-path={path}
-			data-pending={presentWhen(pending)}
-			data-rows={rows.length}
-			data-language={language ?? ""}
-			data-layout={file.split ? "split" : "unified"}
-			data-signs={presentWhen(showSigns)}
-			// Washes and gutters follow the syntax theme's ground, not the page theme (#139).
-			data-syntax={highlightAppearance(highlightTheme) ?? undefined}
-			style={
-				{
-					"--gutter-width": `max(var(--gutter-min-width), calc(${gutterChars(lines)}ch + var(--space-4)))`,
-					...emphasisStyle(highlightTheme),
-				} as CSSProperties
-			}
+			{...viewerData(file, { pending, showSigns, highlightTheme })}
+			style={viewerStyle(file.lines, highlightTheme)}
 		>
 			{header}
 			<div className={styles.body} hidden={folded}>
-				{/* `hljs` takes the theme stylesheet's background; the change washes paint over it. */}
-				<div
-					className={`${styles.scroller} hljs`}
-					ref={scroller}
-					data-testid="diff-scroller"
-					onScroll={(event) => {
-						scrollTopRef.current = offsetInEstimatedRows(
-							virtualizer,
-							event.currentTarget.scrollTop,
-						);
-					}}
-				>
-					<table className={styles.sizer} aria-label={path} style={{ height }}>
-						<tbody>
-							{virtualizer.getVirtualItems().map((item) => {
-								const row = rows[item.index];
-								if (!row) return null;
-
-								return (
-									<ViewRow
-										file={file}
-										key={item.key}
-										placement={{
-											index: item.index,
-											ref: virtualizer.measureElement,
-											style: { transform: `translateY(${item.start}px)` },
-										}}
-										row={row}
-										selection={{
-											selected: anchor !== null && isAnchoredRow(row, anchor),
-											onSelectLine,
-										}}
-									/>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
+				<DiffScroller
+					anchor={anchor}
+					file={file}
+					height={height}
+					onSelectLine={onSelectLine}
+					scrollerRef={scroller}
+					scrollTopRef={scrollTopRef}
+					virtualizer={virtualizer}
+				/>
 				<FileScrollbar
 					autohide={autohideScrollbar}
 					file={file}
@@ -134,6 +91,120 @@ export function DiffView({
 			</div>
 		</div>
 	);
+}
+
+function viewerData(
+	file: FileModelControls,
+	{
+		pending,
+		showSigns,
+		highlightTheme,
+	}: Pick<DiffViewProps, "pending" | "showSigns" | "highlightTheme">,
+) {
+	return {
+		"data-path": file.path,
+		"data-pending": presentWhen(pending),
+		"data-rows": file.rows.length,
+		"data-language": file.language ?? "",
+		"data-layout": file.split ? "split" : "unified",
+		"data-signs": presentWhen(showSigns),
+		// Washes and gutters follow the syntax theme's ground, not the page theme (#139).
+		"data-syntax": highlightAppearance(highlightTheme) ?? undefined,
+	};
+}
+
+function viewerStyle(
+	lines: FileModelControls["lines"],
+	highlightTheme: string | null,
+): CSSProperties {
+	return {
+		"--gutter-width": `max(var(--gutter-min-width), calc(${gutterChars(lines)}ch + var(--space-4)))`,
+		...emphasisStyle(highlightTheme),
+	} as CSSProperties;
+}
+
+type RowVirtualizer = ReturnType<typeof useRowVirtualizer>;
+
+interface VirtualRowsProps {
+	file: FileModelControls;
+	virtualizer: RowVirtualizer;
+	anchor: LineAnchor | null;
+	onSelectLine(anchor: LineAnchor): void;
+}
+
+interface DiffScrollerProps extends VirtualRowsProps {
+	height: number;
+	scrollerRef: RefObject<HTMLDivElement | null>;
+	scrollTopRef: RefObject<number>;
+}
+
+function DiffScroller({
+	file,
+	virtualizer,
+	anchor,
+	onSelectLine,
+	height,
+	scrollerRef,
+	scrollTopRef,
+}: DiffScrollerProps) {
+	"use no memo";
+
+	return (
+		/* `hljs` takes the theme stylesheet's background; the change washes paint over it. */
+		<div
+			className={`${styles.scroller} hljs`}
+			ref={scrollerRef}
+			data-testid="diff-scroller"
+			onScroll={(event) => {
+				scrollTopRef.current = offsetInEstimatedRows(
+					virtualizer,
+					event.currentTarget.scrollTop,
+				);
+			}}
+		>
+			<table className={styles.sizer} aria-label={file.path} style={{ height }}>
+				<tbody>
+					<VirtualRows
+						anchor={anchor}
+						file={file}
+						onSelectLine={onSelectLine}
+						virtualizer={virtualizer}
+					/>
+				</tbody>
+			</table>
+		</div>
+	);
+}
+
+function VirtualRows({
+	file,
+	virtualizer,
+	anchor,
+	onSelectLine,
+}: VirtualRowsProps) {
+	"use no memo";
+
+	return virtualizer.getVirtualItems().map((item) => {
+		const row = file.rows[item.index];
+		if (!row) return null;
+
+		return (
+			<ViewRow
+				file={file}
+				key={item.key}
+				placement={{
+					index: item.index,
+					ref: virtualizer.measureElement,
+					style: { transform: `translateY(${item.start}px)` },
+				}}
+				row={row}
+				selection={{
+					selected: anchor !== null && isAnchoredRow(row, anchor),
+					onSelectLine,
+				}}
+			/>
+		);
+	});
 }
 
 interface ViewRowProps {

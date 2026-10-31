@@ -42,7 +42,6 @@ export function FileHeader({
 	onExpandAllChange,
 }: FileHeaderProps) {
 	const toggleLabel = open ? "Collapse file" : "Expand file";
-	const foldLabel = expandAll ? "Fold all lines" : "Expand all lines";
 
 	return (
 		<header
@@ -77,48 +76,80 @@ export function FileHeader({
 				</IconButton>
 			)}
 			<LineCounts added={entry.added ?? 0} removed={entry.removed ?? 0} />
-			<div className={styles.actions}>
-				<IconButton
-					aria-label={foldLabel}
-					aria-pressed={expandAll ?? false}
-					className={styles.action}
-					disabled={expandAll === null}
-					onClick={() => onExpandAllChange(!expandAll)}
-					title={foldLabel}
-				>
-					{expandAll ? (
-						<FoldIcon height="16" width="16" />
-					) : (
-						<UnfoldIcon height="16" width="16" />
-					)}
-				</IconButton>
-				{onOpenFile && (
-					<IconButton
-						aria-label="Open file"
-						className={styles.action}
-						data-testid="open-file"
-						onClick={onOpenFile}
-						title="Open this file on its own"
-					>
-						<FileIcon height="16" width="16" />
-					</IconButton>
-				)}
-				<button
-					aria-checked={viewed}
-					aria-keyshortcuts={VIEWED_SHORTCUT}
-					aria-label="Viewed"
-					className={styles.viewed}
-					data-testid="viewed-toggle"
-					onClick={() => onViewedChange(!viewed)}
-					role="checkbox"
-					title={`Mark as viewed (${VIEWED_SHORTCUT})`}
-					type="button"
-				>
-					Viewed
-					<Kbd className={styles.key} keys={VIEWED_SHORTCUT} />
-				</button>
-			</div>
+			<FileActions
+				expandAll={expandAll}
+				onExpandAllChange={onExpandAllChange}
+				onOpenFile={onOpenFile}
+				onViewedChange={onViewedChange}
+				viewed={viewed}
+			/>
 		</header>
+	);
+}
+
+function FileActions({
+	viewed,
+	onViewedChange,
+	onOpenFile,
+	expandAll,
+	onExpandAllChange,
+}: Pick<
+	FileHeaderProps,
+	"viewed" | "onViewedChange" | "onOpenFile" | "expandAll" | "onExpandAllChange"
+>) {
+	const foldLabel = expandAll ? "Fold all lines" : "Expand all lines";
+
+	return (
+		<div className={styles.actions}>
+			<IconButton
+				aria-label={foldLabel}
+				aria-pressed={expandAll ?? false}
+				className={styles.action}
+				disabled={expandAll === null}
+				onClick={() => onExpandAllChange(!expandAll)}
+				title={foldLabel}
+			>
+				{expandAll ? (
+					<FoldIcon height="16" width="16" />
+				) : (
+					<UnfoldIcon height="16" width="16" />
+				)}
+			</IconButton>
+			{onOpenFile && (
+				<IconButton
+					aria-label="Open file"
+					className={styles.action}
+					data-testid="open-file"
+					onClick={onOpenFile}
+					title="Open this file on its own"
+				>
+					<FileIcon height="16" width="16" />
+				</IconButton>
+			)}
+			<ViewedToggle onViewedChange={onViewedChange} viewed={viewed} />
+		</div>
+	);
+}
+
+function ViewedToggle({
+	viewed,
+	onViewedChange,
+}: Pick<FileHeaderProps, "viewed" | "onViewedChange">) {
+	return (
+		<button
+			aria-checked={viewed}
+			aria-keyshortcuts={VIEWED_SHORTCUT}
+			aria-label="Viewed"
+			className={styles.viewed}
+			data-testid="viewed-toggle"
+			onClick={() => onViewedChange(!viewed)}
+			role="checkbox"
+			title={`Mark as viewed (${VIEWED_SHORTCUT})`}
+			type="button"
+		>
+			Viewed
+			<Kbd className={styles.key} keys={VIEWED_SHORTCUT} />
+		</button>
 	);
 }
 
