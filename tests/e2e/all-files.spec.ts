@@ -282,3 +282,108 @@ test("the stream's scrollbar sits beside the cards and scrolls the stream", asyn
 		.poll(() => stream(page).evaluate((element) => element.scrollTop))
 		.toBeGreaterThan(0);
 });
+
+async function firstReadyCard(page: Page) {
+	await showAllFiles(page);
+	const [path = ""] = await cardPaths(page);
+	const target = card(page, path);
+	await expect(target).toHaveAttribute("data-state", "ready", ENGINE);
+	return { path, target };
+}
+
+test("a double click on a control in a file's header leaves the file open", async ({
+	page,
+}) => {
+	const { target } = await firstReadyCard(page);
+	const header = target.locator("header");
+
+	await header.getByTestId("collapse-file").dblclick();
+	await expect(target).not.toHaveAttribute("data-collapsed");
+
+	await header.getByRole("button", { name: "Expand all lines" }).dblclick();
+	await expect(target).not.toHaveAttribute("data-collapsed");
+
+	await header.getByTestId("viewed-toggle").dblclick();
+	await expect(header.getByTestId("viewed-toggle")).not.toBeChecked();
+	await expect(target).not.toHaveAttribute("data-collapsed");
+	await expect(target.getByTestId("stream-rows")).toBeVisible();
+});
+
+test("expanding every line of a folded file leaves it folded", async ({
+	page,
+}) => {
+	const { target } = await firstReadyCard(page);
+	await target.getByTestId("collapse-file").click();
+	await expect(target).toHaveAttribute("data-collapsed");
+
+	await target.getByRole("button", { name: "Expand all lines" }).click();
+
+	await expect(
+		target.getByRole("button", { name: "Fold all lines" }),
+	).toHaveAttribute("aria-pressed", "true");
+	await expect(target).toHaveAttribute("data-collapsed");
+	await expect(target.getByTestId("stream-rows")).toHaveCount(0);
+});
+
+test("the viewed toggle shows its V key and answers the space bar", async ({
+	page,
+}) => {
+	const { target } = await firstReadyCard(page);
+	const viewed = target.getByTestId("viewed-toggle");
+
+	await expect(viewed).toHaveText("ViewedV");
+	await expect(viewed.locator("kbd")).toHaveText("V");
+	await expect(viewed).toHaveAttribute("aria-keyshortcuts", "V");
+
+	await viewed.focus();
+	await page.keyboard.press("Space");
+
+	await expect(viewed).toBeChecked();
+	await expect(target).toHaveAttribute("data-collapsed");
+
+	await page.keyboard.press("Space");
+
+	await expect(viewed).not.toBeChecked();
+	await expect(target).not.toHaveAttribute("data-collapsed");
+});
+
+test("ticking viewed folds the file being read and stays on it", async ({
+	page,
+}) => {
+	const { path, target } = await firstReadyCard(page);
+	await stream(page).evaluate((element) => element.scrollBy(0, 600));
+	await expect(stream(page)).toHaveAttribute("data-current", path);
+
+	await markViewed(target);
+
+	await expect(target).toHaveAttribute("data-collapsed");
+	await expect(target).toBeInViewport();
+	await expect(stream(page)).toHaveAttribute("data-current", path);
+});
+
+test("cards open their file but have nothing to close", async ({ page }) => {
+	await showAllFiles(page);
+
+	await expect(stream(page).getByTestId("open-file")).toHaveCount(
+		CHANGED_FILES,
+	);
+	await expect(stream(page).getByTestId("close-file")).toHaveCount(0);
+});
+
+test("a card's header is as tall as the toolbar, which counts no differences", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const toolbar = page.getByTestId("diff-toolbar");
+
+	const headerBox = await cards(page).first().locator("header").boundingBox();
+	const toolbarBox = await toolbar.boundingBox();
+	expect(headerBox?.height).toBe(toolbarBox?.height);
+	await expect(page.getByTestId("difference-count")).toHaveCount(0);
+	await expect(toolbar.getByRole("button", { name: "Expand all" })).toHaveCount(
+		0,
+	);
+	await expect(toolbar.getByRole("button", { name: "Close file" })).toHaveCount(
+		0,
+	);
+});
