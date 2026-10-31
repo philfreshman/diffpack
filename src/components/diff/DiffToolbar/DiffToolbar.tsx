@@ -9,12 +9,9 @@ import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
 	ArrowUpIcon,
-	CloseIcon,
 	FileIcon,
 	FilesIcon,
-	FoldIcon,
 	SplitViewIcon,
-	UnfoldIcon,
 	UnifiedViewIcon,
 } from "#/components/ui/icons.tsx";
 import type { FileLayout } from "#/lib/review/fileStream.ts";
@@ -26,11 +23,7 @@ export interface DiffToolbarProps {
 	fileIndex: number;
 	fileCount: number;
 	onStepFile(direction: 1 | -1): void;
-	onClose(): void;
-	file: Pick<
-		FileModelControls,
-		"differences" | "stepDifference" | "expandAll" | "setExpandAll"
-	> | null;
+	file: Pick<FileModelControls, "stepDifference"> | null;
 	split: boolean;
 	onSplitChange(split: boolean): void;
 	layout: FileLayout;
@@ -43,7 +36,6 @@ export function DiffToolbar({
 	fileIndex,
 	fileCount,
 	onStepFile,
-	onClose,
 	file,
 	split,
 	onSplitChange,
@@ -52,7 +44,6 @@ export function DiffToolbar({
 	settings,
 }: DiffToolbarProps) {
 	const open = path !== "";
-	const closable = open && layout === "single";
 
 	return (
 		<div className={styles.toolbar} data-testid="diff-toolbar">
@@ -95,30 +86,11 @@ export function DiffToolbar({
 				>
 					<ArrowRightIcon width="16" height="16" />
 				</IconButton>
-				<IconButton
-					aria-label="Close file"
-					title="Close file"
-					disabled={!closable}
-					onClick={onClose}
-				>
-					<CloseIcon width="16" height="16" />
-				</IconButton>
 			</div>
 
-			{layout === "single" ? (
-				<h2 className={styles.filename}>{path}</h2>
-			) : (
-				<span className={styles.spacer} />
-			)}
+			<span className={styles.spacer} />
 
-			{file && (
-				<span className={styles.differences} data-testid="difference-count">
-					{file.differences}{" "}
-					{file.differences === 1 ? "difference" : "differences"}
-				</span>
-			)}
-
-			<ViewControls file={file} onSplitChange={onSplitChange} split={split} />
+			<ViewControls onSplitChange={onSplitChange} split={split} />
 
 			<LayoutControls layout={layout} onLayoutChange={onLayoutChange} />
 
@@ -128,28 +100,11 @@ export function DiffToolbar({
 }
 
 function ViewControls({
-	file,
 	split,
 	onSplitChange,
-}: Pick<DiffToolbarProps, "file" | "split" | "onSplitChange">) {
-	const expandAll = file?.expandAll ?? false;
-	const fold = expandAll ? "Fold all" : "Expand all";
-
+}: Pick<DiffToolbarProps, "split" | "onSplitChange">) {
 	return (
 		<div className={styles.group}>
-			<IconButton
-				aria-label={fold}
-				aria-pressed={expandAll}
-				title={fold}
-				disabled={!file}
-				onClick={() => file?.setExpandAll(!expandAll)}
-			>
-				{expandAll ? (
-					<FoldIcon width="16" height="16" />
-				) : (
-					<UnfoldIcon width="16" height="16" />
-				)}
-			</IconButton>
 			<IconButton
 				aria-label="Switch to split view"
 				aria-pressed={split}

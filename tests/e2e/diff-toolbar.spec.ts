@@ -38,7 +38,7 @@ test("stands whether or not a file is open", async ({ page }) => {
 	).toBeDisabled();
 	await expect(
 		toolbar(page).getByRole("button", { name: "Close file" }),
-	).toBeDisabled();
+	).toHaveCount(0);
 });
 
 test("walks the changed files, and closes the one it is on", async ({
@@ -57,10 +57,42 @@ test("walks the changed files, and closes the one it is on", async ({
 	await expect(page).toHaveURL(`${EXPRESS}/lib/view.js`);
 	await expect(page.getByTestId("file-counter")).toHaveText("13/14 files");
 
-	await toolbar(page).getByRole("button", { name: "Close file" }).click();
+	await page.getByTestId("diff-view").getByTestId("close-file").click();
 
 	await expect(page).toHaveURL(EXPRESS);
 	await expect(page.getByTestId("diff-view")).toHaveCount(0);
+});
+
+test("heads the open file with its path, counts and viewed toggle", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+	const view = page.getByTestId("diff-view");
+
+	await expect(view.getByRole("heading")).toHaveText("package.json");
+	const headerBox = await view.locator("header").boundingBox();
+	const toolbarBox = await toolbar(page).boundingBox();
+	expect(headerBox?.height).toBe(toolbarBox?.height);
+	const viewed = view.getByTestId("viewed-toggle");
+	await expect(viewed).not.toBeChecked();
+	await expect(viewed.locator("kbd")).toHaveText("V");
+	await expect(view.getByTestId("open-file")).toHaveCount(0);
+
+	await page.keyboard.press("v");
+
+	await expect(viewed).toBeChecked();
+	await expect(
+		page.getByRole("treeitem").and(page.locator('[data-path="package.json"]')),
+	).toHaveAttribute("data-viewed");
+	await expect(view.getByTestId("diff-scroller")).toBeHidden();
+
+	await view.getByRole("heading").dblclick();
+
+	await expect(view.getByTestId("diff-scroller")).toBeVisible();
+
+	await viewed.uncheck();
+
+	await expect(viewed).not.toBeChecked();
 });
 
 test("blurs the file it is holding rather than emptying the pane", async ({
@@ -78,15 +110,8 @@ test("blurs the file it is holding rather than emptying the pane", async ({
 	await expect(view.locator("tr").first()).toBeVisible();
 });
 
-test("counts the differences, and scrolls to them one at a time", async ({
-	page,
-}) => {
+test("scrolls to the differences one at a time", async ({ page }) => {
 	await open(page, LODASH);
-
-	// A run of touched lines is one difference, however many lines it is.
-	await expect(page.getByTestId("difference-count")).toContainText(
-		/^\d+ differences$/,
-	);
 
 	const scroller = page.getByTestId("diff-scroller");
 	const top = async () => scroller.evaluate((it) => it.scrollTop);
@@ -189,10 +214,14 @@ test("the choice survives a reload, the way the layout does", async ({
 	).toBe("true");
 });
 
-test("names the file being read", async ({ page }) => {
+test("names the file in its header, not in the toolbar", async ({ page }) => {
 	await open(page, MANIFEST);
 
-	await expect(toolbar(page)).toContainText("package.json");
+	await expect(page.getByTestId("diff-view").getByRole("heading")).toHaveText(
+		"package.json",
+	);
+	await expect(toolbar(page)).not.toContainText("package.json");
+	await expect(page.getByTestId("difference-count")).toHaveCount(0);
 });
 
 test("opens the whole file, and folds it back up", async ({ page }) => {
@@ -200,12 +229,16 @@ test("opens the whole file, and folds it back up", async ({ page }) => {
 
 	const viewer = page.getByTestId("diff-view");
 	const folded = await viewer.getAttribute("data-rows");
-	await toolbar(page).getByRole("button", { name: "Expand all" }).click();
+	await expect(
+		toolbar(page).getByRole("button", { name: "Expand all" }),
+	).toHaveCount(0);
+	const header = viewer.locator("header");
+	await header.getByRole("button", { name: "Expand all lines" }).click();
 
 	await expect(page.getByTestId("fold")).toHaveCount(0);
 	await expect(viewer).not.toHaveAttribute("data-rows", folded ?? "");
 
-	await toolbar(page).getByRole("button", { name: "Fold all" }).click();
+	await header.getByRole("button", { name: "Fold all lines" }).click();
 
 	await expect(viewer).toHaveAttribute("data-rows", folded ?? "");
 });
@@ -237,25 +270,6 @@ test("puts the old file beside the new one, and remembers that it was asked", as
 	expect(
 		await page.evaluate((key) => localStorage.getItem(key), SPLIT_VIEW.key),
 	).toBe("false");
-});
-
-test("counts the same differences however the file is shown", async ({
-	page,
-}) => {
-	await open(page, LODASH);
-	const count = page.getByTestId("difference-count");
-	const folded = await count.innerText();
-
-	// The count comes from the rows on screen; neither expanding nor splitting may split or join a difference.
-	await toolbar(page).getByRole("button", { name: "Expand all" }).click();
-	await expect(page.getByTestId("fold")).toHaveCount(0);
-	await expect(count).toHaveText(folded);
-
-	await toolbar(page)
-		.getByRole("button", { name: "Switch to split view" })
-		.click();
-	await expect(splitRows(page).first()).toBeVisible();
-	await expect(count).toHaveText(folded);
 });
 
 const themeLink = (page: Page) => page.locator("link#highlight-theme");
@@ -439,4 +453,75 @@ test("switches the color mode from the last item of the settings menu", async ({
 
 	await modeSwitch.getByRole("button", { name: "System" }).click();
 	await expect(html).toHaveAttribute("data-theme-selection", "system");
+});
+
+const header = (page: Page) => page.getByTestId("diff-view").locator("header");
+const diffBody = (page: Page) =>
+	page.getByTestId("diff-view").getByTestId("diff-scroller");
+
+test("a double click on a control in the header leaves the file open", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	await header(page).getByTestId("collapse-file").dblclick();
+	await expect(diffBody(page)).toBeVisible();
+
+	await header(page)
+		.getByRole("button", { name: "Expand all lines" })
+		.dblclick();
+	await expect(diffBody(page)).toBeVisible();
+
+	await header(page).getByTestId("viewed-toggle").dblclick();
+	await expect(header(page).getByTestId("viewed-toggle")).not.toBeChecked();
+	await expect(diffBody(page)).toBeVisible();
+});
+
+test("expanding every line of the folded file leaves it folded", async ({
+	page,
+}) => {
+	await open(page, LODASH);
+	await header(page).getByTestId("collapse-file").click();
+	await expect(diffBody(page)).toBeHidden();
+
+	await header(page).getByRole("button", { name: "Expand all lines" }).click();
+
+	await expect(
+		header(page).getByRole("button", { name: "Fold all lines" }),
+	).toHaveAttribute("aria-pressed", "true");
+	await expect(diffBody(page)).toBeHidden();
+});
+
+test("v typed into the tree filter is just typing", async ({ page }) => {
+	await open(page, MANIFEST);
+	const filter = page.getByRole("searchbox", {
+		name: "Filter files and folders",
+	});
+
+	await filter.click();
+	await page.keyboard.press("v");
+
+	await expect(filter).toHaveValue("v");
+	await expect(header(page).getByTestId("viewed-toggle")).not.toBeChecked();
+	await expect(diffBody(page)).toBeVisible();
+});
+
+test("a double click on the header folds the file without selecting its name", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	await header(page).getByRole("heading").dblclick();
+
+	await expect(diffBody(page)).toBeHidden();
+	expect(await page.evaluate(() => String(window.getSelection()))).toBe("");
+});
+
+test("the folded file's header draws no rule under itself", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+	await header(page).getByTestId("collapse-file").click();
+
+	await expect(header(page)).toHaveCSS("border-bottom-width", "0px");
 });

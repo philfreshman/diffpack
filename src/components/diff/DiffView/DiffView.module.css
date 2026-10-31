@@ -21,6 +21,18 @@
 	transition: filter var(--duration-fast) ease;
 }
 
+.body {
+	position: relative;
+	display: flex;
+	flex: 0 1 auto;
+	min-height: 0;
+	flex-direction: column;
+}
+
+.body[hidden] {
+	display: none;
+}
+
 .scroller {
 	flex: 0 1 auto;
 	min-height: 0;

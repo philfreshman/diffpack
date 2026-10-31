@@ -1,7 +1,9 @@
 import type { CSSProperties } from "react";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
+import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
 import {
 	ChevronDownIcon,
+	CloseIcon,
 	FileIcon,
 	FoldIcon,
 	UnfoldIcon,
@@ -12,6 +14,8 @@ import styles from "./FileHeader.module.css";
 
 const LINE_COUNT = new Intl.NumberFormat("en-US");
 
+const VIEWED_SHORTCUT = "V";
+
 const STAT_KINDS: readonly StatBlock[] = ["added", "removed", "neutral"];
 
 interface FileHeaderProps {
@@ -20,7 +24,8 @@ interface FileHeaderProps {
 	onOpenChange(open: boolean): void;
 	viewed: boolean;
 	onViewedChange(viewed: boolean): void;
-	onOpenFile(): void;
+	onOpenFile?(): void;
+	onClose?(): void;
 	expandAll: boolean | null;
 	onExpandAllChange(expandAll: boolean): void;
 }
@@ -32,6 +37,7 @@ export function FileHeader({
 	viewed,
 	onViewedChange,
 	onOpenFile,
+	onClose,
 	expandAll,
 	onExpandAllChange,
 }: FileHeaderProps) {
@@ -39,7 +45,15 @@ export function FileHeader({
 	const foldLabel = expandAll ? "Fold all lines" : "Expand all lines";
 
 	return (
-		<header className={styles.header}>
+		<header
+			className={styles.header}
+			data-open={open ? "" : undefined}
+			onDoubleClick={(event) => {
+				if (isInsideControl(event.target)) return;
+				clearTextSelection();
+				onOpenChange(!open);
+			}}
+		>
 			<IconButton
 				aria-expanded={open}
 				aria-label={toggleLabel}
@@ -51,6 +65,17 @@ export function FileHeader({
 				<ChevronDownIcon height="16" width="16" />
 			</IconButton>
 			<FilePath entry={entry} />
+			{onClose && (
+				<IconButton
+					aria-label="Close file"
+					className={styles.close}
+					data-testid="close-file"
+					onClick={onClose}
+					title="Close file"
+				>
+					<CloseIcon height="16" width="16" />
+				</IconButton>
+			)}
 			<LineCounts added={entry.added ?? 0} removed={entry.removed ?? 0} />
 			<div className={styles.actions}>
 				<IconButton
@@ -67,28 +92,31 @@ export function FileHeader({
 						<UnfoldIcon height="16" width="16" />
 					)}
 				</IconButton>
-				<IconButton
-					aria-label="Open file"
-					className={styles.action}
-					data-testid="open-file"
-					onClick={onOpenFile}
-					title="Open this file on its own"
+				{onOpenFile && (
+					<IconButton
+						aria-label="Open file"
+						className={styles.action}
+						data-testid="open-file"
+						onClick={onOpenFile}
+						title="Open this file on its own"
+					>
+						<FileIcon height="16" width="16" />
+					</IconButton>
+				)}
+				<button
+					aria-checked={viewed}
+					aria-keyshortcuts={VIEWED_SHORTCUT}
+					aria-label="Viewed"
+					className={styles.viewed}
+					data-testid="viewed-toggle"
+					onClick={() => onViewedChange(!viewed)}
+					role="checkbox"
+					title={`Mark as viewed (${VIEWED_SHORTCUT})`}
+					type="button"
 				>
-					<FileIcon height="16" width="16" />
-				</IconButton>
-				<label className={styles.viewed} data-checked={viewed ? "" : undefined}>
-					<input
-						checked={viewed}
-						className={styles.checkbox}
-						data-testid="viewed-toggle"
-						onChange={(event) => {
-							releasePointerFocus(event.currentTarget);
-							onViewedChange(event.currentTarget.checked);
-						}}
-						type="checkbox"
-					/>
 					Viewed
-				</label>
+					<Kbd className={styles.key} keys={VIEWED_SHORTCUT} />
+				</button>
 			</div>
 		</header>
 	);
@@ -142,8 +170,14 @@ function LineCounts({ added, removed }: { added: number; removed: number }) {
 	);
 }
 
-function releasePointerFocus(input: HTMLInputElement): void {
-	if (!input.matches(":focus-visible")) input.blur();
+const CONTROL_SELECTOR = "button";
+
+function isInsideControl(target: EventTarget): boolean {
+	return target instanceof Element && target.closest(CONTROL_SELECTOR) !== null;
+}
+
+function clearTextSelection(): void {
+	document.getSelection()?.removeAllRanges();
 }
 
 function countOf(blocks: readonly StatBlock[], kind: StatBlock): number {

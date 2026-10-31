@@ -139,6 +139,7 @@
 	--workspace-header-height: 4.75rem;
 	--workspace-inset: var(--space-4);
 	--control-height: 2.25rem;
+	--file-header-height: var(--control-height);
 	--tree-row-height: 30px;
 	--scrollbar-width: 0.875rem;
 

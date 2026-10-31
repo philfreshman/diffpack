@@ -7,8 +7,6 @@
 }
 
 .stream {
-	--file-header-height: var(--control-height);
-
 	flex: 1;
 	min-width: 0;
 	min-height: 0;
