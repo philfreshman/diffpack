@@ -5,6 +5,7 @@ import { TreeFilter } from "#/components/tree/TreeFilter/TreeFilter.tsx";
 import { TreeMenu } from "#/components/tree/TreeMenu/TreeMenu.tsx";
 import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
 import {
+	HIDE_VIEWED,
 	ONLY_MODIFIED,
 	TREE_LINE_COUNTS,
 	TREE_WIDTH,
@@ -16,6 +17,8 @@ import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./TreePanel.module.css";
 import { usePanelPosition } from "./usePanelPosition.ts";
 import { usePanelResize } from "./usePanelResize.ts";
+
+const NOTHING_HIDDEN: ReadonlySet<string> = new Set();
 
 export interface TreePanelProps {
 	tree: DiffFileEntry | null;
@@ -36,6 +39,8 @@ export function TreePanel({
 		useSetting(ONLY_MODIFIED);
 	const { value: lineCounts, set: setLineCounts } =
 		useSetting(TREE_LINE_COUNTS);
+	const { value: hideViewed, set: setHideViewed } = useSetting(HIDE_VIEWED);
+	const hiddenPaths = (hideViewed && viewedPaths) || NOTHING_HIDDEN;
 
 	const [folders, dispatch] = useReducer(folderReducer, comparison, foldersFor);
 	// Reset during render: an effect would render once with the old comparison's folders.
@@ -45,8 +50,14 @@ export function TreePanel({
 
 	const rows = useMemo(
 		() =>
-			visibleRows(tree, { filter, onlyModified, expandedKeys, collapsedKeys }),
-		[tree, filter, onlyModified, expandedKeys, collapsedKeys],
+			visibleRows(tree, {
+				filter,
+				onlyModified,
+				hiddenPaths,
+				expandedKeys,
+				collapsedKeys,
+			}),
+		[tree, filter, onlyModified, hiddenPaths, expandedKeys, collapsedKeys],
 	);
 
 	function toggleFolder(path: string, expanded: boolean) {
@@ -76,6 +87,8 @@ export function TreePanel({
 						onOnlyModifiedChange={(next) => narrow(() => setOnlyModified(next))}
 						lineCounts={lineCounts}
 						onLineCountsChange={setLineCounts}
+						hideViewed={hideViewed}
+						onHideViewedChange={setHideViewed}
 						position={position}
 						onPositionChange={sidebar.place}
 					/>

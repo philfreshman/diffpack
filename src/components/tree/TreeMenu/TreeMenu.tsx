@@ -24,6 +24,8 @@ export interface TreeMenuProps {
 	onOnlyModifiedChange(onlyModified: boolean): void;
 	lineCounts: boolean;
 	onLineCountsChange(lineCounts: boolean): void;
+	hideViewed: boolean;
+	onHideViewedChange(hideViewed: boolean): void;
 	position: TreePosition;
 	onPositionChange(position: TreePosition): void;
 }
@@ -32,6 +34,8 @@ export function TreeMenu({
 	onOnlyModifiedChange,
 	lineCounts,
 	onLineCountsChange,
+	hideViewed,
+	onHideViewedChange,
 	position,
 	onPositionChange,
 }: TreeMenuProps) {
@@ -52,6 +56,11 @@ export function TreeMenu({
 				label="Line counts"
 				on={lineCounts}
 				onChange={onLineCountsChange}
+			/>
+			<ToggleOption
+				label="Hide viewed"
+				on={hideViewed}
+				onChange={onHideViewedChange}
 			/>
 
 			<FoldOutOption

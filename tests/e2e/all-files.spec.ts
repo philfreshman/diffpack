@@ -140,6 +140,32 @@ test("a viewed file folds away and stays viewed", async ({ page }) => {
 	await expect(treeFile(page, path)).not.toHaveAttribute("data-viewed");
 });
 
+test("hide viewed, in the tree's menu, takes viewed files out of the tree", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const [path = ""] = await cardPaths(page);
+	await page.getByRole("button", { name: "File tree options" }).click();
+	const hideViewed = page.getByRole("button", {
+		name: "Hide viewed",
+		exact: true,
+	});
+	await expect(hideViewed).toHaveAttribute("aria-pressed", "false");
+	await hideViewed.click();
+	await expect(hideViewed).toHaveAttribute("aria-pressed", "true");
+	await page.keyboard.press("Escape");
+
+	const target = card(page, path);
+	await expect(target).toHaveAttribute("data-state", "ready", ENGINE);
+	await markViewed(target);
+
+	await expect(treeFile(page, path)).toHaveCount(0);
+	await expect(target).toBeVisible();
+
+	await target.getByTestId("viewed-toggle").uncheck();
+	await expect(treeFile(page, path)).toBeVisible();
+});
+
 test("a file picked in the tree scrolls into view without leaving the comparison", async ({
 	page,
 }) => {

@@ -27,6 +27,7 @@ const NESTED: DiffFileEntry = {
 const SHOW_ALL = {
 	filter: "",
 	onlyModified: false,
+	hiddenPaths: new Set<string>(),
 	expandedKeys: new Set<string>(),
 	collapsedKeys: new Set<string>(),
 };
@@ -52,6 +53,26 @@ describe("rowKey", () => {
 });
 
 describe("visibleRows", () => {
+	test("leaves out the files it is told to hide", () => {
+		const rows = visibleRows(NESTED, {
+			...SHOW_ALL,
+			hiddenPaths: new Set(["lib/index.js"]),
+			expandedKeys: new Set(["lib"]),
+		}).map((row) => row.entry.path);
+
+		expect(rows).toEqual(["lib", "lib/util.js", "package.json"]);
+	});
+
+	test("drops a folder once everything that would show in it is hidden", () => {
+		const rows = visibleRows(NESTED, {
+			...SHOW_ALL,
+			onlyModified: true,
+			hiddenPaths: new Set(["lib/index.js"]),
+		}).map((row) => row.entry.path);
+
+		expect(rows).toEqual(["package.json"]);
+	});
+
 	test("a folder's contents appear only when it is open", () => {
 		const rows = visibleRows(NESTED, SHOW_ALL).map((row) => row.entry.path);
 
