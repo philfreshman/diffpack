@@ -70,7 +70,6 @@
 	--color-added: #16a34a;
 	--color-removed: #dc2626;
 	--color-renamed: #d97706;
-	--color-renamed-surface: #fef3c7;
 	--color-selected-surface: rgb(0 0 0 / 0.08);
 	--color-severity-critical: #9f1239;
 	--color-severity-high: #c2410c;
@@ -171,7 +170,6 @@
 	--color-added: #4ade80;
 	--color-removed: #f87171;
 	--color-renamed: #fbbf24;
-	--color-renamed-surface: rgb(120 53 15 / 0.3);
 	--color-selected-surface: rgb(255 255 255 / 0.09);
 	--color-severity-critical: #fb7185;
 	--color-severity-high: #fb923c;

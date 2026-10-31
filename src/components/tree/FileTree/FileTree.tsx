@@ -3,12 +3,16 @@ import {
 	CheckIcon,
 	ChevronDownIcon,
 	ChevronRightIcon,
+	FileAddedIcon,
+	FileDiffIcon,
 	FileIcon,
+	FileRemovedIcon,
 	FolderIcon,
 	FolderOpenIcon,
 } from "#/components/ui/icons.tsx";
 import { treeCommand } from "#/lib/tree/keymap.ts";
 import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
+import type { DiffStatus } from "#/lib/worker/protocol.ts";
 import styles from "./FileTree.module.css";
 
 export interface FileTreeProps {
@@ -147,7 +151,11 @@ function FileTreeRow({
 			onClick={() => onActivate(row)}
 		>
 			<RowChevron expanded={expanded} hasChildren={hasChildren} />
-			<RowIcon expanded={expanded} folder={entry.type === "directory"} />
+			<RowIcon
+				expanded={expanded}
+				folder={entry.type === "directory"}
+				status={entry.status}
+			/>
 			<span className={styles.name} data-testid="name">
 				{nameOf(entry.path)}
 			</span>
@@ -161,9 +169,6 @@ function FileTreeRow({
 				>
 					<CheckIcon width="12" height="12" />
 				</span>
-			)}
-			{entry.status === "renamed" && (
-				<span className={styles.renamed}>RENAMED</span>
 			)}
 			{entry.added ? (
 				<span className={styles.added} data-testid="added">
@@ -199,19 +204,62 @@ function RowChevron({
 
 const GLYPHS = {
 	file: FileIcon,
+	"file-added": FileAddedIcon,
+	"file-removed": FileRemovedIcon,
+	"file-diff": FileDiffIcon,
 	folder: FolderIcon,
 	"folder-open": FolderOpenIcon,
 };
 
-function RowIcon({ expanded, folder }: { expanded: boolean; folder: boolean }) {
-	const name = folder ? (expanded ? "folder-open" : "folder") : "file";
+type GlyphName = keyof typeof GLYPHS;
+
+const FILE_GLYPHS: Record<DiffStatus, GlyphName> = {
+	added: "file-added",
+	removed: "file-removed",
+	modified: "file-diff",
+	renamed: "file-diff",
+	unchanged: "file",
+};
+
+const STATUS_LABELS: Record<DiffStatus, string | undefined> = {
+	added: "Added",
+	removed: "Removed",
+	modified: "Modified",
+	renamed: "Renamed",
+	unchanged: undefined,
+};
+
+function glyphNameOf(
+	folder: boolean,
+	expanded: boolean,
+	status: DiffStatus,
+): GlyphName {
+	if (folder) return expanded ? "folder-open" : "folder";
+	return FILE_GLYPHS[status];
+}
+
+function RowIcon({
+	expanded,
+	folder,
+	status,
+}: {
+	expanded: boolean;
+	folder: boolean;
+	status: DiffStatus;
+}) {
+	const name = glyphNameOf(folder, expanded, status);
 	const Glyph = GLYPHS[name];
+	const label = folder ? undefined : STATUS_LABELS[status];
 
 	return (
 		<span
 			className={folder ? styles.folderIcon : styles.fileIcon}
+			role={label && "img"}
+			aria-label={label}
+			title={label}
 			data-testid="icon"
 			data-icon={name}
+			data-status={folder ? undefined : status}
 		>
 			<Glyph />
 		</span>

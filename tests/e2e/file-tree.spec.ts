@@ -97,19 +97,40 @@ test("shows the comparison as a tree of folders and files", async ({
 	await expect(row(page, "lib").first()).toBeVisible();
 });
 
-test("says what changed in each file, and how much", async ({ page }) => {
+test("marks each changed file with a coloured status file icon, and keeps names plain", async ({
+	page,
+}) => {
 	await page.goto(EXPRESS);
 	await ready(page);
 
 	const manifest = row(page, "package.json");
-	// Shape, not numbers: the counts come from the engine and real archives.
-	await expect(manifest.getByTestId("added")).toHaveText(/^\+\d+$/);
-	await expect(manifest.getByTestId("removed")).toHaveText(/^-\d+$/);
+	const removed = row(page, "query.js");
+	const modifiedIcon = manifest.getByTestId("icon");
+	const removedIcon = removed.getByTestId("icon");
+	await expect(modifiedIcon).toHaveAttribute("data-icon", "file-diff");
+	await expect(modifiedIcon).toHaveAccessibleName("Modified");
+	await expect(removedIcon).toHaveAttribute("data-icon", "file-removed");
+	await expect(removedIcon).toHaveAccessibleName("Removed");
 
-	await expect(row(page, "lib").first().getByTestId("removed")).toHaveText(
-		/^-\d+$/,
-	);
+	const modifiedColour = await tokenColour(page, "--color-renamed");
+	const removedColour = await tokenColour(page, "--color-removed");
+	const foreground = await tokenColour(page, "--color-foreground");
+	await expect(modifiedIcon).toHaveCSS("color", modifiedColour);
+	await expect(removedIcon).toHaveCSS("color", removedColour);
+	await expect(manifest.getByTestId("name")).toHaveCSS("color", foreground);
+	await expect(removed.getByTestId("name")).toHaveCSS("color", foreground);
 });
+
+async function tokenColour(page: Page, token: string): Promise<string> {
+	return page.evaluate((name) => {
+		const probe = document.createElement("span");
+		probe.style.color = `var(${name})`;
+		document.querySelector("[role='tree']")?.append(probe);
+		const colour = getComputedStyle(probe).color;
+		probe.remove();
+		return colour;
+	}, token);
+}
 
 test("opens on what changed, without the untouched files", async ({ page }) => {
 	await page.goto(EXPRESS);
@@ -121,21 +142,6 @@ test("opens on what changed, without the untouched files", async ({ page }) => {
 	await expect(
 		page.locator("[role='treeitem'][data-status='unchanged']"),
 	).toHaveCount(0);
-});
-
-test("colours a file by what happened to it", async ({ page }) => {
-	await page.goto(EXPRESS);
-	await ready(page);
-
-	const removed = await row(page, "query.js")
-		.getByTestId("name")
-		.evaluate((node) => getComputedStyle(node).color);
-	const modified = await row(page, "package.json")
-		.getByTestId("name")
-		.evaluate((node) => getComputedStyle(node).color);
-
-	expect(removed).toBe("rgb(248, 113, 113)");
-	expect(modified).toBe("rgb(251, 191, 36)");
 });
 
 test("filtering narrows the tree to what matches, and opens the way to it", async ({
@@ -371,7 +377,7 @@ test("shows at a glance which rows open and which are files", async ({
 	await expect(row(page, "package.json").getByTestId("chevron")).toHaveCount(0);
 	await expect(row(page, "package.json").getByTestId("icon")).toHaveAttribute(
 		"data-icon",
-		"file",
+		"file-diff",
 	);
 });
 
