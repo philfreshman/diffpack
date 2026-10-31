@@ -1,6 +1,6 @@
 .header {
 	position: sticky;
-	top: var(--review-bar-height);
+	top: 0;
 	z-index: calc(var(--z-toolbar) - 1);
 
 	display: flex;

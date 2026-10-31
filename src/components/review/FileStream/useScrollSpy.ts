@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
 	cardTops,
-	fileUnderBar,
+	fileAtTop,
 	NO_FILE,
 } from "#/components/review/streamGeometry.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
@@ -9,7 +9,7 @@ import type { StreamRefs } from "./streamRefs.ts";
 
 export function useScrollSpy(
 	files: readonly DiffFileEntry[],
-	{ scrollerRef, contentRef, cardsRef, barRef }: StreamRefs,
+	{ scrollerRef, contentRef, cardsRef }: StreamRefs,
 	onCurrentFileChange: (path: string | null) => void,
 ): number {
 	const [currentIndex, setCurrentIndex] = useState(NO_FILE);
@@ -33,7 +33,7 @@ export function useScrollSpy(
 		let frame = 0;
 		const spy = () => {
 			frame = 0;
-			report(fileUnderBar(scroller, barRef.current, tops));
+			report(fileAtTop(scroller, tops));
 		};
 		const scheduleSpy = () => {
 			if (frame === 0) frame = requestAnimationFrame(spy);
@@ -53,7 +53,7 @@ export function useScrollSpy(
 			resizes.disconnect();
 			scroller.removeEventListener("scroll", scheduleSpy);
 		};
-	}, [files, scrollerRef, contentRef, cardsRef, barRef]);
+	}, [files, scrollerRef, contentRef, cardsRef]);
 
 	return currentIndex;
 }

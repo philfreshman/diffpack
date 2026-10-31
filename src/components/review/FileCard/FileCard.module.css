@@ -59,9 +59,7 @@
 
 .loading {
 	position: sticky;
-	top: calc(
-		var(--review-bar-height) + var(--file-header-height) + var(--space-3)
-	);
+	top: calc(var(--file-header-height) + var(--space-3));
 	z-index: 1;
 	display: inline-flex;
 	align-items: center;

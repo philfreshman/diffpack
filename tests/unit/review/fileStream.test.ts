@@ -5,7 +5,6 @@ import {
 	estimatedRows,
 	FILE_LAYOUTS,
 	nextUnviewed,
-	reviewProgress,
 	STAT_BLOCKS,
 } from "#/lib/review/fileStream.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
@@ -19,28 +18,6 @@ const FILES = [file("a.js"), file("b.js"), file("c.js"), file("d.js")];
 describe("the file layouts", () => {
 	test("offer one file at a time first, then all files", () => {
 		expect(FILE_LAYOUTS).toEqual(["single", "all"]);
-	});
-});
-
-describe("reviewProgress", () => {
-	test("counts only the comparison's files as viewed", () => {
-		const viewed = new Set(["a.js", "gone.js"]);
-
-		expect(reviewProgress(FILES, viewed)).toEqual({
-			viewed: 1,
-			total: 4,
-			done: false,
-		});
-	});
-
-	test("is done once every file is viewed", () => {
-		const viewed = new Set(FILES.map((entry) => entry.path));
-
-		expect(reviewProgress(FILES, viewed).done).toBe(true);
-	});
-
-	test("is never done with nothing to review", () => {
-		expect(reviewProgress([], new Set()).done).toBe(false);
 	});
 });
 

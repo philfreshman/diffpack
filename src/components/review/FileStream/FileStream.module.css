@@ -7,7 +7,6 @@
 }
 
 .stream {
-	--review-bar-height: calc(var(--control-height) + 2 * var(--space-2));
 	--file-header-height: calc(var(--control-height) + var(--space-2));
 
 	flex: 1;

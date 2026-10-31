@@ -14,38 +14,19 @@ export function cardTops(scroller: HTMLElement, cards: HTMLElement): number[] {
 	return Array.from(cards.children, (card) => offsetWithin(scroller, card));
 }
 
-function barHeight(bar: HTMLElement | null): number {
-	return bar?.offsetHeight ?? 0;
-}
-
-export function scrollTopFor(
+export function fileAtTop(
 	scroller: HTMLElement,
-	bar: HTMLElement | null,
-	card: Element,
-): number {
-	return offsetWithin(scroller, card) - barHeight(bar);
-}
-
-export function fileUnderBar(
-	scroller: HTMLElement,
-	bar: HTMLElement | null,
 	tops: readonly number[],
 ): number {
-	const line = scroller.scrollTop + barHeight(bar) + STUCK_TOLERANCE_PX;
+	const line = scroller.scrollTop + STUCK_TOLERANCE_PX;
 	const first = tops[0];
 	if (first === undefined || first > line) return NO_FILE;
 
 	return currentFileIndex(tops, line);
 }
 
-export function hasScrolledUnderBar(
-	scroller: HTMLElement,
-	bar: HTMLElement | null,
-	card: Element,
-): boolean {
-	return (
-		scrollTopFor(scroller, bar, card) < scroller.scrollTop - STUCK_TOLERANCE_PX
-	);
+export function hasScrolledPast(scroller: HTMLElement, card: Element): boolean {
+	return offsetWithin(scroller, card) < scroller.scrollTop - STUCK_TOLERANCE_PX;
 }
 
 export function isOffTarget(scroller: HTMLElement, target: number): boolean {

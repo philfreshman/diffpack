@@ -1,7 +1,7 @@
 import { type RefObject, useEffect, useEffectEvent, useRef } from "react";
 import {
 	isOffTarget,
-	scrollTopFor,
+	offsetWithin,
 } from "#/components/review/streamGeometry.ts";
 import type { StreamRefs } from "./streamRefs.ts";
 
@@ -19,7 +19,6 @@ export function useScrollAim({
 	scrollerRef,
 	contentRef,
 	cardsRef,
-	barRef,
 }: StreamRefs): ScrollAim {
 	const aimedIndexRef = useRef<number | null>(null);
 	const pinnedIndexRef = useRef<number | null>(null);
@@ -42,7 +41,7 @@ export function useScrollAim({
 		const card = pinned === null ? null : cardAt(pinned);
 		if (!scroller || !card) return;
 
-		const target = scrollTopFor(scroller, barRef.current, card);
+		const target = offsetWithin(scroller, card);
 		if (isOffTarget(scroller, target))
 			scroller.scrollTo({ top: target, behavior });
 	}
@@ -96,7 +95,7 @@ export function useScrollAim({
 		const card = cardAt(index);
 		if (!scroller || !card) return;
 
-		const top = scrollTopFor(scroller, barRef.current, card);
+		const top = offsetWithin(scroller, card);
 		aimedIndexRef.current = index;
 		pinnedIndexRef.current = index;
 		scroller.scrollTo({ top, behavior: withinReach(scroller, top, behavior) });

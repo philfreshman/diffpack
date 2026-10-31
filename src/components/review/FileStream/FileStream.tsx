@@ -6,11 +6,11 @@ import {
 } from "react";
 import { DiffScrollbar } from "#/components/diff/DiffScrollbar/DiffScrollbar.tsx";
 import { FileCard } from "#/components/review/FileCard/FileCard.tsx";
-import { ReviewBar } from "#/components/review/ReviewBar/ReviewBar.tsx";
 import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { DiffFileEntry, FileDiff } from "#/lib/worker/protocol.ts";
 import styles from "./FileStream.module.css";
 import { useStreamNavigation } from "./useStreamNavigation.ts";
+import { useStreamShortcuts } from "./useStreamShortcuts.ts";
 
 export interface FileStreamHandle {
 	scrollToFile(path: string): void;
@@ -51,10 +51,9 @@ export function FileStream({
 	const scrollerRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const cardsRef = useRef<HTMLDivElement>(null);
-	const barRef = useRef<HTMLDivElement>(null);
 	const navigation = useStreamNavigation(
 		files,
-		{ scrollerRef, contentRef, cardsRef, barRef },
+		{ scrollerRef, contentRef, cardsRef },
 		onCurrentFileChange,
 	);
 	const layout = { scrollerRef, contentRef };
@@ -64,6 +63,8 @@ export function FileStream({
 		if (isViewed) navigation.keepPlace(path, "next");
 		onViewedChange(path, isViewed);
 	}
+
+	useStreamShortcuts(files, viewed, navigation, changeViewed);
 
 	useImperativeHandle(streamRef, () => ({
 		scrollToFile: navigation.scrollToFile,
@@ -80,15 +81,6 @@ export function FileStream({
 			>
 				<div className={styles.content} ref={contentRef}>
 					<div className={styles.header}>{header}</div>
-					<ReviewBar
-						barRef={barRef}
-						currentIndex={navigation.currentIndex}
-						files={files}
-						onJump={navigation.scrollToFile}
-						onStepFile={navigation.stepFile}
-						onViewedChange={changeViewed}
-						viewed={viewed}
-					/>
 					<div className={styles.cards} ref={cardsRef}>
 						{files.map((entry) => (
 							<FileCard
