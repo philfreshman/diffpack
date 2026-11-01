@@ -19,9 +19,11 @@ export interface FileStreamProps {
 	files: readonly DiffFileEntry[];
 	readFile(entry: DiffFileEntry): Promise<FileDiff>;
 	viewed: ReadonlySet<string>;
+	selectedPath: string;
 	onViewedChange(path: string, viewed: boolean): void;
 	onCurrentFileChange(path: string | null): void;
 	onOpenFile(path: string): void;
+	onSelectFile(path: string): void;
 	onSelectLine(path: string, anchor: LineAnchor): void;
 	split: boolean;
 	showSigns: boolean;
@@ -34,9 +36,11 @@ export function FileStream({
 	files,
 	readFile,
 	viewed,
+	selectedPath,
 	onViewedChange,
 	onCurrentFileChange,
 	onOpenFile,
+	onSelectFile,
 	onSelectLine,
 	split,
 	showSigns,
@@ -44,7 +48,13 @@ export function FileStream({
 	highlightTheme,
 }: FileStreamProps) {
 	const { scrollerRef, contentRef, cardsRef, navigation, changeViewed } =
-		useFileStream(files, viewed, onViewedChange, onCurrentFileChange);
+		useFileStream(
+			files,
+			viewed,
+			selectedPath,
+			onViewedChange,
+			onCurrentFileChange,
+		);
 
 	useImperativeHandle(streamRef, () => ({
 		scrollToFile: navigation.scrollToFile,
@@ -67,6 +77,7 @@ export function FileStream({
 						layout={{ scrollerRef, contentRef }}
 						onCollapse={navigation.keepPlace}
 						onOpenFile={onOpenFile}
+						onSelectFile={onSelectFile}
 						onSelectLine={onSelectLine}
 						onViewedChange={changeViewed}
 						readFile={readFile}
@@ -89,6 +100,7 @@ interface StreamCardsProps extends Pick<
 	| "viewed"
 	| "onViewedChange"
 	| "onOpenFile"
+	| "onSelectFile"
 	| "onSelectLine"
 > {
 	cardsRef: RefObject<HTMLDivElement | null>;
@@ -107,6 +119,7 @@ function StreamCards({
 	onViewedChange,
 	onCollapse,
 	onOpenFile,
+	onSelectFile,
 	onSelectLine,
 }: StreamCardsProps) {
 	return (
@@ -119,6 +132,7 @@ function StreamCards({
 					layout={layout}
 					onCollapse={() => onCollapse(entry.path)}
 					onOpenFile={() => onOpenFile(entry.path)}
+					onSelect={() => onSelectFile(entry.path)}
 					onSelectLine={(anchor) => onSelectLine(entry.path, anchor)}
 					onViewedChange={(isViewed) => onViewedChange(entry.path, isViewed)}
 					readFile={readFile}

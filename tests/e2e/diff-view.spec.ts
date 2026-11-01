@@ -517,24 +517,3 @@ test("a new comparison is a new file, opened at the top", async ({ page }) => {
 		folds(page).and(page.locator(`[data-start="${start}"]`)),
 	).toHaveCount(1);
 });
-
-test("Escape closes the file and leaves the comparison open", async ({
-	page,
-}) => {
-	await open(page, MANIFEST);
-
-	await page.keyboard.press("Escape");
-
-	await expect(page.getByTestId("diff-view")).toBeHidden();
-	await expect(page).toHaveURL("/npm/express/4.18.2/5.1.0");
-	await expect(page.getByRole("tree")).toBeVisible();
-});
-
-test("Escape in a field is the field's, not the viewer's", async ({ page }) => {
-	await open(page, MANIFEST);
-
-	await page.getByRole("combobox", { name: "Package Name" }).click();
-	await page.keyboard.press("Escape");
-
-	await expect(page.getByTestId("diff-view")).toBeVisible();
-});

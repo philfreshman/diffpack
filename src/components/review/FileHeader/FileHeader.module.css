@@ -1,4 +1,6 @@
 .header {
+	--card-edge-width: var(--border-width);
+
 	position: sticky;
 	top: 0;
 	z-index: var(--z-toolbar);
@@ -7,10 +9,16 @@
 	align-items: center;
 	gap: var(--space-2);
 	min-height: var(--file-header-height);
+	margin: calc(-1 * var(--card-edge-width)) calc(-1 * var(--card-edge-width)) 0;
 	padding: 0 var(--space-2) 0 var(--space-1);
+	border: var(--card-edge-width) solid var(--edge-color, var(--color-border));
+	border-bottom: 0;
+	border-radius: var(--radius-surface) var(--radius-surface) 0 0;
 	background: var(--color-background);
+	box-shadow: 0 calc(-1 * var(--radius-surface)) 0 var(--color-canvas);
 	color: var(--color-foreground);
 	font-size: var(--text-body);
+	transition: border-color var(--duration-slow) ease;
 }
 
 .header[data-open] {
@@ -188,6 +196,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.header,
 	.chevron svg,
 	.viewed {
 		transition: none;

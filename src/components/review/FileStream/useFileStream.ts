@@ -6,6 +6,7 @@ import { useStreamShortcuts } from "./useStreamShortcuts.ts";
 export function useFileStream(
 	files: readonly DiffFileEntry[],
 	viewed: ReadonlySet<string>,
+	selectedPath: string,
 	onViewedChange: (path: string, viewed: boolean) => void,
 	onCurrentFileChange: (path: string | null) => void,
 ) {
@@ -23,7 +24,7 @@ export function useFileStream(
 		onViewedChange(path, isViewed);
 	}
 
-	useStreamShortcuts(files, viewed, navigation, changeViewed);
+	useStreamShortcuts(files, viewed, selectedPath, navigation, changeViewed);
 
 	return { scrollerRef, contentRef, cardsRef, navigation, changeViewed };
 }

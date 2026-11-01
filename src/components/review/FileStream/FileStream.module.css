@@ -30,7 +30,6 @@
 .content {
 	display: flex;
 	flex-direction: column;
-	padding-top: var(--space-4);
 }
 
 .cards {

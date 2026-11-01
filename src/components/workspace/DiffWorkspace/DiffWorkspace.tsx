@@ -151,9 +151,11 @@ function streamOf({
 		files: changed,
 		readFile: diffSession.readFile,
 		viewed: review.viewed,
+		selectedPath: files.selectedPath,
 		onViewedChange: review.setViewed,
 		onCurrentFileChange: files.onCurrentFileChange,
 		onOpenFile: links.openFile,
+		onSelectFile: files.pickStreamFile,
 		onSelectLine: links.selectStreamLine,
 		split: viewer.split.value,
 	};
@@ -323,7 +325,7 @@ function SingleFile({
 	highlightTheme,
 }: SingleFileProps) {
 	const viewed = review.viewed.has(shown.path);
-	const [open, setOpen] = useStateResetOn(() => !viewed, [viewed]);
+	const [open, setOpen] = useStateResetOn(() => true, [shown.path]);
 	useKeyShortcut("v", () => review.setViewed(shown.path, !viewed));
 
 	return (
@@ -346,7 +348,6 @@ function SingleFile({
 				)
 			}
 			folded={!open}
-			onClose={onClose}
 			pending={pending}
 			showSigns={showSigns}
 			autohideScrollbar={autohideScrollbar}

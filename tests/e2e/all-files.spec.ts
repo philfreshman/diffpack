@@ -64,7 +64,7 @@ test("shows no ASCII trail behind the files", async ({ page }) => {
 	await expect(page.getByTestId("ascii-trail")).toHaveCount(0);
 });
 
-test("shows every changed file without the summary, and remembers the choice", async ({
+test("shows every changed file without the summary, and remembers the choice, opening the first file on the way back", async ({
 	page,
 }) => {
 	await showAllFiles(page);
@@ -95,10 +95,17 @@ test("shows every changed file without the summary, and remembers the choice", a
 		"true",
 	);
 	await expect(cards(page)).toHaveCount(CHANGED_FILES);
+	const [first = ""] = await cardPaths(page);
+	await expect(treeFile(page, first)).toHaveAttribute("aria-selected", "true");
 
 	await page.getByTestId("layout-single").click();
 	await expect(stream(page)).toHaveCount(0);
-	await expect(page.getByTestId("diff-summary")).toBeVisible();
+	await expect(page).toHaveURL(`${EXPRESS}/${first}`);
+	await expect(page.getByTestId("diff-view")).toHaveAttribute(
+		"data-path",
+		first,
+		ENGINE,
+	);
 	expect(await storedItem(page, FILE_LAYOUT.key)).toBe("single");
 });
 
@@ -206,6 +213,36 @@ test("a file picked in the tree scrolls into view without leaving the comparison
 	await expect(page).toHaveURL(EXPRESS);
 });
 
+test("a click on a card's header selects its file in the tree until the stream scrolls on", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const [first = "", second = "", third = ""] = await cardPaths(page);
+	await card(page, first).getByTestId("collapse-file").click();
+	await card(page, second).getByTestId("collapse-file").click();
+	await expect(card(page, third)).toBeInViewport();
+
+	await card(page, second).getByRole("heading").click();
+
+	await expect(treeFile(page, second)).toHaveAttribute("aria-selected", "true");
+	await expect(treeFile(page, first)).toHaveAttribute("aria-selected", "false");
+	await expect(page).toHaveURL(EXPRESS);
+
+	await stream(page).evaluate((element) =>
+		element.scrollTo(0, element.scrollHeight),
+	);
+	await expect(stream(page)).not.toHaveAttribute("data-current", second);
+	const scrolledTo = (await stream(page).getAttribute("data-current")) ?? "";
+	await expect(treeFile(page, scrolledTo)).toHaveAttribute(
+		"aria-selected",
+		"true",
+	);
+	await expect(treeFile(page, second)).toHaveAttribute(
+		"aria-selected",
+		"false",
+	);
+});
+
 test("a card opens its file on its own", async ({ page }) => {
 	await showAllFiles(page);
 	const [path = ""] = await cardPaths(page);
@@ -233,6 +270,25 @@ test("v folds the file being read and stays on it", async ({ page }) => {
 	await expect(target).toHaveAttribute("data-collapsed");
 	await expect(target).toBeInViewport();
 	await expect(stream(page)).toHaveAttribute("data-current", first);
+});
+
+test("v marks the file selected in the tree over the one scrolled to", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const [first = "", second = "", third = ""] = await cardPaths(page);
+	await card(page, first).getByTestId("collapse-file").click();
+	await card(page, second).getByTestId("collapse-file").click();
+	await expect(card(page, third)).toBeInViewport();
+	await card(page, second).getByRole("heading").click();
+	await expect(treeFile(page, second)).toHaveAttribute("aria-selected", "true");
+	await expect(stream(page)).not.toHaveAttribute("data-current", second);
+	const scrolledTo = (await stream(page).getAttribute("data-current")) ?? "";
+
+	await page.keyboard.press("v");
+
+	await expect(card(page, second)).toHaveAttribute("data-viewed");
+	await expect(card(page, scrolledTo)).not.toHaveAttribute("data-viewed");
 });
 
 test("n jumps to the next file not yet viewed", async ({ page }) => {

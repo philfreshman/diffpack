@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { type RefObject, useEffect, useEffectEvent, useRef } from "react";
+import { useRef } from "react";
 import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { useSetting } from "#/components/storage/useSetting.ts";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
@@ -16,7 +16,6 @@ import { usePackageSearch } from "../usePackageSearch.ts";
 import styles from "./PackageCombobox.module.css";
 
 const SHORTCUT = "/";
-const CLEAR = "Escape";
 
 export interface PackageComboboxProps {
 	adapter: RegistryAdapter;
@@ -83,7 +82,6 @@ function usePackagePicker(adapter: RegistryAdapter, selected: string) {
 	const history = useSetting(searchHistory(adapter.id));
 
 	const input = useShortcutFocus();
-	useEscapeToClear(input, reset);
 
 	const { results, loading, searching } = usePackageSearch(adapter, inputValue);
 	const items = searching ? results : history.value;
@@ -99,11 +97,6 @@ function usePackagePicker(adapter: RegistryAdapter, selected: string) {
 
 		setInputValue(trimmed);
 		navigate({ to: buildPath(adapter, { package: trimmed }) });
-	}
-
-	function reset() {
-		setInputValue("");
-		navigate({ to: buildPath(adapter, {}) });
 	}
 
 	return {
@@ -125,29 +118,6 @@ function useShortcutFocus() {
 	});
 
 	return input;
-}
-
-// Escape on an open list only closes it. Listening on the input runs ahead of
-// Base UI's handler, so `aria-expanded` still shows whether the list was open.
-function useEscapeToClear(
-	input: RefObject<HTMLInputElement | null>,
-	onClear: () => void,
-) {
-	const handler = useEffectEvent(onClear);
-
-	useEffect(() => {
-		const element = input.current;
-		if (!element) return;
-
-		function onKeyDown(event: KeyboardEvent) {
-			if (event.key !== CLEAR || !element?.value) return;
-			if (element.getAttribute("aria-expanded") === "true") return;
-			handler();
-		}
-
-		element.addEventListener("keydown", onKeyDown);
-		return () => element.removeEventListener("keydown", onKeyDown);
-	}, [input]);
 }
 
 // The test id is needed because an open popup makes this slot inert, leaving

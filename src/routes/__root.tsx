@@ -8,6 +8,7 @@ import {
 import { useState } from "react";
 import { Analytics } from "#/components/Analytics.tsx";
 import { NotFound } from "#/components/NotFound/NotFound.tsx";
+import { useEscapeReleasesFocus } from "#/components/ui/useEscapeReleasesFocus.ts";
 import { GA_SCRIPT, GA_SRC } from "#/lib/analytics.ts";
 import { createQueryClient } from "#/lib/query/queryClient.ts";
 import { THEME_SCRIPT } from "#/lib/themeScript.ts";
@@ -75,6 +76,7 @@ export const Route = createRootRoute({
 function RootDocument() {
 	// Not a module singleton, which the server would share between requests.
 	const [queryClient] = useState(createQueryClient);
+	useEscapeReleasesFocus();
 
 	return (
 		<html lang="en" suppressHydrationWarning>

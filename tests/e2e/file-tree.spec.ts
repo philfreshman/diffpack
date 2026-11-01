@@ -160,6 +160,26 @@ test("filtering narrows the tree to what matches, and opens the way to it", asyn
 	await expect(row(page, "package.json")).toHaveCount(0);
 });
 
+test("the filter's clear button empties it and keeps the focus there", async ({
+	page,
+}) => {
+	await page.goto(EXPRESS);
+	await ready(page);
+	const filter = page.getByRole("searchbox", {
+		name: "Filter files and folders",
+	});
+	const clear = page.getByRole("button", { name: "Clear filter" });
+
+	await expect(clear).toHaveCount(0);
+	await filter.fill("router");
+	await clear.click();
+
+	await expect(filter).toHaveValue("");
+	await expect(filter).toBeFocused();
+	await expect(clear).toHaveCount(0);
+	await expect(row(page, "package.json")).toBeVisible();
+});
+
 const treeOptions = (page: Page) =>
 	page.getByRole("button", { name: "File tree options" });
 const option = (page: Page, name: string) =>

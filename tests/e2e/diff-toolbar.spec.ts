@@ -84,11 +84,6 @@ test("heads the open file with its path, counts and viewed toggle", async ({
 	await expect(
 		page.getByRole("treeitem").and(page.locator('[data-path="package.json"]')),
 	).toHaveAttribute("data-viewed");
-	await expect(view.getByTestId("diff-scroller")).toBeHidden();
-
-	await view.getByRole("heading").dblclick();
-
-	await expect(view.getByTestId("diff-scroller")).toBeVisible();
 
 	await viewed.uncheck();
 
@@ -490,6 +485,22 @@ test("expanding every line of the folded file leaves it folded", async ({
 		header(page).getByRole("button", { name: "Fold all lines" }),
 	).toHaveAttribute("aria-pressed", "true");
 	await expect(diffBody(page)).toBeHidden();
+});
+
+test("v marks the single open file viewed and leaves it open", async ({
+	page,
+}) => {
+	await open(page, MANIFEST);
+
+	await page.keyboard.press("v");
+
+	await expect(header(page).getByTestId("viewed-toggle")).toBeChecked();
+	await expect(diffBody(page)).toBeVisible();
+
+	await page.keyboard.press("v");
+
+	await expect(header(page).getByTestId("viewed-toggle")).not.toBeChecked();
+	await expect(diffBody(page)).toBeVisible();
 });
 
 test("v typed into the tree filter is just typing", async ({ page }) => {
