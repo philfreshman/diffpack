@@ -38,9 +38,14 @@
 	appearance: none;
 }
 
-.trailing {
+.clear,
+.shortcut {
 	position: absolute;
 	top: 50%;
 	right: var(--space-2);
 	translate: 0 -50%;
+}
+
+.field:focus-within .shortcut {
+	display: none;
 }

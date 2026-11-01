@@ -37,7 +37,7 @@ export function TreeFilter({ filter, onFilterChange }: TreeFilterProps) {
 			{filter ? (
 				<IconButton
 					aria-label="Clear filter"
-					className={styles.trailing}
+					className={styles.clear}
 					onClick={() => {
 						onFilterChange("");
 						input.current?.focus();
@@ -47,7 +47,7 @@ export function TreeFilter({ filter, onFilterChange }: TreeFilterProps) {
 					<CloseIcon width="14" height="14" />
 				</IconButton>
 			) : (
-				<Kbd className={styles.trailing} keys={SHORTCUT.toUpperCase()} />
+				<Kbd className={styles.shortcut} keys={SHORTCUT.toUpperCase()} />
 			)}
 		</div>
 	);
