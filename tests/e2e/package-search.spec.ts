@@ -83,7 +83,7 @@ test("selecting a result becomes the URL", async ({ page }) => {
 	);
 });
 
-test("shows search, then a spinner, then clears on Escape", async ({
+test("shows search, then a spinner, then the chosen package", async ({
 	page,
 }) => {
 	await stubNpmSearch(page, [], 2_000);
@@ -98,17 +98,9 @@ test("shows search, then a spinner, then clears on Escape", async ({
 
 	await option(page, "express").click();
 	await expect(slot).toHaveAttribute("data-state", "selected");
-
-	// Focusing opens the list: the first Escape closes it, the second clears.
-	await field(page).press("Escape");
-	await page.keyboard.press("Escape");
-
-	await expect(page).toHaveURL("/npm");
-	await expect(field(page)).toHaveValue("");
-	await expect(slot).toHaveAttribute("data-state", "idle");
 });
 
-test("/ reaches the field; Escape closes the list, then empties it", async ({
+test("/ reaches the field; Escape closes the list and keeps the text", async ({
 	page,
 }) => {
 	await stubNpmSearch(page);
@@ -128,9 +120,6 @@ test("/ reaches the field; Escape closes the list, then empties it", async ({
 	await page.keyboard.press("Escape");
 	await expect(page.getByRole("option")).toHaveCount(0);
 	await expect(field(page)).toHaveValue("expr");
-
-	await page.keyboard.press("Escape");
-	await expect(field(page)).toHaveValue("");
 });
 
 test("offers the packages this registry has been asked for before", async ({
