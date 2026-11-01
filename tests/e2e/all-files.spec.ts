@@ -64,7 +64,7 @@ test("shows no ASCII trail behind the files", async ({ page }) => {
 	await expect(page.getByTestId("ascii-trail")).toHaveCount(0);
 });
 
-test("shows every changed file without the summary, and remembers the choice", async ({
+test("shows every changed file without the summary, and remembers the choice, opening the first file on the way back", async ({
 	page,
 }) => {
 	await showAllFiles(page);
@@ -95,10 +95,17 @@ test("shows every changed file without the summary, and remembers the choice", a
 		"true",
 	);
 	await expect(cards(page)).toHaveCount(CHANGED_FILES);
+	const [first = ""] = await cardPaths(page);
+	await expect(treeFile(page, first)).toHaveAttribute("aria-selected", "true");
 
 	await page.getByTestId("layout-single").click();
 	await expect(stream(page)).toHaveCount(0);
-	await expect(page.getByTestId("diff-summary")).toBeVisible();
+	await expect(page).toHaveURL(`${EXPRESS}/${first}`);
+	await expect(page.getByTestId("diff-view")).toHaveAttribute(
+		"data-path",
+		first,
+		ENGINE,
+	);
 	expect(await storedItem(page, FILE_LAYOUT.key)).toBe("single");
 });
 
