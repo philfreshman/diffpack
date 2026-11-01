@@ -5,7 +5,6 @@
 	flex-direction: column;
 	padding: 0;
 	overflow: hidden;
-	border-radius: var(--radius-md);
 	background-color: var(--color-summary-surface);
 }
 
@@ -13,7 +12,7 @@
 	display: flex;
 	flex: none;
 	flex-direction: column;
-	gap: var(--space-3);
+	gap: var(--gap-stack);
 	padding: var(--space-4);
 	background-color: var(--color-summary-overview);
 }
@@ -27,14 +26,14 @@
 
 .stats {
 	display: flex;
-	gap: var(--space-8);
+	gap: var(--gap-section);
 	margin: 0;
 }
 
 .stat {
 	display: flex;
 	flex-direction: column-reverse;
-	gap: var(--space-1);
+	gap: var(--gap-tight);
 }
 
 .label {
@@ -43,8 +42,8 @@
 
 .value {
 	margin: 0;
-	font-size: var(--text-xl);
-	line-height: 1.2;
+	font-size: var(--text-title);
+	line-height: var(--leading-tight);
 	font-variant-numeric: tabular-nums;
 }
 
@@ -59,9 +58,9 @@
 .bar {
 	display: flex;
 	height: var(--space-2);
-	gap: 2px;
+	gap: var(--space-1);
 	overflow: hidden;
-	border-radius: var(--radius-full);
+	border-radius: var(--radius-pill);
 }
 
 .added,

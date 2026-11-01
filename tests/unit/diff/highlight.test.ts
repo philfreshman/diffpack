@@ -57,7 +57,7 @@ test("has nothing to say about an empty file", () => {
 	expect(detectLanguage("LICENSE", unchanged("", "", ""))).toBe(null);
 });
 
-describe("highlightLine", () => {
+describe("highlightLine marking up a line", () => {
 	test("marks up the line in the file's language", () => {
 		expect(highlightLine('"version": "26.7.0",', "json")).toContain(
 			'class="hljs-attr"',
@@ -89,7 +89,9 @@ describe("highlightLine", () => {
 
 		expect(highlightLine(line, "json")).toBe(line);
 	});
+});
 
+describe("highlightLine marking the changed part", () => {
 	test("marks the part of the line that changed", () => {
 		const range = { start: 1, end: 4 };
 

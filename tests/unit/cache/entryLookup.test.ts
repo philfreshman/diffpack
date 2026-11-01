@@ -85,7 +85,9 @@ describe("looking a comparison up in the server's cache", () => {
 		expect(calls[0]?.init?.credentials).toBe("omit");
 		expect(calls[0]?.init?.referrerPolicy).toBe("no-referrer");
 	});
+});
 
+describe("a cache lookup that misses", () => {
 	test("is a miss when the server has no entry", async () => {
 		const { lookUp } = lookupAnswering(() => json({}, 404));
 
@@ -136,7 +138,9 @@ describe("looking a comparison up in the server's cache", () => {
 
 		expect(await lookUp(zod)).not.toBeNull();
 	});
+});
 
+describe("a cache lookup against a slow server", () => {
 	test("lets an entry that has begun to arrive finish, however long it takes", async () => {
 		const lookUp = createEntryLookup({
 			fetcher: async (_url, init) =>

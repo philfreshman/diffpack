@@ -1,4 +1,4 @@
-import { Panel } from "#/components/ui/Panel/Panel.tsx";
+import { Notice } from "#/components/ui/Notice/Notice.tsx";
 import { type FailureCode, isProxyLimit } from "#/lib/failure/failure.ts";
 import { ProxyLimitNotice } from "../ProxyLimitNotice/ProxyLimitNotice.tsx";
 import { ViewportCenter } from "../ViewportCenter/ViewportCenter.tsx";
@@ -32,9 +32,9 @@ export function FailureNotice({
 	...failure
 }: ShownFailure & { centered?: boolean }) {
 	const notice = (
-		<Panel>
+		<Notice tone={isProxyLimit(failure.code) ? "neutral" : "danger"}>
 			<FailureMessage {...failure} />
-		</Panel>
+		</Notice>
 	);
 
 	return centered ? <ViewportCenter>{notice}</ViewportCenter> : notice;

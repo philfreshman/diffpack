@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { highlightLine } from "#/lib/diff/highlight.ts";
 import { markRange } from "#/lib/diff/markRange.ts";
 
-describe("markRange", () => {
+describe("markRange inside a line", () => {
 	test("marks the changed characters of a plain escaped line", () => {
 		expect(markRange("a &lt; b", { start: 2, end: 3 })).toBe(
 			"a <mark>&lt;</mark> b",
@@ -43,7 +43,9 @@ describe("markRange", () => {
 		);
 		expect(isWellNested(marked)).toBe(true);
 	});
+});
 
+describe("markRange at the edges of a line", () => {
 	test("leaves the line untouched when the range is empty", () => {
 		const html = '<span class="a">a &amp; b</span>';
 

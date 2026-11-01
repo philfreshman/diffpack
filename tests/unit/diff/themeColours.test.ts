@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readThemeColours } from "#/lib/diff/themeColours.ts";
 
-describe("readThemeColours", () => {
+describe("readThemeColours background, text and change hints", () => {
 	test("reads the `.hljs` background and base colour", () => {
 		const css = ".hljs {\n  background: #102030;\n  color: #a0b0c0;\n}";
 
@@ -43,7 +43,9 @@ describe("readThemeColours", () => {
 			{ r: 255, g: 0, b: 0 },
 		]);
 	});
+});
 
+describe("readThemeColours selectors and comments", () => {
 	test("counts a colour shared in a selector list for `.hljs-addition`", () => {
 		const css = `.hljs { background: #000000 }
 .hljs-addition,
@@ -80,7 +82,9 @@ describe("readThemeColours", () => {
 		expect(colours.addition).toEqual([{ r: 0, g: 255, b: 0 }]);
 		expect(colours.deletion).toEqual([]);
 	});
+});
 
+describe("readThemeColours colour values", () => {
 	test.each([
 		["#123", { r: 17, g: 34, b: 51 }],
 		["#AbCdEf", { r: 171, g: 205, b: 239 }],
@@ -114,7 +118,9 @@ describe("readThemeColours", () => {
 
 		expect(() => readThemeColours(css)).toThrow("no `.hljs` background");
 	});
+});
 
+describe("readThemeColours across several rules", () => {
 	test("collects each text colour of the highlight rules once", () => {
 		const css = `.hljs { background: #000000; color: #ffffff }
 .hljs-keyword { color: #ff00ff }

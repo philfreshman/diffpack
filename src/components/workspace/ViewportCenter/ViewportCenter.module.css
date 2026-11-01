@@ -1,5 +1,5 @@
 .stage {
-	--window-middle-to-stage-bottom: calc(50dvh - var(--workspace-inset));
+	--window-middle-to-stage-bottom: 50dvh;
 	--below-mirrored-half: max(
 		0px,
 		2 * var(--window-middle-to-stage-bottom) - 100%

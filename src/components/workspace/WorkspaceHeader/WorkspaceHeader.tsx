@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from "react";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import { SidebarIcon } from "#/components/ui/icons.tsx";
 import { requireAdapter } from "#/lib/registries/index.ts";
@@ -9,14 +10,20 @@ import styles from "./WorkspaceHeader.module.css";
 
 export function WorkspaceHeader({ slug }: { slug: DiffSlug }) {
 	const adapter = requireAdapter(slug.registry);
+	const collapsed = useSyncExternalStore(
+		sidebar.subscribe,
+		sidebar.collapsed,
+		() => false,
+	);
 
 	return (
 		<header className={styles.header}>
 			<IconButton
-				className={styles.expand}
-				aria-label="Expand sidebar"
-				title="Expand sidebar"
-				onClick={() => sidebar.open()}
+				className={styles.toggle}
+				aria-label="Toggle sidebar"
+				aria-expanded={!collapsed}
+				title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+				onClick={() => sidebar.toggle()}
 			>
 				<SidebarIcon className={styles.sidebarIcon} width="16" height="16" />
 			</IconButton>

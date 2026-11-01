@@ -1,5 +1,6 @@
 import { Menu as Base } from "@base-ui/react/menu";
 import type { ReactElement, ReactNode } from "react";
+import popoverStyles from "#/components/ui/Popover/Popover.module.css";
 import styles from "./Menu.module.css";
 
 export interface MenuProps {
@@ -25,7 +26,9 @@ export function Menu({
 					align="start"
 					sideOffset={4}
 				>
-					<Base.Popup className={styles.popup}>{children}</Base.Popup>
+					<Base.Popup className={`${popoverStyles.surface} ${styles.popup}`}>
+						{children}
+					</Base.Popup>
 				</Base.Positioner>
 			</Base.Portal>
 		</Base.Root>
@@ -41,7 +44,11 @@ export function MenuLinkItem({
 	children: ReactNode;
 }) {
 	return (
-		<Base.LinkItem className={styles.item} render={render} closeOnClick>
+		<Base.LinkItem
+			className={`${popoverStyles.item} ${styles.item}`}
+			render={render}
+			closeOnClick
+		>
 			{children}
 		</Base.LinkItem>
 	);

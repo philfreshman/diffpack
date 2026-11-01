@@ -106,6 +106,14 @@ describe("an incomplete record", () => {
 		expect(advisoryFrom(null, NPM_X).id).toBe("");
 	});
 
+	test("encodes the id in the link to osv.dev", () => {
+		expect(advisoryFrom({ id: "a/b c" }, NPM_X).url).toBe(
+			"https://osv.dev/vulnerability/a%2Fb%20c",
+		);
+	});
+});
+
+describe("an incomplete record's summary", () => {
 	test("falls back to the first line of the details for a summary", () => {
 		const record = { id: "PYSEC-1", details: "Jinja is unsafe.\nMore here." };
 		expect(
@@ -113,6 +121,18 @@ describe("an incomplete record", () => {
 		).toBe("Jinja is unsafe.");
 	});
 
+	test("cuts a long first line of the details short", () => {
+		const record = { id: "OSV-4", details: `${"a".repeat(250)}\nMore.` };
+		expect(advisoryFrom(record, NPM_X).summary).toBe(`${"a".repeat(200)}…`);
+	});
+
+	test("falls back to the details when the summary is only whitespace", () => {
+		const record = { id: "OSV-5", summary: "   ", details: "Details." };
+		expect(advisoryFrom(record, NPM_X).summary).toBe("Details.");
+	});
+});
+
+describe("an incomplete record's affected entries", () => {
 	test("matches a PyPI name however it is spelled", () => {
 		const record = {
 			id: "PYSEC-2",
@@ -156,21 +176,5 @@ describe("an incomplete record", () => {
 		const advisory = advisoryFrom(record, NPM_X);
 		expect(advisory.fixedIn).toEqual([]);
 		expect(advisory.hints.functions).toEqual([]);
-	});
-
-	test("cuts a long first line of the details short", () => {
-		const record = { id: "OSV-4", details: `${"a".repeat(250)}\nMore.` };
-		expect(advisoryFrom(record, NPM_X).summary).toBe(`${"a".repeat(200)}…`);
-	});
-
-	test("falls back to the details when the summary is only whitespace", () => {
-		const record = { id: "OSV-5", summary: "   ", details: "Details." };
-		expect(advisoryFrom(record, NPM_X).summary).toBe("Details.");
-	});
-
-	test("encodes the id in the link to osv.dev", () => {
-		expect(advisoryFrom({ id: "a/b c" }, NPM_X).url).toBe(
-			"https://osv.dev/vulnerability/a%2Fb%20c",
-		);
 	});
 });

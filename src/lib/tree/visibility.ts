@@ -14,6 +14,7 @@ export function rowKey(entry: DiffFileEntry): string {
 export interface TreeView {
 	filter: string;
 	onlyModified: boolean;
+	hiddenPaths: ReadonlySet<string>;
 	expandedKeys: ReadonlySet<string>;
 	/** Outranks auto-expansion. */
 	collapsedKeys: ReadonlySet<string>;
@@ -45,7 +46,16 @@ function isVisible(entry: DiffFileEntry, view: TreeView): boolean {
 		.includes(view.filter.toLowerCase());
 	const changed = entry.status !== "unchanged";
 
-	return matchesFilter && (!view.onlyModified || changed);
+	return (
+		matchesFilter && (!view.onlyModified || changed) && !isHidden(entry, view)
+	);
+}
+
+function isHidden(entry: DiffFileEntry, view: TreeView): boolean {
+	if (view.hiddenPaths.size === 0) return false;
+	if (entry.type === "file") return view.hiddenPaths.has(entry.path);
+
+	return !hasVisibleDescendant(entry, view);
 }
 
 // A sole top-level folder opens by itself; only shutting it by hand overrides that.

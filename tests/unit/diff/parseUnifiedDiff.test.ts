@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { parseUnifiedDiff } from "#/lib/diff/parseUnifiedDiff.ts";
 
-describe("parseUnifiedDiff", () => {
+describe("parseUnifiedDiff numbering and headers", () => {
 	test("numbers each line against the sides it exists on", () => {
 		const lines = parseUnifiedDiff({
 			isDiff: true,
@@ -46,7 +46,9 @@ describe("parseUnifiedDiff", () => {
 			{ type: "removed", content: "one", oldNumber: 1, newNumber: null },
 		]);
 	});
+});
 
+describe("parseUnifiedDiff reading markers", () => {
 	test("a file that did not change is all of it, unmarked", () => {
 		// The engine returns an unchanged file as its raw content: no markers, no header.
 		const lines = parseUnifiedDiff({

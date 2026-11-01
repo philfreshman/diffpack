@@ -1,7 +1,4 @@
 .viewer {
-	--diff-line-height: 23px;
-	--gutter-min-width: 50px;
-
 	position: relative;
 
 	display: flex;
@@ -9,8 +6,8 @@
 	min-width: 0;
 	min-height: 0;
 	flex-direction: column;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-surface);
 	background: var(--color-background);
 	overflow: hidden;
 }
@@ -21,10 +18,23 @@
 	transition: filter var(--duration-fast) ease;
 }
 
+.body {
+	position: relative;
+	display: flex;
+	flex: 0 1 auto;
+	min-height: 0;
+	flex-direction: column;
+}
+
+.body[hidden] {
+	display: none;
+}
+
 .scroller {
 	flex: 0 1 auto;
 	min-height: 0;
 	overflow: auto;
+	padding-inline-end: var(--scrollbar-width);
 	/* DiffScrollbar draws over this edge instead. */
 	scrollbar-width: none;
 	/* Not `auto`: virtual rows change the hit element on every scroll step, so the cursor flickers. */
@@ -42,4 +52,10 @@
 	position: relative;
 	width: 100%;
 	border-collapse: collapse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.viewer[data-pending] {
+		transition: none;
+	}
 }

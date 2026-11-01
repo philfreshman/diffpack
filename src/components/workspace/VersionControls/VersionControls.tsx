@@ -19,28 +19,17 @@ export function VersionControls({
 	slug: DiffSlug;
 }) {
 	const navigate = useNavigate();
-	const { list, loading, error } = useVersions(adapter, slug.package);
-	// A selection made here lasts until the URL or the list changes.
-	const [selection, setSelection] = useStateResetOn(
-		() => resolveSelection(list, { from: slug.from, to: slug.to }),
-		[list, slug.from, slug.to],
-	);
-
-	const { from, to } = selection;
-	const ready = Boolean(slug.package && from && to);
-	// Keeps the open file: a path missing from the new pair reads as removed.
-	const target = buildPath(adapter, {
-		package: slug.package,
+	const {
+		list,
+		loading,
+		error,
 		from,
 		to,
-		file: slug.file,
-	});
-
-	// The session dedupes prefetches and swallows their failures.
-	function prefetch() {
-		if (!ready) return;
-		diffSession.prefetch({ registry: adapter.id, pkg: slug.package, from, to });
-	}
+		setSelection,
+		ready,
+		target,
+		prefetch,
+	} = useVersionPair(adapter, slug);
 
 	return (
 		<>
@@ -80,4 +69,41 @@ export function VersionControls({
 			</Button>
 		</>
 	);
+}
+
+function useVersionPair(adapter: RegistryAdapter, slug: DiffSlug) {
+	const { list, loading, error } = useVersions(adapter, slug.package);
+	// A selection made here lasts until the URL or the list changes.
+	const [selection, setSelection] = useStateResetOn(
+		() => resolveSelection(list, { from: slug.from, to: slug.to }),
+		[list, slug.from, slug.to],
+	);
+
+	const { from, to } = selection;
+	const ready = Boolean(slug.package && from && to);
+	// Keeps the open file: a path missing from the new pair reads as removed.
+	const target = buildPath(adapter, {
+		package: slug.package,
+		from,
+		to,
+		file: slug.file,
+	});
+
+	// The session dedupes prefetches and swallows their failures.
+	function prefetch() {
+		if (!ready) return;
+		diffSession.prefetch({ registry: adapter.id, pkg: slug.package, from, to });
+	}
+
+	return {
+		list,
+		loading,
+		error,
+		from,
+		to,
+		setSelection,
+		ready,
+		target,
+		prefetch,
+	};
 }

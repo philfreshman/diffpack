@@ -1,4 +1,5 @@
 import { getJson } from "./http.ts";
+import { compareVersionsDesc } from "./semver.ts";
 import type { Fetcher, RegistryAdapter } from "./types.ts";
 
 const REGISTRY_URL = "https://registry.npmjs.org";
@@ -52,8 +53,7 @@ export function createNpmAdapter(fetcher: Fetcher = fetch): RegistryAdapter {
 				`npm: no versions for ${name}`,
 			);
 
-			// npm lists versions oldest-first; every selector wants newest-first.
-			return Object.keys(data.versions).reverse();
+			return Object.keys(data.versions).sort(compareVersionsDesc);
 		},
 
 		downloadUrl(name, version) {

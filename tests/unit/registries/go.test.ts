@@ -205,7 +205,7 @@ function goSearchAnswer(
 	return json({ items, total: items.length });
 }
 
-describe("go keyword search", () => {
+describe("go keyword search through the proxy", () => {
 	test("asks the diffpack proxy and lists each module once, in pkg.go.dev's order", async () => {
 		const { fetcher, calls } = stubFetch(() =>
 			goSearchAnswer([
@@ -248,7 +248,9 @@ describe("go keyword search", () => {
 			},
 		]);
 	});
+});
 
+describe("go keyword search and the standard library", () => {
 	test("leaves out the standard library, which the Go module proxy does not serve", async () => {
 		const { fetcher } = stubFetch(() =>
 			goSearchAnswer([

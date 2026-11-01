@@ -3,14 +3,13 @@
 	flex: 0 0 auto;
 	min-height: 0;
 	width: var(--tree-panel-width, 320px);
-	border-right: 1px solid var(--color-border);
+	border-right: var(--border-width) solid var(--color-border);
 }
 
 /* Pinned to the diff's side at a minimum width: below it the content slides out of the window instead of crushing. */
 .content {
 	position: absolute;
 	inset: 0 0 0 auto;
-	margin-top: 10px;
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-2);
@@ -23,7 +22,7 @@
 :global(html[data-tree-position="right"]) .panel {
 	order: 1;
 	border-right: 0;
-	border-left: 1px solid var(--color-border);
+	border-left: var(--border-width) solid var(--color-border);
 }
 
 :global(html[data-tree-position="right"]) .content {
@@ -60,9 +59,7 @@
 	display: flex;
 	align-items: center;
 	gap: var(--space-2);
-	margin-top: calc(
-		var(--workspace-header-height) + var(--space-4) - var(--space-2)
-	);
+	margin-top: calc(var(--workspace-inset) - var(--space-2));
 	margin-bottom: calc(var(--space-3) - var(--space-2));
 }
 
@@ -106,8 +103,8 @@
 	width: 1.5rem;
 	height: 1.5rem;
 	padding: 0;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-full);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-pill);
 	background-color: var(--color-background);
 	color: var(--color-foreground);
 	cursor: pointer;
@@ -141,6 +138,6 @@
 }
 
 .collapse:focus-visible {
-	outline: 2px solid var(--color-focus-ring);
-	outline-offset: 2px;
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: var(--focus-ring-offset);
 }

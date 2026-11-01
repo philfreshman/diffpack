@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { type RefObject, useEffect, useEffectEvent, useRef } from "react";
+import { useRef } from "react";
 import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { useSetting } from "#/components/storage/useSetting.ts";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
@@ -16,7 +16,6 @@ import { usePackageSearch } from "../usePackageSearch.ts";
 import styles from "./PackageCombobox.module.css";
 
 const SHORTCUT = "/";
-const CLEAR = "Escape";
 
 export interface PackageComboboxProps {
 	adapter: RegistryAdapter;
@@ -24,38 +23,15 @@ export interface PackageComboboxProps {
 }
 
 export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
-	const navigate = useNavigate();
-	const [inputValue, setInputValue] = useStateResetOn(
-		() => selected,
-		[selected],
-	);
-	// localStorage, so history is empty until after hydration.
-	const history = useSetting(searchHistory(adapter.id));
-
-	const input = useShortcutFocus();
-	useEscapeToClear(input, reset);
-
-	const { results, loading, searching } = usePackageSearch(adapter, inputValue);
-	const items = searching ? results : history.value;
-
-	function choose(name: string) {
-		const trimmed = name.trim();
-		if (!trimmed) return;
-
-		const entry = results.find((result) => result.name === trimmed) ?? {
-			name: trimmed,
-		};
-		history.set(addToHistory(history.value, entry));
-
-		setInputValue(trimmed);
-		navigate({ to: buildPath(adapter, { package: trimmed }) });
-	}
-
-	function reset() {
-		setInputValue("");
-		navigate({ to: buildPath(adapter, {}) });
-	}
-
+	const {
+		input,
+		inputValue,
+		setInputValue,
+		items,
+		loading,
+		searching,
+		choose,
+	} = usePackagePicker(adapter, selected);
 	const state = selected ? "selected" : loading ? "searching" : "idle";
 
 	return (
@@ -96,6 +72,44 @@ export function PackageCombobox({ adapter, selected }: PackageComboboxProps) {
 	);
 }
 
+function usePackagePicker(adapter: RegistryAdapter, selected: string) {
+	const navigate = useNavigate();
+	const [inputValue, setInputValue] = useStateResetOn(
+		() => selected,
+		[selected],
+	);
+	// localStorage, so history is empty until after hydration.
+	const history = useSetting(searchHistory(adapter.id));
+
+	const input = useShortcutFocus();
+
+	const { results, loading, searching } = usePackageSearch(adapter, inputValue);
+	const items = searching ? results : history.value;
+
+	function choose(name: string) {
+		const trimmed = name.trim();
+		if (!trimmed) return;
+
+		const entry = results.find((result) => result.name === trimmed) ?? {
+			name: trimmed,
+		};
+		history.set(addToHistory(history.value, entry));
+
+		setInputValue(trimmed);
+		navigate({ to: buildPath(adapter, { package: trimmed }) });
+	}
+
+	return {
+		input,
+		inputValue,
+		setInputValue,
+		items,
+		loading,
+		searching,
+		choose,
+	};
+}
+
 function useShortcutFocus() {
 	const input = useRef<HTMLInputElement>(null);
 	useKeyShortcut(SHORTCUT, () => {
@@ -104,29 +118,6 @@ function useShortcutFocus() {
 	});
 
 	return input;
-}
-
-// Escape on an open list only closes it. Listening on the input runs ahead of
-// Base UI's handler, so `aria-expanded` still shows whether the list was open.
-function useEscapeToClear(
-	input: RefObject<HTMLInputElement | null>,
-	onClear: () => void,
-) {
-	const handler = useEffectEvent(onClear);
-
-	useEffect(() => {
-		const element = input.current;
-		if (!element) return;
-
-		function onKeyDown(event: KeyboardEvent) {
-			if (event.key !== CLEAR || !element?.value) return;
-			if (element.getAttribute("aria-expanded") === "true") return;
-			handler();
-		}
-
-		element.addEventListener("keydown", onKeyDown);
-		return () => element.removeEventListener("keydown", onKeyDown);
-	}, [input]);
 }
 
 // The test id is needed because an open popup makes this slot inert, leaving

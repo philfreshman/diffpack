@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { PROXY_ORIGIN } from "#/lib/proxy/origin.ts";
 import { getJson } from "./http.ts";
-import type { Fetcher, RegistryAdapter } from "./types.ts";
+import type { Fetcher, PackagePath, RegistryAdapter } from "./types.ts";
 
 const PACKAGIST_URL = "https://packagist.org";
 const NAME_WIDTH = 2;
@@ -22,6 +22,27 @@ function encodedName(name: string): string {
 	return name.split("/").map(encodeURIComponent).join("/");
 }
 
+const vendorPackagePath: PackagePath = {
+	parse(segments) {
+		return {
+			name: segments.slice(0, NAME_WIDTH).join("/").toLowerCase(),
+			rest: segments.slice(NAME_WIDTH),
+		};
+	},
+
+	toSegments(name) {
+		return name.toLowerCase().split("/").filter(Boolean);
+	},
+};
+
+function packagistPage(name: string, version: string): string {
+	if (!PACKAGE_NAME.test(name)) {
+		return `${PACKAGIST_URL}/search/?q=${encodeURIComponent(name)}`;
+	}
+
+	return `${PACKAGIST_URL}/packages/${encodedName(name)}#${encodeURIComponent(version)}`;
+}
+
 export function createComposerAdapter(
 	fetcher: Fetcher = fetch,
 	proxyOrigin = PROXY_ORIGIN,
@@ -38,18 +59,7 @@ export function createComposerAdapter(
 			title: "Open on Packagist",
 			opens: "page",
 		},
-		packagePath: {
-			parse(segments) {
-				return {
-					name: segments.slice(0, NAME_WIDTH).join("/").toLowerCase(),
-					rest: segments.slice(NAME_WIDTH),
-				};
-			},
-
-			toSegments(name) {
-				return name.toLowerCase().split("/").filter(Boolean);
-			},
-		},
+		packagePath: vendorPackagePath,
 
 		async search(query, signal) {
 			const payload = await getJson(
@@ -79,13 +89,7 @@ export function createComposerAdapter(
 			return releases.map((release) => release.version);
 		},
 
-		downloadUrl(name, version) {
-			if (!PACKAGE_NAME.test(name)) {
-				return `${PACKAGIST_URL}/search/?q=${encodeURIComponent(name)}`;
-			}
-
-			return `${PACKAGIST_URL}/packages/${encodedName(name)}#${encodeURIComponent(version)}`;
-		},
+		downloadUrl: packagistPage,
 	};
 }
 

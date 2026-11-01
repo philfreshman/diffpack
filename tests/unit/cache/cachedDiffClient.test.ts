@@ -90,6 +90,25 @@ describe("a diff client in front of the server's cache", () => {
 		expect(calls).toEqual([]);
 	});
 
+	test("reports no downloads for a comparison the cache holds", async () => {
+		const { client } = clientFinding(entry);
+		const heard: string[] = [];
+
+		await client.buildTree(zod, ({ side }) => heard.push(side));
+
+		expect(heard).toEqual([]);
+	});
+
+	test("warms downloads the way the worker does", async () => {
+		const { client, calls } = clientFinding(entry);
+
+		await client.prefetch(zod);
+
+		expect(calls).toEqual(["prefetch zod"]);
+	});
+});
+
+describe("a diff client working out what a cached entry lacks", () => {
 	test("works out a file the cache has no patch for on this device", async () => {
 		const { client, calls } = clientFinding(entry);
 		await client.buildTree(zod);
@@ -110,6 +129,34 @@ describe("a diff client in front of the server's cache", () => {
 		expect(calls).toContain("get constructor");
 	});
 
+	test("builds a cached comparison here once, however many files it lacks", async () => {
+		const { client, calls } = clientFinding({
+			tree: cachedTree,
+			patches: new Map(),
+		});
+		await client.buildTree(zod);
+
+		await Promise.all([
+			client.getFile(zod, "index.js", undefined),
+			client.getFile(zod, "README.md", undefined),
+		]);
+
+		expect(calls.filter((call) => call.startsWith("build"))).toEqual([
+			"build zod",
+		]);
+	});
+
+	test("asks the worker for a file of any comparison but the cached one", async () => {
+		const { client, calls } = clientFinding(entry);
+		await client.buildTree(zod);
+
+		await client.getFile({ ...zod, to: "4.1.0" }, "index.js", undefined);
+
+		expect(calls).toEqual(["get index.js"]);
+	});
+});
+
+describe("a diff client once the cache stops serving a comparison", () => {
 	test("forgets a cached entry once the same comparison misses", async () => {
 		const local = localClient();
 		let found: CachedEntry | null = entry;
@@ -124,15 +171,6 @@ describe("a diff client in front of the server's cache", () => {
 		await client.buildTree(zod);
 
 		expect(await client.getFile(zod, "index.js", undefined)).toEqual(localFile);
-	});
-
-	test("asks the worker for a file of any comparison but the cached one", async () => {
-		const { client, calls } = clientFinding(entry);
-		await client.buildTree(zod);
-
-		await client.getFile({ ...zod, to: "4.1.0" }, "index.js", undefined);
-
-		expect(calls).toEqual(["get index.js"]);
 	});
 
 	test("builds a cached comparison here again after a build that failed", async () => {
@@ -160,7 +198,9 @@ describe("a diff client in front of the server's cache", () => {
 			localFile,
 		);
 	});
+});
 
+describe("a diff client the cache cannot help", () => {
 	test("builds on this device what the cache does not hold", async () => {
 		const { client, calls } = clientFinding(null);
 
@@ -178,15 +218,6 @@ describe("a diff client in front of the server's cache", () => {
 		expect(heard).toEqual(["from"]);
 	});
 
-	test("reports no downloads for a comparison the cache holds", async () => {
-		const { client } = clientFinding(entry);
-		const heard: string[] = [];
-
-		await client.buildTree(zod, ({ side }) => heard.push(side));
-
-		expect(heard).toEqual([]);
-	});
-
 	test("builds on this device when the lookup itself breaks", async () => {
 		const local = localClient();
 		const client = createCachedDiffClient(local.client, () =>
@@ -195,31 +226,6 @@ describe("a diff client in front of the server's cache", () => {
 
 		expect(await client.buildTree(zod)).toEqual(builtTree);
 		expect(local.calls).toEqual(["build zod"]);
-	});
-
-	test("builds a cached comparison here once, however many files it lacks", async () => {
-		const { client, calls } = clientFinding({
-			tree: cachedTree,
-			patches: new Map(),
-		});
-		await client.buildTree(zod);
-
-		await Promise.all([
-			client.getFile(zod, "index.js", undefined),
-			client.getFile(zod, "README.md", undefined),
-		]);
-
-		expect(calls.filter((call) => call.startsWith("build"))).toEqual([
-			"build zod",
-		]);
-	});
-
-	test("warms downloads the way the worker does", async () => {
-		const { client, calls } = clientFinding(entry);
-
-		await client.prefetch(zod);
-
-		expect(calls).toEqual(["prefetch zod"]);
 	});
 });
 
@@ -252,13 +258,15 @@ function clientAfterBoot(booted: EntryBoot, found: CachedEntry | null = null) {
 	return { client, calls: local.calls, asked };
 }
 
+function bootFor(served: EntryBoot["served"]): EntryBoot {
+	return { comparison: zod, served, abandoned: false };
+}
+
 describe("a diff client adopting the boot script's lookup", () => {
 	test("takes the cached tree the boot script found, asking nothing again", async () => {
-		const { client, calls, asked } = clientAfterBoot({
-			comparison: zod,
-			served: Promise.resolve(servedFor(zod)),
-			abandoned: false,
-		});
+		const { client, calls, asked } = clientAfterBoot(
+			bootFor(Promise.resolve(servedFor(zod))),
+		);
 
 		expect(await client.buildTree(zod)).toEqual(cachedTree);
 		expect(await client.getFile(zod, "index.js", undefined)).toEqual(
@@ -269,11 +277,9 @@ describe("a diff client adopting the boot script's lookup", () => {
 	});
 
 	test("builds here, without asking again, when the boot script missed", async () => {
-		const { client, calls, asked } = clientAfterBoot({
-			comparison: zod,
-			served: Promise.resolve(null),
-			abandoned: false,
-		});
+		const { client, calls, asked } = clientAfterBoot(
+			bootFor(Promise.resolve(null)),
+		);
 
 		expect(await client.buildTree(zod)).toEqual(builtTree);
 		expect(asked).toEqual([]);
@@ -281,39 +287,17 @@ describe("a diff client adopting the boot script's lookup", () => {
 	});
 
 	test("builds here when what the boot script found is not this comparison's entry", async () => {
-		const { client, calls } = clientAfterBoot({
-			comparison: zod,
-			served: Promise.resolve({ ...servedFor(zod), package: "Zod" }),
-			abandoned: false,
-		});
+		const { client, calls } = clientAfterBoot(
+			bootFor(Promise.resolve({ ...servedFor(zod), package: "Zod" })),
+		);
 
 		expect(await client.buildTree(zod)).toEqual(builtTree);
 		expect(calls).toEqual(["build zod"]);
 	});
 
-	test("asks for itself about any other comparison", async () => {
-		const other = { ...zod, to: "4.1.0" };
-		const { client, asked } = clientAfterBoot(
-			{
-				comparison: zod,
-				served: Promise.resolve(servedFor(zod)),
-				abandoned: false,
-			},
-			entry,
-		);
-
-		await client.buildTree(other);
-
-		expect(asked).toEqual([other]);
-	});
-
 	test("adopts the boot script's answer once", async () => {
 		const { client, asked } = clientAfterBoot(
-			{
-				comparison: zod,
-				served: Promise.resolve(servedFor(zod)),
-				abandoned: false,
-			},
+			bootFor(Promise.resolve(servedFor(zod))),
 			entry,
 		);
 
@@ -322,17 +306,27 @@ describe("a diff client adopting the boot script's lookup", () => {
 
 		expect(asked).toEqual([zod]);
 	});
+});
+
+describe("a diff client beside the boot script's lookup", () => {
+	test("asks for itself about any other comparison", async () => {
+		const other = { ...zod, to: "4.1.0" };
+		const { client, asked } = clientAfterBoot(
+			bootFor(Promise.resolve(servedFor(zod))),
+			entry,
+		);
+
+		await client.buildTree(other);
+
+		expect(asked).toEqual([other]);
+	});
 
 	test("warms nothing until the boot script's lookup has settled", async () => {
 		let settle: (served: unknown) => void = () => {};
 		const served = new Promise<unknown>((resolve) => {
 			settle = resolve;
 		});
-		const { client, calls } = clientAfterBoot({
-			comparison: zod,
-			served,
-			abandoned: false,
-		});
+		const { client, calls } = clientAfterBoot(bootFor(served));
 
 		const warming = client.prefetch(zod);
 		await Promise.resolve();
@@ -344,11 +338,7 @@ describe("a diff client adopting the boot script's lookup", () => {
 	});
 
 	test("tells the boot script to stand down when another comparison is asked for", async () => {
-		const booted: EntryBoot = {
-			comparison: zod,
-			served: new Promise(() => {}),
-			abandoned: false,
-		};
+		const booted = bootFor(new Promise(() => {}));
 		const { client } = clientAfterBoot(booted, null);
 
 		void client.buildTree({ ...zod, to: "4.1.0" });

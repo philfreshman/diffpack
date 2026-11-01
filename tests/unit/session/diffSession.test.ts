@@ -140,6 +140,17 @@ describe("a comparison", () => {
 		expect(session.store.state.tree).toBe(TREE);
 	});
 
+	test("asking again for the comparison on screen costs nothing", async () => {
+		const { stub, session } = await readySession();
+
+		session.follow({ ...SLUG });
+		session.answerWhitespace(false);
+
+		expect(stub.built).toHaveLength(1);
+	});
+});
+
+describe("a comparison's download progress", () => {
 	test("reports each archive as it arrives", () => {
 		const { stub, session } = toldOf(SLUG);
 
@@ -176,16 +187,9 @@ describe("a comparison", () => {
 			diff: { state: "waiting" },
 		});
 	});
+});
 
-	test("asking again for the comparison on screen costs nothing", async () => {
-		const { stub, session } = await readySession();
-
-		session.follow({ ...SLUG });
-		session.answerWhitespace(false);
-
-		expect(stub.built).toHaveLength(1);
-	});
-
+describe("a comparison that fails", () => {
 	test("surfaces the engine's own message when it fails", async () => {
 		const { stub, session } = toldOf(SLUG);
 
@@ -227,7 +231,9 @@ describe("a comparison", () => {
 			resetsAt: null,
 		});
 	});
+});
 
+describe("a comparison asked for again before it lands", () => {
 	test("a superseded comparison never lands", async () => {
 		const { stub, session } = toldOf(SLUG);
 		session.follow({ ...SLUG, to: "5.2.0" });
@@ -430,6 +436,23 @@ describe("the file the URL names", () => {
 		]);
 	});
 
+	test("on screen is the one the URL named last", async () => {
+		const { stub, session } = await readySession();
+
+		session.follow({ ...SLUG, file: "index.js" });
+		session.follow({ ...SLUG, file: "lib/router.js" });
+		take(stub.fileReplies, 1).resolve({ data: "second", isDiff: true });
+		take(stub.fileReplies, 0).resolve({ data: "first", isDiff: true });
+		await settled();
+
+		expect(session.store.state.file).toMatchObject({
+			path: "lib/router.js",
+			diff: { data: "second", isDiff: true },
+		});
+	});
+});
+
+describe("the file the URL names, told again", () => {
 	test("is not read again when the URL is told again", async () => {
 		const { stub, session } = await readySession();
 		session.follow({ ...SLUG, file: "index.js" });
@@ -456,7 +479,9 @@ describe("the file the URL names", () => {
 
 		expect(session.store.state.file).toBeNull();
 	});
+});
 
+describe("the file the URL names, when it cannot be read", () => {
 	test("is an error when this comparison does not contain it", async () => {
 		const { stub, session } = await readySession();
 
@@ -488,20 +513,50 @@ describe("the file the URL names", () => {
 			resetsAt: null,
 		});
 	});
+});
 
-	test("on screen is the one the URL named last", async () => {
+describe("reading a file for the all-files view", () => {
+	test("reads it out of the comparison on screen, under both paths", async () => {
 		const { stub, session } = await readySession();
-
-		session.follow({ ...SLUG, file: "index.js" });
-		session.follow({ ...SLUG, file: "lib/router.js" });
-		take(stub.fileReplies, 1).resolve({ data: "second", isDiff: true });
-		take(stub.fileReplies, 0).resolve({ data: "first", isDiff: true });
-		await settled();
-
-		expect(session.store.state.file).toMatchObject({
+		const renamed = {
 			path: "lib/router.js",
-			diff: { data: "second", isDiff: true },
+			oldPath: "lib/routes.js",
+			type: "file",
+			status: "renamed",
+		} as const;
+
+		const read = session.readFile(renamed);
+		take(stub.fileReplies, 0).resolve({ data: "diff", isDiff: true });
+
+		expect(await read).toEqual({ data: "diff", isDiff: true });
+		expect(stub.filesAsked).toEqual([
+			[COMPARISON, "lib/router.js", "lib/routes.js"],
+		]);
+	});
+
+	test("leaves the open file alone", async () => {
+		const { session } = await readySession();
+
+		void session.readFile({
+			path: "index.js",
+			type: "file",
+			status: "modified",
 		});
+
+		expect(session.store.state.file).toBeNull();
+	});
+
+	test("is refused while the tree is still being built", async () => {
+		const { stub, session } = toldOf(SLUG);
+
+		const read = session.readFile({
+			path: "index.js",
+			type: "file",
+			status: "modified",
+		});
+
+		await expect(read).rejects.toThrow("index.js is not in this comparison");
+		expect(stub.filesAsked).toEqual([]);
 	});
 });
 

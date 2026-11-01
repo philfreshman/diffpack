@@ -131,26 +131,29 @@ describe("crate functions", () => {
 	});
 });
 
+const FIX_COMMIT = { owner: "o", repo: "r", sha: "abc1234" };
+
+function filesTheFixChanged(tree: string[], ...changed: string[]) {
+	const commitFiles = new Map([
+		[
+			commitKey(FIX_COMMIT),
+			changed.map((filename) => ({
+				filename,
+				removedLines: [`old ${filename}`],
+				addedLines: [`new ${filename}`],
+			})),
+		],
+	]);
+	const entry = introduced({
+		id: "GHSA-1",
+		hints: { fixCommits: [FIX_COMMIT] },
+	});
+	return affectedFiles([entry], tree, "pkg", commitFiles);
+}
+
 describe("fix commit files", () => {
-	const commit = { owner: "o", repo: "r", sha: "abc1234" };
-
-	function filesFor(tree: string[], ...changed: string[]) {
-		const commitFiles = new Map([
-			[
-				commitKey(commit),
-				changed.map((filename) => ({
-					filename,
-					removedLines: [`old ${filename}`],
-					addedLines: [`new ${filename}`],
-				})),
-			],
-		]);
-		const entry = introduced({ id: "GHSA-1", hints: { fixCommits: [commit] } });
-		return affectedFiles([entry], tree, "pkg", commitFiles);
-	}
-
 	test("match a tree path that ends with the commit's path", () => {
-		expect(filesFor(["package/lib/trim.js"], "lib/trim.js")).toEqual([
+		expect(filesTheFixChanged(["package/lib/trim.js"], "lib/trim.js")).toEqual([
 			{
 				path: "package/lib/trim.js",
 				advisoryIds: ["GHSA-1"],
@@ -163,28 +166,39 @@ describe("fix commit files", () => {
 
 	test("match a tree path the commit's path ends with", () => {
 		expect(
-			paths(filesFor(["trim.js", "index.js"], "packages/lodash/trim.js")),
+			paths(
+				filesTheFixChanged(["trim.js", "index.js"], "packages/lodash/trim.js"),
+			),
 		).toEqual(["trim.js"]);
 	});
 
 	test("prefer the longest match", () => {
 		expect(
 			paths(
-				filesFor(["src/a/index.js", "src/b/index.js"], "repo/src/a/index.js"),
+				filesTheFixChanged(
+					["src/a/index.js", "src/b/index.js"],
+					"repo/src/a/index.js",
+				),
 			),
 		).toEqual(["src/a/index.js"]);
 	});
+});
 
+describe("fix commit files that match no single path", () => {
 	test("ignore a file name shared by several tree paths", () => {
 		expect(
-			filesFor(["a/index.js", "b/index.js"], "packages/c/index.js"),
+			filesTheFixChanged(["a/index.js", "b/index.js"], "packages/c/index.js"),
 		).toEqual([]);
 	});
 
 	test("ignore paths that only share some trailing folders", () => {
-		expect(filesFor(["dist/util/trim.js"], "src/util/trim.js")).toEqual([]);
+		expect(
+			filesTheFixChanged(["dist/util/trim.js"], "src/util/trim.js"),
+		).toEqual([]);
 	});
+});
 
+describe("fix commit files left out", () => {
 	test("ignore manifests, lockfiles, documentation and tests", () => {
 		const tree = [
 			"package.json",
@@ -196,7 +210,7 @@ describe("fix commit files", () => {
 		];
 		expect(
 			paths(
-				filesFor(
+				filesTheFixChanged(
 					tree,
 					"package.json",
 					"README.md",

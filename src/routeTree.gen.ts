@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RegistryRouteRouteImport } from './routes/$registry/route'
+import { Route as DesignRouteImport } from './routes/design'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RegistryIndexRouteImport } from './routes/$registry/index'
 import { Route as RegistrySplatRouteImport } from './routes/$registry/$'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const RegistryRouteRoute = RegistryRouteRouteImport.update({
   id: '/$registry',
   path: '/$registry',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignRoute = DesignRouteImport.update({
+  id: '/design',
+  path: '/design',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -44,12 +50,14 @@ const RegistrySplatRoute = RegistrySplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$registry': typeof RegistryRouteRouteWithChildren
+  '/design': typeof DesignRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/$registry/$': typeof RegistrySplatRoute
   '/$registry/': typeof RegistryIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/design': typeof DesignRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/$registry/$': typeof RegistrySplatRoute
   '/$registry': typeof RegistryIndexRoute
@@ -58,6 +66,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$registry': typeof RegistryRouteRouteWithChildren
+  '/design': typeof DesignRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/$registry/$': typeof RegistrySplatRoute
   '/$registry/': typeof RegistryIndexRoute
@@ -65,13 +74,19 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/$registry' | '/sitemap.xml' | '/$registry/$' | '/$registry/'
+    | '/'
+    | '/$registry'
+    | '/design'
+    | '/sitemap.xml'
+    | '/$registry/$'
+    | '/$registry/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sitemap.xml' | '/$registry/$' | '/$registry'
+  to: '/' | '/design' | '/sitemap.xml' | '/$registry/$' | '/$registry'
   id:
     | '__root__'
     | '/'
     | '/$registry'
+    | '/design'
     | '/sitemap.xml'
     | '/$registry/$'
     | '/$registry/'
@@ -80,6 +95,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RegistryRouteRoute: typeof RegistryRouteRouteWithChildren
+  DesignRoute: typeof DesignRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
@@ -97,6 +113,13 @@ declare module '@tanstack/react-router' {
       path: '/$registry'
       fullPath: '/$registry'
       preLoaderRoute: typeof RegistryRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design': {
+      id: '/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof DesignRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -140,6 +163,7 @@ const RegistryRouteRouteWithChildren = RegistryRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RegistryRouteRoute: RegistryRouteRouteWithChildren,
+  DesignRoute: DesignRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport

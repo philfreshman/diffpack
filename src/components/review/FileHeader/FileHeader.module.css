@@ -1,0 +1,204 @@
+.header {
+	--card-edge-width: var(--border-width);
+
+	position: sticky;
+	top: 0;
+	z-index: var(--z-toolbar);
+
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-height: var(--file-header-height);
+	margin: calc(-1 * var(--card-edge-width)) calc(-1 * var(--card-edge-width)) 0;
+	padding: 0 var(--space-2) 0 var(--space-1);
+	border: var(--card-edge-width) solid var(--edge-color, var(--color-border));
+	border-bottom: 0;
+	border-radius: var(--radius-surface) var(--radius-surface) 0 0;
+	background: var(--color-background);
+	box-shadow: 0 calc(-1 * var(--radius-surface)) 0 var(--color-canvas);
+	color: var(--color-foreground);
+	font-size: var(--text-body);
+	transition: border-color var(--duration-slow) ease;
+}
+
+.header[data-open] {
+	border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.chevron {
+	flex: none;
+	color: var(--color-muted);
+}
+
+.chevron svg {
+	transition: transform var(--duration-fast) ease;
+}
+
+.chevron[aria-expanded="false"] svg {
+	transform: rotate(-90deg);
+}
+
+.path {
+	display: flex;
+	flex: 0 1 auto;
+	min-width: 0;
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: var(--text-body);
+	font-weight: var(--weight-regular);
+	white-space: nowrap;
+}
+
+.directory,
+.name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.directory {
+	flex: 0 1000 auto;
+	direction: rtl;
+	color: var(--color-muted);
+}
+
+.name {
+	flex: 0 1 auto;
+	font-weight: var(--weight-strong);
+}
+
+.oldPath {
+	text-decoration: line-through;
+	text-decoration-color: color-mix(
+		in srgb,
+		var(--color-muted) 50%,
+		transparent
+	);
+}
+
+.arrow {
+	color: var(--color-renamed);
+}
+
+.close {
+	flex: none;
+	color: var(--color-muted);
+}
+
+.counts {
+	display: flex;
+	flex: none;
+	align-items: center;
+	margin-left: auto;
+	gap: var(--space-2);
+	font-family: var(--font-mono);
+	font-size: var(--text-caption);
+	font-variant-numeric: tabular-nums;
+}
+
+.added {
+	color: var(--color-added);
+}
+
+.removed {
+	color: var(--color-removed);
+}
+
+.stat {
+	display: flex;
+	gap: var(--space-1);
+}
+
+.blocks {
+	--block-size: var(--space-2);
+	--block-color: color-mix(in srgb, var(--color-muted) 30%, transparent);
+
+	width: calc(var(--blocks) * (var(--block-size) + 2px) - 2px);
+	height: var(--block-size);
+	background: repeating-linear-gradient(
+		to right,
+		var(--block-color) 0 var(--block-size),
+		transparent var(--block-size) calc(var(--block-size) + 2px)
+	);
+}
+
+.blocks[data-kind="added"] {
+	--block-color: var(--color-added);
+}
+
+.blocks[data-kind="removed"] {
+	--block-color: var(--color-removed);
+}
+
+.actions {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: var(--space-1);
+	margin-left: var(--space-1);
+	color: var(--color-muted);
+}
+
+.action {
+	flex: none;
+}
+
+.viewed {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	height: calc(var(--control-height) - var(--space-2));
+	margin-left: var(--space-1);
+	padding: 0 var(--space-1) 0 var(--space-3);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-control);
+	background: var(--color-background);
+	color: var(--color-muted);
+	font-family: inherit;
+	font-size: var(--text-caption);
+	font-weight: var(--weight-strong);
+	cursor: pointer;
+	user-select: none;
+	transition:
+		background-color var(--duration-fast) ease,
+		border-color var(--duration-fast) ease,
+		color var(--duration-fast) ease;
+}
+
+.viewed:hover {
+	background: var(--color-surface-hover);
+	color: var(--color-foreground);
+}
+
+.viewed[aria-checked="true"] {
+	border-color: color-mix(in srgb, var(--color-added) 45%, transparent);
+	background: color-mix(
+		in srgb,
+		var(--color-added) 12%,
+		var(--color-background)
+	);
+	color: var(--color-added);
+}
+
+.viewed:focus-visible {
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: var(--focus-ring-offset);
+}
+
+.key {
+	font-weight: var(--weight-regular);
+}
+
+@media (max-width: 53rem) {
+	.stat {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.header,
+	.chevron svg,
+	.viewed {
+		transition: none;
+	}
+}

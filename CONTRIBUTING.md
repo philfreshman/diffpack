@@ -130,7 +130,10 @@ test ~0.3s, `fallow audit` ~1.4s warm — about 5.3s total.
 `fallow audit --gate new-only` (the default, and what the hook passes) only blocks findings **your
 change introduces** — unused exports, new complexity, duplication, and the rest of what
 `.fallowrc.jsonc` enables. Findings already on `development` in files you did not touch do not
-block you.
+block you. A finding fallow rates only a warning, such as a small clone group, blocks too. `fallow
+audit` exits 0 on a `warn` verdict, but the CI action fails on any issue, so the hook reads the
+verdict from the JSON output and fails on anything but `pass`. A commit that passes locally then
+also passes the PR gate.
 
 Two things fail every fallow run, whatever it changed. A source file fallow cannot parse fails it
 (`failOnParseError`), because otherwise that file silently drops out of every analysis. In CI, a run
@@ -162,7 +165,7 @@ five jobs — none of which needs a Rust toolchain, since the engine arrives pre
 | Job | Runs | Needs |
 | :--- | :--- | :--- |
 | `conventional commits` | fails on a commit in the PR whose message is not a Conventional Commit | git, PRs only |
-| `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge` | bun only |
+| `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge`, `check:coverage-badge` | bun only |
 | `end-to-end` | `test:e2e` | bun + Chromium |
 | `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, `check:coverage-gaps`, SARIF upload | bun, PRs only |
 | `fallow (full repo)` | full-repo `fallow`, the type-aware pass, `check:coverage-gaps`, the health grade, SARIF upload | bun, pushes to `development` only |
@@ -170,6 +173,15 @@ five jobs — none of which needs a Rust toolchain, since the engine arrives pre
 The first two are split so a broken type or a failing unit test goes red in under a minute rather
 than behind a Chromium download and a production build. On an e2e failure the Playwright HTML
 report and traces are uploaded as a `playwright-report` artifact on the run.
+
+`bun run ci-failure <pr>` (or `--run <run-id>`) shows why a PR's checks failed. For each failed job
+it prints the lines leading up to every `##[error]`, and every `##[warning]`, from the job log. For
+`end-to-end` it also downloads the `playwright-report` artifact, prints each failed test's error
+details and gives the folder with the full report and traces.
+
+The e2e specs hit the real registries, so a slow download or a late layout shift sometimes fails one.
+In CI each failed test runs once more. A test that passes on the retry does not fail the job, but the
+report still lists it as flaky, so it stays visible. Locally there are no retries.
 
 Rust — `cargo fmt --all --check`, `cargo test`, and `wasm-pack test --headless --chrome` — runs in
 [the engine's CI](https://github.com/philfreshman/diffpack-engine/blob/main/.github/workflows/ci.yml),
@@ -255,6 +267,22 @@ bun run badge   # then commit .github/badges/fallow-health.svg
 
 The same grade, with the per-threshold detail behind it, is also written to the job summary of every
 `fallow (full repo)` run. Locally: `bunx fallow health --format github-summary`.
+
+#### The coverage badge
+
+Beside the health grade sits the unit test coverage: the share of lines under `src/` that
+`bun run test` runs (generated `.gen.ts` files aside), rounded down to a whole percent. `scripts/coverage-badge.ts` runs the unit
+tests with Bun's coverage on, reads the lcov report and draws the SVG itself, so no coverage service
+is involved. Only files a unit test loads are measured, which is why `check:coverage-gaps` matters:
+it makes sure every file in `src/lib` is one of them. Components and routes are covered by the
+Playwright suite, which this number does not include.
+
+It is a committed SVG for the same reasons as the grade, and `bun run check:coverage-badge` checks it
+in the same job. When a change moves the whole percent:
+
+```bash
+bun run badge:coverage   # then commit .github/badges/coverage.svg
+```
 
 ## Development Workflow
 

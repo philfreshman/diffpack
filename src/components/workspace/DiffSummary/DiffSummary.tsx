@@ -35,16 +35,17 @@ export function DiffSummary({ summary, children }: DiffSummaryProps) {
 					<p {...risesIn(styles.files, 2)} data-testid="summary-files">
 						{describeFileCount(summary)}
 					</p>
-					<p {...risesIn(styles.hint, 3)}>
-						{changedCount > 0
-							? "Pick a file in the tree to see its diff."
-							: "Nothing changed between these versions."}
-					</p>
+					<p {...risesIn(styles.hint, 3)}>{hintFor(changedCount)}</p>
 				</div>
 				{children}
 			</Panel>
 		</ViewportCenter>
 	);
+}
+
+function hintFor(changedCount: number): string {
+	if (changedCount === 0) return "Nothing changed between these versions.";
+	return "Pick a file in the tree to see its diff.";
 }
 
 interface LineStatProps {

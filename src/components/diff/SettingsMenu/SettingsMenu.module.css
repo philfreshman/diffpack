@@ -1,5 +1,5 @@
 .switchRow {
 	margin-top: var(--space-1);
-	padding: var(--space-2) var(--space-3) var(--space-1);
-	border-top: 1px solid var(--color-border);
+	padding: var(--space-2) var(--padding-control-x) var(--space-1);
+	border-top: var(--border-width) solid var(--color-border);
 }

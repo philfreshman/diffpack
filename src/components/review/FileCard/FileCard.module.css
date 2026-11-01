@@ -1,0 +1,112 @@
+.card {
+	--edge-color: var(--color-border);
+
+	border: var(--border-width) solid var(--edge-color);
+	border-radius: var(--radius-surface);
+	background: var(--color-background);
+	overflow: clip;
+	overflow-clip-margin: var(--border-width);
+	transition: border-color var(--duration-slow) ease;
+}
+
+.card[data-viewed] {
+	--edge-color: color-mix(in srgb, var(--color-added) 35%, var(--color-border));
+}
+
+.placeholder {
+	position: relative;
+	height: calc(var(--rows) * var(--leading-code));
+	background:
+		linear-gradient(var(--color-surface), var(--color-surface)) 0 0 /
+			calc(2 * var(--gutter-min-width)) 100% no-repeat,
+		repeating-linear-gradient(
+				to bottom,
+				transparent 0 var(--space-2),
+				var(--color-surface-hover) var(--space-2)
+					calc(var(--leading-code) - var(--space-2)),
+				transparent calc(var(--leading-code) - var(--space-2))
+					var(--leading-code)
+			)
+			calc(2 * var(--gutter-min-width) + var(--space-3)) 0 / 55% 100% no-repeat;
+}
+
+.placeholder[aria-busy="true"]::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		100deg,
+		transparent 30%,
+		var(--color-surface-veil) 50%,
+		transparent 70%
+	);
+	background-size: 250% 100%;
+	animation: shimmer 1.4s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes shimmer {
+	from {
+		background-position: 100% 0;
+	}
+
+	to {
+		background-position: 0 0;
+	}
+}
+
+.loading {
+	position: sticky;
+	top: calc(var(--file-header-height) + var(--space-3));
+	z-index: var(--z-raised);
+	display: inline-flex;
+	align-items: center;
+	gap: var(--gap-inline);
+	margin: var(--space-3) calc(2 * var(--gutter-min-width) + var(--space-3));
+	padding: var(--space-1) var(--space-3);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-pill);
+	background: var(--color-background);
+	color: var(--color-muted);
+	font-size: var(--text-caption);
+}
+
+.notice {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	background: var(--color-surface);
+	color: var(--color-muted);
+	font-size: var(--text-body);
+}
+
+.message {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.failed {
+	color: var(--color-danger);
+	font-weight: var(--weight-strong);
+}
+
+.quiet {
+	margin: 0;
+	padding: var(--space-4);
+	color: var(--color-muted);
+	font-size: var(--text-body);
+	font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.card {
+		transition: none;
+	}
+
+	.placeholder[aria-busy="true"]::after {
+		animation: none;
+	}
+}

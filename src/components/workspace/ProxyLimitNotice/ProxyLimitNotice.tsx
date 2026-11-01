@@ -1,13 +1,13 @@
+import { NoticeText } from "#/components/ui/Notice/Notice.tsx";
 import type { ProxyLimitCode } from "#/lib/failure/failure.ts";
 import { formatResetTime } from "#/lib/failure/resetTime.ts";
-import styles from "./ProxyLimitNotice.module.css";
 
-interface NoticeText {
+interface ProxyLimitText {
 	title: string;
 	detail(resetTime: string): string;
 }
 
-const NOTICES: Record<ProxyLimitCode, NoticeText> = {
+const NOTICES: Record<ProxyLimitCode, ProxyLimitText> = {
 	quota_exhausted: {
 		title: "Composer diffs are paused for today.",
 		detail: (resetTime) =>
@@ -30,14 +30,13 @@ export function ProxyLimitNotice({ code, resetsAt }: ProxyLimitNoticeProps) {
 	const resetTime = formatResetTime(resetsAt);
 
 	return (
-		<div
-			className={styles.notice}
+		<NoticeText
+			title={notice.title}
 			role="status"
 			data-testid="proxy-limit-notice"
 			data-code={code}
 		>
-			<p className={styles.title}>{notice.title}</p>
-			<p className={styles.detail}>{notice.detail(resetTime)}</p>
-		</div>
+			{notice.detail(resetTime)}
+		</NoticeText>
 	);
 }

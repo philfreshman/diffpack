@@ -1,98 +1,42 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { DiffToolbar } from "#/components/diff/DiffToolbar/DiffToolbar.tsx";
 import { DiffView } from "#/components/diff/DiffView/DiffView.tsx";
-import {
-	type FileModelControls,
-	useFileModel,
-} from "#/components/diff/useFileModel.ts";
+import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
-import { useHighlightTheme } from "#/components/diff/useHighlightTheme.ts";
+import {
+	FileStream,
+	type FileStreamProps,
+} from "#/components/review/FileStream/FileStream.tsx";
+import { FileHeader } from "#/components/review/FileHeader/FileHeader.tsx";
+import type { ViewedFiles } from "#/components/review/useViewedFiles.ts";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
-import { failureOf } from "#/lib/failure/failure.ts";
-import { requireAdapter } from "#/lib/registries/index.ts";
+import { useKeyShortcut } from "#/components/ui/useKeyShortcut.ts";
+import type { BuildProgress } from "#/lib/session/buildProgress.ts";
 import {
-	BUILT,
-	type BuildProgress,
-	FETCHING,
-} from "#/lib/session/buildProgress.ts";
-import type { DiffSessionState, OpenFile } from "#/lib/session/diffSession.ts";
-import {
-	changedFiles,
-	summarizeTree,
-	type TreeSummary,
-} from "#/lib/session/tree.ts";
-import { buildPath, type DiffSlug, namesComparison } from "#/lib/url/slug.ts";
+	type DiffSessionState,
+	diffSession,
+	type OpenFile,
+} from "#/lib/session/diffSession.ts";
+import { findFile, type TreeSummary } from "#/lib/session/tree.ts";
+import { type DiffSlug, namesComparison } from "#/lib/url/slug.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import { AsciiTrail } from "../AsciiTrail/AsciiTrail.tsx";
 import { DiffProgress } from "../DiffProgress/DiffProgress.tsx";
 import { DiffSummary } from "../DiffSummary/DiffSummary.tsx";
 import { FailureNotice } from "../FailureNotice/FailureNotice.tsx";
-import { useDiffSession } from "../useDiffSession.ts";
-import { type LineLink, useLineLink } from "../useLineLink.ts";
-import { useVersions } from "../useVersions.ts";
-import { useViewerSettings } from "../useViewerSettings.ts";
-import {
-	type ScanStatus,
-	useVulnerabilityFindings,
-	type VulnerabilityFindings,
-} from "../useVulnerabilities.ts";
+import type { LineLink } from "../useLineLink.ts";
+import type { VulnerabilityFindings } from "../useVulnerabilities.ts";
 import { VulnerabilityNotice } from "../VulnerabilityNotice/VulnerabilityNotice.tsx";
 import { VulnerabilityReport } from "../VulnerabilityReport/VulnerabilityReport.tsx";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
 import styles from "./DiffWorkspace.module.css";
+import { useWorkspace, type Workspace } from "./useWorkspace.ts";
 
 export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
-	const adapter = requireAdapter(slug.registry);
-	const navigate = useNavigate();
-	const { whitespace, split, signs, autohide } = useViewerSettings();
-	// One instance for the toolbar and the viewer; a second would be a second answer.
-	const highlight = useHighlightTheme();
-	// null until the stored value is read, or a deep link would build a
-	// whitespace-exact tree first and then throw it away.
-	const session = useDiffSession(
-		slug,
-		whitespace.known ? whitespace.value : null,
-	);
-	// The arrows skip unchanged files, which the tree hides by default.
-	const changed = changedFiles(session.tree);
-	// From the session, not the URL: a file is open only once its tree is ready.
-	const fileIndex = changed.findIndex(
-		(entry) => entry.path === session.file?.path,
-	);
-
-	// The header's list, shared through the query cache: no second request.
-	const versions = useVersions(adapter, slug.package);
-	const vulnerabilities = useVulnerabilityFindings(slug, readyTree(session));
-
-	const lineLink = useLineLink(adapter, slug);
-	// What is on screen, not what was last asked for: it lags while the blur shows.
-	const shown = useFileModel(session.key, session.file, split.value);
-	// Unlike `session.key`, this holds still when whitespace is toggled.
-	const comparisonPath = buildPath(adapter, { ...slug, file: "" });
-
-	const versionsFailure = versions.error && failureOf(versions.error);
-	const progress = shownProgress(session, slug, vulnerabilities.scan.status);
-	const summary = shownSummary(session);
-	const pane = paneOf(session.status, progress, versionsFailure !== null);
-
-	function fileLink(file: string): string {
-		return buildPath(adapter, { ...slug, file });
-	}
-
-	function openFile(file: string) {
-		navigate({ to: fileLink(file) });
-	}
-
-	function closeFile() {
-		navigate({ to: comparisonPath });
-	}
-
-	function stepFile(direction: 1 | -1) {
-		const next = changed[fileIndex + direction];
-		if (next) openFile(next.path);
-	}
+	const workspace = useWorkspace(slug);
+	const { session, links, files, review, versionsFailure, pane } = workspace;
 
 	return (
 		// The e2e suites read the parsed URL and the session state from these attributes.
@@ -105,14 +49,15 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 			data-to={slug.to}
 			data-file={slug.file}
 		>
-			<TreePanel
-				tree={session.tree}
-				comparison={comparisonPath}
-				selectedPath={slug.file}
-				onOpenFile={openFile}
-			/>
-			<div className={styles.column}>
-				<WorkspaceHeader slug={slug} />
+			<WorkspaceHeader slug={slug} />
+			<div className={styles.panes}>
+				<TreePanel
+					tree={session.tree}
+					comparison={links.comparisonPath}
+					selectedPath={files.selectedPath}
+					onOpenFile={files.showFile}
+					viewedPaths={review.viewed}
+				/>
 				<main className={styles.body}>
 					{versionsFailure && pane !== "progress" && (
 						<FailureNotice
@@ -123,49 +68,7 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 					)}
 
 					{pane !== "versions-failure" && (
-						<section className={styles.file} data-testid="diff-file">
-							<DiffToolbar
-								path={session.file?.path ?? ""}
-								fileIndex={fileIndex}
-								fileCount={changed.length}
-								onStepFile={stepFile}
-								onClose={closeFile}
-								file={shown}
-								split={split.value}
-								onSplitChange={split.set}
-								settings={{
-									ignoreWhitespace: whitespace.value,
-									onIgnoreWhitespaceChange: whitespace.set,
-									showSigns: signs.value,
-									onShowSignsChange: signs.set,
-									autohideScrollbar: autohide.value,
-									onAutohideScrollbarChange: autohide.set,
-									highlight,
-								}}
-							/>
-							{showsIntro(session.status) && (
-								<p className={styles.intro} data-testid="workspace-intro">
-									{workspaceIntro(adapter, slug)}
-								</p>
-							)}
-							{showsTrail(session.status, slug, progress, summary) && (
-								<AsciiTrail />
-							)}
-							<ComparisonPane
-								slug={slug}
-								progress={progress}
-								summary={summary}
-								file={session.file}
-								highlight={highlight}
-								showSigns={signs.value}
-								autohideScrollbar={autohide.value}
-								lineLink={lineLink}
-								onClose={closeFile}
-								shown={shown}
-								vulnerabilities={vulnerabilities}
-								fileLink={fileLink}
-							/>
-						</section>
+						<ComparisonSection workspace={workspace} />
 					)}
 				</main>
 			</div>
@@ -173,7 +76,90 @@ export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	);
 }
 
-type Pane = "progress" | "versions-failure" | "file";
+function ComparisonSection({ workspace }: { workspace: Workspace }) {
+	const { slug, adapter, session, links, files, progress, summary } = workspace;
+
+	return (
+		<section className={styles.file} data-testid="diff-file">
+			<WorkspaceToolbar workspace={workspace} />
+			{showsIntro(session.status) && (
+				<p className={styles.intro} data-testid="workspace-intro">
+					{workspaceIntro(adapter, slug)}
+				</p>
+			)}
+			{!files.streaming &&
+				showsTrail(session.status, slug, progress, summary) && <AsciiTrail />}
+			<ComparisonPane
+				slug={slug}
+				progress={progress}
+				summary={summary}
+				streaming={files.streaming}
+				stream={streamOf(workspace)}
+				file={session.file}
+				highlight={workspace.highlight}
+				showSigns={workspace.viewer.signs.value}
+				autohideScrollbar={workspace.viewer.autohide.value}
+				lineLink={workspace.lineLink}
+				onClose={links.closeFile}
+				shown={workspace.shown}
+				tree={session.tree}
+				review={workspace.review}
+				vulnerabilities={workspace.vulnerabilities}
+				fileLink={links.fileLink}
+			/>
+		</section>
+	);
+}
+
+function WorkspaceToolbar({ workspace }: { workspace: Workspace }) {
+	const { files, changed, shown, highlight } = workspace;
+	const { whitespace, split, signs, autohide } = workspace.viewer;
+
+	return (
+		<DiffToolbar
+			path={files.currentPath}
+			fileIndex={files.currentIndex}
+			fileCount={changed.length}
+			onStepFile={files.stepFile}
+			file={shown}
+			split={split.value}
+			onSplitChange={split.set}
+			layout={files.shownLayout}
+			onLayoutChange={files.changeLayout}
+			settings={{
+				ignoreWhitespace: whitespace.value,
+				onIgnoreWhitespaceChange: whitespace.set,
+				showSigns: signs.value,
+				onShowSignsChange: signs.set,
+				autohideScrollbar: autohide.value,
+				onAutohideScrollbarChange: autohide.set,
+				highlight,
+			}}
+		/>
+	);
+}
+
+function streamOf({
+	files,
+	changed,
+	review,
+	links,
+	viewer,
+}: Workspace): StreamProps {
+	return {
+		streamRef: files.streamRef,
+		files: changed,
+		readFile: diffSession.readFile,
+		viewed: review.viewed,
+		selectedPath: files.selectedPath,
+		onViewedChange: review.setViewed,
+		onCurrentFileChange: files.onCurrentFileChange,
+		onOpenFile: links.openFile,
+		onSelectFile: files.pickStreamFile,
+		onSelectLine: links.selectStreamLine,
+		split: viewer.split.value,
+	};
+}
 
 function showsIntro(status: DiffSessionState["status"]): boolean {
 	return status === "idle" || status === "loading";
@@ -189,49 +175,17 @@ function showsTrail(
 	return isEmpty || progress !== null || summary !== null;
 }
 
-function shownProgress(
-	session: DiffSessionState,
-	slug: DiffSlug,
-	scan: ScanStatus,
-): BuildProgress | null {
-	if (session.status === "loading" || session.status === "error")
-		return session.progress;
-	if (session.status === "idle" && namesComparison(slug)) return FETCHING;
-	if (summaryAwaitsScan(session, scan)) return BUILT;
-	return null;
-}
-
-function summaryAwaitsScan(
-	session: DiffSessionState,
-	scan: ScanStatus,
-): boolean {
-	return session.status === "ready" && !session.file && scan === "loading";
-}
-
-function readyTree(session: DiffSessionState): DiffFileEntry | null {
-	return session.status === "ready" ? session.tree : null;
-}
-
-function shownSummary(session: DiffSessionState): TreeSummary | null {
-	if (session.status !== "ready" || session.file) return null;
-	return summarizeTree(session.tree);
-}
-
-// A comparison in progress, or one that failed, says more than its version list.
-function paneOf(
-	status: DiffSessionState["status"],
-	progress: BuildProgress | null,
-	versionsFailed: boolean,
-): Pane {
-	if (progress) return "progress";
-	if (status === "idle" && versionsFailed) return "versions-failure";
-	return "file";
-}
+type StreamProps = Omit<
+	FileStreamProps,
+	"showSigns" | "autohideScrollbar" | "highlightTheme"
+>;
 
 interface ComparisonPaneProps extends FilePaneProps {
 	slug: DiffSlug;
 	progress: BuildProgress | null;
 	summary: TreeSummary | null;
+	streaming: boolean;
+	stream: StreamProps;
 	fileLink(path: string): string;
 }
 
@@ -239,6 +193,8 @@ function ComparisonPane({
 	slug,
 	progress,
 	summary,
+	streaming,
+	stream,
 	fileLink,
 	...filePane
 }: ComparisonPaneProps) {
@@ -251,6 +207,15 @@ function ComparisonPane({
 				to={slug.to}
 				progress={progress}
 				osv={scan.status}
+			/>
+		);
+	if (summary && streaming)
+		return (
+			<FileStream
+				{...stream}
+				showSigns={filePane.showSigns}
+				autohideScrollbar={filePane.autohideScrollbar}
+				highlightTheme={filePane.highlight.theme}
 			/>
 		);
 	if (summary)
@@ -271,6 +236,8 @@ function ComparisonPane({
 interface FilePaneProps {
 	file: OpenFile | null;
 	shown: FileModelControls | null;
+	tree: DiffFileEntry | null;
+	review: ViewedFiles;
 	onClose(): void;
 	highlight: HighlightThemeControls;
 	showSigns: boolean;
@@ -282,6 +249,8 @@ interface FilePaneProps {
 function FilePane({
 	file,
 	shown,
+	tree,
+	review,
 	onClose,
 	highlight,
 	showSigns,
@@ -307,15 +276,16 @@ function FilePane({
 			{shown && (
 				<>
 					{/* Keyed by path, so restoring scroll is a plain mount effect. */}
-					<DiffView
-						file={shown}
+					<SingleFile
+						shown={shown}
 						key={shown.path}
+						entry={findFile(tree, shown.path)}
+						review={review}
 						onClose={onClose}
 						pending={file?.status === "loading"}
 						showSigns={showSigns}
 						autohideScrollbar={autohideScrollbar}
-						anchor={lineLink.anchorIn(shown.path)}
-						onSelectLine={lineLink.select}
+						lineLink={lineLink}
 						highlightTheme={highlight.theme}
 					/>
 					<VulnerabilityNotice
@@ -328,5 +298,62 @@ function FilePane({
 				</>
 			)}
 		</>
+	);
+}
+
+interface SingleFileProps {
+	shown: FileModelControls;
+	entry: DiffFileEntry | undefined;
+	review: ViewedFiles;
+	onClose(): void;
+	pending: boolean;
+	showSigns: boolean;
+	autohideScrollbar: boolean;
+	lineLink: LineLink;
+	highlightTheme: string | null;
+}
+
+function SingleFile({
+	shown,
+	entry,
+	review,
+	onClose,
+	pending,
+	showSigns,
+	autohideScrollbar,
+	lineLink,
+	highlightTheme,
+}: SingleFileProps) {
+	const viewed = review.viewed.has(shown.path);
+	const [open, setOpen] = useStateResetOn(() => true, [shown.path]);
+	useKeyShortcut("v", () => review.setViewed(shown.path, !viewed));
+
+	return (
+		<DiffView
+			file={shown}
+			header={
+				entry && (
+					<FileHeader
+						entry={entry}
+						expandAll={shown.rows.length > 0 ? shown.expandAll : null}
+						onClose={onClose}
+						onExpandAllChange={shown.setExpandAll}
+						onOpenChange={setOpen}
+						onViewedChange={(isViewed) =>
+							review.setViewed(shown.path, isViewed)
+						}
+						open={open}
+						viewed={viewed}
+					/>
+				)
+			}
+			folded={!open}
+			pending={pending}
+			showSigns={showSigns}
+			autohideScrollbar={autohideScrollbar}
+			anchor={lineLink.anchorIn(shown.path)}
+			onSelectLine={lineLink.select}
+			highlightTheme={highlightTheme}
+		/>
 	);
 }

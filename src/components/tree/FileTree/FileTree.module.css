@@ -1,15 +1,17 @@
 .tree {
 	overflow: auto;
 	font-family: var(--font-mono);
-	font-size: var(--text-sm);
+	font-size: var(--text-body);
 }
 
 .row {
 	display: flex;
 	align-items: center;
 	gap: var(--space-1);
-	padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
-	border-radius: var(--radius-md);
+	height: var(--tree-row-height);
+	padding: 0 var(--space-3) 0
+		calc(var(--depth) * var(--tree-indent) + var(--space-1));
+	border-radius: var(--radius-control);
 	cursor: pointer;
 	user-select: none;
 }
@@ -19,8 +21,8 @@
 }
 
 .row:focus-visible {
-	outline: 1px solid var(--color-accent);
-	outline-offset: -1px;
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .row[aria-selected="true"] {
@@ -42,33 +44,45 @@
 	color: var(--color-accent);
 }
 
+.fileIcon[data-status="added"] {
+	color: var(--color-added);
+}
+
+.fileIcon[data-status="removed"] {
+	color: var(--color-removed);
+}
+
+.fileIcon[data-status="modified"],
+.fileIcon[data-status="renamed"] {
+	color: var(--color-renamed);
+}
+
 .name {
 	flex: 1;
 	min-width: 0;
 	overflow: hidden;
-	font-weight: 400;
+	font-weight: var(--weight-regular);
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	color: var(--color-foreground);
 }
 
-.row[data-status="added"] .name {
-	color: var(--color-added);
+.row[data-viewed] .name {
+	opacity: 0.6;
 }
 
-.row[data-status="removed"] .name {
-	color: var(--color-removed);
-}
-
-.row[data-status="modified"] .name,
-.row[data-status="renamed"] .name {
-	color: var(--color-renamed);
+.viewed {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	color: var(--color-muted);
 }
 
 .added,
 .removed {
 	flex-shrink: 0;
 	padding-inline: var(--space-1);
-	font-weight: 700;
+	font-weight: var(--weight-strong);
 	font-variant-numeric: tabular-nums;
 }
 
@@ -78,15 +92,4 @@
 
 .removed {
 	color: var(--color-removed);
-}
-
-.renamed {
-	flex-shrink: 0;
-	margin-right: var(--space-1);
-	padding-inline: var(--space-1);
-	border-radius: var(--radius-sm);
-	background: var(--color-renamed-surface);
-	color: var(--color-renamed);
-	font-size: 0.625rem;
-	font-weight: 700;
 }

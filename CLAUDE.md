@@ -27,7 +27,9 @@ bun run test:e2e         # Playwright: production build + real registries, slow 
 bun run generate-routes  # tsr generate, after adding or renaming a file in src/routes/
 bun run generate-emphasis # rewrite themeEmphasis.gen.ts, after a highlight.js upgrade or a theme change
 bun run badge            # regenerate .github/badges/fallow-health.svg when the score moves
+bun run badge:coverage   # regenerate .github/badges/coverage.svg when unit test coverage moves
 bun run check:coverage-gaps # fail if a file or export in src/lib has no unit test importing it
+bun run ci-failure 258   # why a PR's CI failed: error excerpts, plus Playwright's errors for e2e (--run <id> for a run)
 ```
 
 - One unit test: `bun test tests/unit/session/diffSession.test.ts` (add `-t "<name>"` to narrow).
@@ -321,20 +323,30 @@ is `data-tree-collapsed`, both on `<html>` and moved without a render (`src/lib/
 
 ## CSS conventions
 
+**Before building or restyling any UI, load the `ui-component` skill**
+(`.claude/skills/ui-component/SKILL.md`). It is the design system: which role token to use for
+what, the primitives to build from, and the screenshot check to run before you are done.
+
 - CSS Modules and custom properties. No Tailwind, no CSS-in-JS.
 - A component with styles lives in its own folder with its `.module.css`, so the two move together.
-- Name semantic tokens only: `var(--color-foreground)`, `--color-border`, `--space-4`,
-  `--control-height`, `--radius-md`, `--duration-fast`, `--z-overlay`. Raw gray ramps and hex
-  values belong in `globals.css`. A component never branches on the theme; `:root[data-theme="dark"]`
-  redefines the tokens instead. fallow's `css-token-drift`, `css-dead-surface` and
-  `css-broken-reference` rules are errors here.
+- Stylesheets read **role tokens** (`--text-body`, `--weight-strong`, `--radius-control`,
+  `--gap-inline`, `--padding-surface-x`, `--border-width`, `--focus-ring-width`,
+  `--shadow-popover`, …) and the `--space-*` scale, never literals. Raw gray ramps, hex values and
+  the type and radius scales belong in `globals.css`. `tests/unit/styles/styleTokens.test.ts`
+  enforces it; a real exception goes in its `ALLOWED` list with a reason.
+- A component never branches on the theme; `:root[data-theme="dark"]` redefines the tokens
+  instead. fallow's `css-token-drift`, `css-dead-surface` and `css-broken-reference` rules are
+  errors here.
 - The diff viewer also switches on `data-syntax` (`light` / `dark`): the chosen highlight.js theme
   brings its own ground, and inside the viewer it wins over the page theme.
 - `@media` cannot read custom properties, so breakpoints repeat the literals recorded as
   `--breakpoint-sm/md/lg` (53rem / 63rem / 75rem).
 - UI primitives are Base UI, wrapped once in `src/components/ui/` (`Button`, `IconButton`,
-  `Combobox`, `Menu`, `Kbd`, `Spinner`, `icons.tsx`). Use the wrappers. `Combobox` is the one
-  behind package search and both version selectors.
+  `Combobox`, `Menu`, `OptionsMenu`, `Panel`, `Notice`, `Kbd`, `Spinner`, `icons.tsx`, and the
+  shared `Popover` surface). Use the wrappers. `Combobox` is the one behind package search and both
+  version selectors.
+- `/design` is a dev-only gallery of every primitive and token, in both themes; it answers 404 in
+  a production build. `bun run screenshot <path>` captures any page in light and dark.
 - Honor `prefers-reduced-motion`, as `globals.css` already does.
 
 ## Deployment
@@ -378,4 +390,5 @@ server function).
 - E2e tests use real registries. Only a tree shape no real package has may be stubbed with
   `page.route` (see `tests/e2e/file-tree.spec.ts`), and the real wasm still does the diffing.
 - If a change moves the fallow health score, `bun run check:badge` fails in CI. Run `bun run badge`
-  and commit the SVG.
+  and commit the SVG. The same goes for unit test coverage: `bun run check:coverage-badge` fails, and
+  `bun run badge:coverage` fixes it.

@@ -111,6 +111,40 @@ describe("opening and closing", () => {
 		expect(store.getItem(TREE_COLLAPSED.key)).toBeNull();
 	});
 
+	test("toggle shuts an open panel and opens a shut one", () => {
+		const { sidebar, store, shut } = page();
+
+		sidebar.toggle();
+		expect(shut()).toBe(true);
+		expect(sidebar.collapsed()).toBe(true);
+
+		sidebar.toggle();
+		expect(shut()).toBe(false);
+		expect(sidebar.collapsed()).toBe(false);
+		expect(store.getItem(TREE_COLLAPSED.key)).toBe("false");
+	});
+});
+
+describe("whether it is open, as others learn it", () => {
+	test("reads a panel the pre-paint script left shut as collapsed", () => {
+		const { sidebar, loadShut } = page();
+		loadShut();
+
+		expect(sidebar.collapsed()).toBe(true);
+	});
+
+	test("tells its listeners when the panel opens or shuts", () => {
+		const { sidebar } = page();
+		const heard: boolean[] = [];
+		sidebar.subscribe(() => heard.push(sidebar.collapsed()));
+
+		sidebar.close();
+		sidebar.close();
+		sidebar.open();
+
+		expect(heard).toEqual([true, false]);
+	});
+
 	test("a store that refuses still opens and shuts it for the session", () => {
 		const { sidebar, shut } = page(REFUSING_STORE);
 
@@ -155,7 +189,9 @@ describe("resizing", () => {
 		expect(sidebar.width()).toBe(421);
 		expect(store.getItem(TREE_WIDTH.key)).toBe("421");
 	});
+});
 
+describe("the width it starts with", () => {
 	test("starts from the width stored on an earlier visit", () => {
 		const store = memoryStore();
 		store.setItem(TREE_WIDTH.key, "440");
@@ -167,7 +203,9 @@ describe("resizing", () => {
 		expect(page().sidebar.width()).toBe(TREE_WIDTH.fallback);
 		expect(page(REFUSING_STORE).sidebar.width()).toBe(TREE_WIDTH.fallback);
 	});
+});
 
+describe("resizing, when the store refuses or someone listens", () => {
 	test("a store that refuses still resizes it for the session", () => {
 		const { sidebar, shownWidth } = page(REFUSING_STORE);
 
@@ -227,17 +265,17 @@ describe("dragging the edge", () => {
 	});
 });
 
+function letGoPastTheMinimum() {
+	const it = page();
+	it.sidebar.resize(400);
+	it.sidebar.startDrag();
+	it.sidebar.dragTo(100);
+	it.sidebar.endDrag(100);
+
+	return it;
+}
+
 describe("snapping shut", () => {
-	function letGoPastTheMinimum() {
-		const it = page();
-		it.sidebar.resize(400);
-		it.sidebar.startDrag();
-		it.sidebar.dragTo(100);
-		it.sidebar.endDrag(100);
-
-		return it;
-	}
-
 	test("let go past the minimum, it animates out before it shuts", () => {
 		const { snapping, shut } = letGoPastTheMinimum();
 
@@ -259,6 +297,18 @@ describe("snapping shut", () => {
 		expect(store.getItem(TREE_COLLAPSED.key)).toBe("true");
 	});
 
+	test("waits exactly as long as the stylesheet takes to animate it", async () => {
+		// The wait is `--duration-fast` written again in TypeScript.
+		const css = await Bun.file("src/styles/globals.css").text();
+		const duration = css.match(/--duration-fast:\s*(\d+)ms;/)?.[1];
+		const { clock } = letGoPastTheMinimum();
+
+		expect(duration).toBeDefined();
+		expect(clock.waiting.map((it) => it.ms)).toEqual([Number(duration)]);
+	});
+});
+
+describe("snapping shut, interrupted", () => {
 	test("opened while it is snapping, the snap is taken back", () => {
 		const { sidebar, store, clock, snapping, shut, shownWidth } =
 			letGoPastTheMinimum();
@@ -286,16 +336,6 @@ describe("snapping shut", () => {
 
 		clock.elapse();
 		expect(shut()).toBe(true);
-	});
-
-	test("waits exactly as long as the stylesheet takes to animate it", async () => {
-		// The wait is `--duration-fast` written again in TypeScript.
-		const css = await Bun.file("src/styles/globals.css").text();
-		const duration = css.match(/--duration-fast:\s*(\d+)ms;/)?.[1];
-		const { clock } = letGoPastTheMinimum();
-
-		expect(duration).toBeDefined();
-		expect(clock.waiting.map((it) => it.ms)).toEqual([Number(duration)]);
 	});
 
 	test("shut while it is snapping, it shuts there and then", () => {
