@@ -1,5 +1,6 @@
 import { useRef } from "react";
-import { SearchIcon } from "#/components/ui/icons.tsx";
+import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
+import { CloseIcon, SearchIcon } from "#/components/ui/icons.tsx";
 import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
 import { useKeyShortcut } from "#/components/ui/useKeyShortcut.ts";
 import { sidebar } from "#/lib/tree/sidebar.ts";
@@ -21,7 +22,7 @@ export function TreeFilter({ filter, onFilterChange }: TreeFilterProps) {
 	});
 
 	return (
-		<div className={styles.field} data-filled={filter ? "" : undefined}>
+		<div className={styles.field}>
 			<SearchIcon className={styles.searchIcon} width="16" height="16" />
 			<input
 				ref={input}
@@ -33,7 +34,21 @@ export function TreeFilter({ filter, onFilterChange }: TreeFilterProps) {
 				value={filter}
 				onChange={(event) => onFilterChange(event.target.value)}
 			/>
-			<Kbd className={styles.shortcut} keys={SHORTCUT.toUpperCase()} />
+			{filter ? (
+				<IconButton
+					aria-label="Clear filter"
+					className={styles.trailing}
+					onClick={() => {
+						onFilterChange("");
+						input.current?.focus();
+					}}
+					title="Clear filter"
+				>
+					<CloseIcon width="14" height="14" />
+				</IconButton>
+			) : (
+				<Kbd className={styles.trailing} keys={SHORTCUT.toUpperCase()} />
+			)}
 		</div>
 	);
 }

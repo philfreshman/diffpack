@@ -34,14 +34,13 @@
 	outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
-.shortcut {
+.input::-webkit-search-cancel-button {
+	appearance: none;
+}
+
+.trailing {
 	position: absolute;
 	top: 50%;
 	right: var(--space-2);
 	translate: 0 -50%;
-}
-
-.field:focus-within .shortcut,
-.field[data-filled] .shortcut {
-	display: none;
 }
