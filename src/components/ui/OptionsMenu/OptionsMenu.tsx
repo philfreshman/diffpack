@@ -13,6 +13,7 @@ import {
 	ChevronLeftIcon,
 	ChevronRightIcon,
 } from "#/components/ui/icons.tsx";
+import popoverStyles from "#/components/ui/Popover/Popover.module.css";
 import styles from "./OptionsMenu.module.css";
 
 export type FoldOutSide = "left" | "right";
@@ -23,6 +24,8 @@ const FOLD_OUT_CHEVRONS: Record<FoldOutSide, typeof ChevronRightIcon> = {
 };
 
 const OPTIONS_ITEM = "options";
+
+const OPTION_CLASS = `${popoverStyles.item} ${styles.option}`;
 
 type CloseMenuThen = (then: () => void) => void;
 
@@ -61,7 +64,7 @@ export function OptionsMenu({
 						{icon}
 					</NavigationMenu.Trigger>
 
-					<NavigationMenu.Content className={styles.content}>
+					<NavigationMenu.Content>
 						<CloseMenuThenContext value={closeMenuThen}>
 							<ul className={styles.options}>{children}</ul>
 						</CloseMenuThenContext>
@@ -75,7 +78,7 @@ export function OptionsMenu({
 					sideOffset={6}
 					align="end"
 				>
-					<NavigationMenu.Popup className={styles.popup}>
+					<NavigationMenu.Popup className={popoverStyles.surface}>
 						<NavigationMenu.Viewport className={styles.viewport} />
 					</NavigationMenu.Popup>
 				</NavigationMenu.Positioner>
@@ -135,7 +138,7 @@ export function ChoiceOption({
 		<li>
 			<button
 				{...buttonProps}
-				className={styles.option}
+				className={OPTION_CLASS}
 				aria-pressed={chosen}
 				onClick={closesMenu ? () => closeMenuThen(onChoose) : onChoose}
 				type="button"
@@ -170,7 +173,7 @@ export function FoldOutOption({
 				<NavigationMenu.List className={styles.options}>
 					<NavigationMenu.Item>
 						<NavigationMenu.Trigger
-							className={styles.option}
+							className={OPTION_CLASS}
 							data-testid={`${testId}-fold`}
 						>
 							{label}
@@ -180,7 +183,7 @@ export function FoldOutOption({
 							</NavigationMenu.Icon>
 						</NavigationMenu.Trigger>
 
-						<NavigationMenu.Content className={styles.content}>
+						<NavigationMenu.Content>
 							<ul className={styles.options}>{children}</ul>
 						</NavigationMenu.Content>
 					</NavigationMenu.Item>
@@ -195,7 +198,7 @@ export function FoldOutOption({
 						side={side}
 					>
 						<NavigationMenu.Popup
-							className={styles.popup}
+							className={popoverStyles.surface}
 							data-testid={`${testId}-popup`}
 						>
 							<NavigationMenu.Viewport className={styles.viewport} />

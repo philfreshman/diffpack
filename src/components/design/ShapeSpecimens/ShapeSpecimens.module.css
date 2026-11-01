@@ -1,0 +1,55 @@
+.box {
+	display: block;
+	width: 100%;
+	height: var(--space-12);
+	border: var(--border-width) solid var(--color-border);
+	background-color: var(--color-surface);
+}
+
+.radiusTag {
+	border-radius: var(--radius-tag);
+}
+
+.radiusControl {
+	border-radius: var(--radius-control);
+}
+
+.radiusSurface {
+	border-radius: var(--radius-surface);
+}
+
+.radiusPopover {
+	border-radius: var(--radius-popover);
+}
+
+.radiusTile {
+	border-radius: var(--radius-tile);
+}
+
+.radiusPill {
+	border-radius: var(--radius-pill);
+}
+
+.borderHairline {
+	border-color: var(--color-foreground);
+}
+
+.borderStrong {
+	border: var(--border-width-strong) solid var(--color-foreground);
+}
+
+.borderAccent {
+	border-left: var(--border-width-accent) solid var(--color-danger);
+}
+
+.focusRing {
+	border-radius: var(--radius-control);
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: var(--focus-ring-offset);
+}
+
+.popoverShadow {
+	border-radius: var(--radius-popover);
+	background-color: var(--color-background);
+	box-shadow: var(--shadow-popover);
+}

@@ -8,7 +8,7 @@
 /* Longhands, not the `animation` shorthand, so an inline delay survives. */
 .riseIn {
 	animation-name: rise-in;
-	animation-duration: 50ms;
+	animation-duration: var(--duration-instant);
 	animation-timing-function: ease-out;
 	animation-fill-mode: backwards;
 }

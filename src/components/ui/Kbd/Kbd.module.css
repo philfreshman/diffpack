@@ -1,12 +1,15 @@
 .kbd {
+	display: inline-grid;
+	place-content: center;
 	min-width: 1.25rem;
+	height: 1.25rem;
 	padding: 0 var(--space-1);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-tag);
 	color: var(--color-muted);
 	font-family: var(--font-sans);
-	font-size: var(--text-xs);
-	line-height: 1.25rem;
+	font-size: var(--text-caption);
+	line-height: var(--leading-tight);
 	text-align: center;
 	pointer-events: none;
 }

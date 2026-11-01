@@ -1,0 +1,16 @@
+.notice[data-tone="danger"] {
+	border-left: var(--border-width-accent) solid var(--color-danger);
+}
+
+.text {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gap-tight);
+	color: var(--color-muted);
+}
+
+.title {
+	margin: 0;
+	color: var(--color-foreground);
+	font-weight: var(--weight-strong);
+}

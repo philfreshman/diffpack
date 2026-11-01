@@ -1,0 +1,90 @@
+.caption {
+	font-size: var(--text-caption);
+}
+
+.body {
+	font-size: var(--text-body);
+}
+
+.title {
+	font-size: var(--text-title);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-tight);
+}
+
+.display,
+.hero,
+.displayFont {
+	font-family: var(--font-display);
+	font-weight: var(--weight-display);
+	letter-spacing: var(--tracking-display);
+	line-height: var(--leading-tight);
+}
+
+.display {
+	font-size: var(--text-display);
+}
+
+.hero {
+	font-size: var(--text-display-hero);
+}
+
+.displayFont {
+	font-size: var(--text-title);
+}
+
+.regular,
+.medium,
+.strong {
+	font-size: var(--text-body);
+}
+
+.regular {
+	font-weight: var(--weight-regular);
+}
+
+.medium {
+	font-weight: var(--weight-medium);
+}
+
+.strong {
+	font-weight: var(--weight-strong);
+}
+
+.mono {
+	font-family: var(--font-mono);
+	font-size: var(--text-body);
+}
+
+.overline {
+	color: var(--color-muted);
+	font-size: var(--text-caption);
+	font-weight: var(--weight-strong);
+	letter-spacing: var(--tracking-caps);
+	text-transform: uppercase;
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gap-tight);
+}
+
+.fieldLabel {
+	color: var(--color-foreground);
+	font-size: var(--text-body);
+	font-weight: var(--weight-strong);
+}
+
+.detail {
+	color: var(--color-muted);
+	font-size: var(--text-caption);
+}
+
+.prose {
+	display: block;
+	max-width: 36rem;
+	color: var(--color-muted);
+	font-size: var(--text-body);
+	line-height: var(--leading-normal);
+}

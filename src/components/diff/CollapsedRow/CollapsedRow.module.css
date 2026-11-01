@@ -11,7 +11,7 @@
 	width: calc(2 * var(--gutter-width));
 	align-items: stretch;
 	background: var(--color-fold-gutter);
-	border-right: 1px solid var(--color-fold-gutter-border);
+	border-right: var(--border-width) solid var(--color-fold-gutter-border);
 	padding: 0;
 }
 

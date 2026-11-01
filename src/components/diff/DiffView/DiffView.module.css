@@ -1,7 +1,4 @@
 .viewer {
-	--diff-line-height: 23px;
-	--gutter-min-width: 50px;
-
 	position: relative;
 
 	display: flex;
@@ -9,8 +6,8 @@
 	min-width: 0;
 	min-height: 0;
 	flex-direction: column;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-surface);
 	background: var(--color-background);
 	overflow: hidden;
 }
@@ -55,4 +52,10 @@
 	position: relative;
 	width: 100%;
 	border-collapse: collapse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.viewer[data-pending] {
+		transition: none;
+	}
 }

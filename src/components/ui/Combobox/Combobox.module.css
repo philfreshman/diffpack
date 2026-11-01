@@ -7,13 +7,13 @@
 
 .surface {
 	height: var(--control-height);
-	padding: 0 var(--space-3);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
+	padding: 0 var(--padding-control-x);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-control);
 	background-color: var(--color-input);
 	color: var(--color-foreground);
 	font: inherit;
-	font-size: var(--text-sm);
+	font-size: var(--text-body);
 }
 
 .input {
@@ -25,8 +25,8 @@
 }
 
 .input:focus-visible {
-	outline: 2px solid var(--color-focus-ring);
-	outline-offset: 1px;
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: var(--focus-ring-offset);
 }
 
 .input:disabled {
@@ -57,10 +57,6 @@
 .popup {
 	max-height: 36rem;
 	overflow-y: auto;
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
-	background-color: var(--color-background);
-	box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
 }
 
 .list {
@@ -68,19 +64,16 @@
 	flex-direction: column;
 }
 
-.item {
-	padding: var(--space-2) var(--space-3);
-	cursor: pointer;
-	font-size: var(--text-sm);
-}
-
-.item[data-highlighted] {
-	background-color: var(--color-surface-hover);
+.popup .item {
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: center;
+	padding-block: var(--space-2);
 }
 
 .status {
 	margin: 0;
-	padding: var(--space-2) var(--space-3);
+	padding: var(--space-2) var(--padding-control-x);
 	color: var(--color-muted);
-	font-size: var(--text-sm);
+	font-size: var(--text-body);
 }

@@ -8,7 +8,7 @@
 }
 
 .half[data-side="left"] {
-	border-right: 1px solid var(--color-border);
+	border-right: var(--border-width) solid var(--color-border);
 }
 
 /* A drag selects only the side it started in, which DiffView marks on press. */

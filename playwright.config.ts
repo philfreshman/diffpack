@@ -25,7 +25,10 @@ export default defineConfig({
 				// `--strictPort`, or preview moves to another port while Playwright keeps
 				// polling this one and tests another worktree's server.
 				command: `bun run build && bunx vite preview --port ${port} --strictPort`,
-				env: { VITE_DIFFPACK_CACHE_ORIGIN: ALWAYS_MISSING_CACHE },
+				env: {
+					VITE_DIFFPACK_CACHE_ORIGIN: ALWAYS_MISSING_CACHE,
+					VITE_DIFFPACK_DESIGN_GALLERY: "true",
+				},
 				url: baseURL,
 				reuseExistingServer: false,
 				timeout: 600_000,

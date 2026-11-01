@@ -1,0 +1,7 @@
+.bar {
+	display: block;
+	width: var(--bar-length);
+	height: var(--space-3);
+	border-radius: var(--radius-tag);
+	background-color: var(--color-accent);
+}

@@ -1,13 +1,14 @@
 .button {
-	padding: var(--space-2) var(--space-6);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
+	height: var(--control-height);
+	padding: 0 var(--padding-button-x);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-control);
 	background-color: var(--color-surface);
 	color: var(--color-foreground);
 	cursor: pointer;
 	font: inherit;
-	font-size: var(--text-sm);
-	font-weight: 500;
+	font-size: var(--text-body);
+	font-weight: var(--weight-medium);
 	transition: background-color var(--duration-fast);
 	--button-hover-background: var(--color-surface-hover);
 }
@@ -24,8 +25,8 @@
 }
 
 .button:focus-visible {
-	outline: 2px solid var(--color-focus-ring);
-	outline-offset: 2px;
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: var(--focus-ring-offset);
 }
 
 .button:disabled {
@@ -33,4 +34,10 @@
 	background-color: var(--color-border);
 	color: var(--color-muted);
 	cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.button {
+		transition: none;
+	}
 }

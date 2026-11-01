@@ -143,10 +143,64 @@
 	--tree-row-height: 30px;
 	--scrollbar-width: 0.875rem;
 
+	--gutter-min-width: 50px;
+	--tree-indent: 18px;
+
 	/* `@media` cannot read custom properties: media queries repeat these literals. */
 	--breakpoint-sm: 53rem;
 	--breakpoint-md: 63rem;
 	--breakpoint-lg: 75rem;
+
+	--text-caption: var(--text-xs);
+	--text-body: var(--text-sm);
+	--text-title: var(--text-xl);
+	--text-display: var(--text-2xl);
+	--text-display-hero: var(--text-3xl);
+
+	--weight-regular: 400;
+	--weight-medium: 500;
+	--weight-strong: 600;
+	--weight-display: 700;
+
+	--leading-tight: 1.2;
+	--leading-normal: 1.5;
+	--leading-code: 23px;
+
+	--tracking-caps: 0.06em;
+	--tracking-display: -0.025em;
+
+	--gap-tight: var(--space-1);
+	--gap-inline: var(--space-2);
+	--gap-stack: var(--space-3);
+	--gap-group: var(--space-4);
+	--gap-section: var(--space-8);
+
+	--padding-control-x: var(--space-3);
+	--padding-button-x: var(--space-6);
+	--padding-surface-y: var(--space-3);
+	--padding-surface-x: var(--space-4);
+	--padding-popover: var(--space-1);
+
+	--radius-tag: var(--radius-sm);
+	--radius-control: var(--radius-md);
+	--radius-surface: var(--radius-md);
+	--radius-popover: var(--radius-lg);
+	--radius-tile: var(--radius-xl);
+	--radius-pill: var(--radius-full);
+
+	--border-width: 1px;
+	--border-width-strong: 2px;
+	--border-width-accent: 3px;
+	--focus-ring-width: 2px;
+	--focus-ring-offset: 2px;
+	--underline-offset: 2px;
+	--underline-thickness-hover: 2px;
+
+	--shadow-popover: 0 8px 24px rgb(0 0 0 / 0.15);
+
+	--duration-instant: 50ms;
+
+	--z-raised: 1;
 }
 
 :root[data-theme="dark"] {
