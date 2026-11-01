@@ -6,10 +6,13 @@ import type { StreamNavigation } from "./useStreamNavigation.ts";
 export function useStreamShortcuts(
 	files: readonly DiffFileEntry[],
 	viewed: ReadonlySet<string>,
+	selectedPath: string,
 	navigation: StreamNavigation,
 	onViewedChange: (path: string, viewed: boolean) => void,
 ) {
-	const current = files[navigation.currentIndex];
+	const selectedFile =
+		files.find((entry) => entry.path === selectedPath) ??
+		files[navigation.currentIndex];
 
 	useKeyShortcut("j", () => navigation.stepFile(1));
 	useKeyShortcut("k", () => navigation.stepFile(-1));
@@ -18,6 +21,8 @@ export function useStreamShortcuts(
 		if (upNext) navigation.scrollToFile(upNext.path);
 	});
 	useKeyShortcut("v", () => {
-		if (current) onViewedChange(current.path, !viewed.has(current.path));
+		if (selectedFile) {
+			onViewedChange(selectedFile.path, !viewed.has(selectedFile.path));
+		}
 	});
 }

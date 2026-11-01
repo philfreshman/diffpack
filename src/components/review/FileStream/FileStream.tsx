@@ -19,6 +19,7 @@ export interface FileStreamProps {
 	files: readonly DiffFileEntry[];
 	readFile(entry: DiffFileEntry): Promise<FileDiff>;
 	viewed: ReadonlySet<string>;
+	selectedPath: string;
 	onViewedChange(path: string, viewed: boolean): void;
 	onCurrentFileChange(path: string | null): void;
 	onOpenFile(path: string): void;
@@ -35,6 +36,7 @@ export function FileStream({
 	files,
 	readFile,
 	viewed,
+	selectedPath,
 	onViewedChange,
 	onCurrentFileChange,
 	onOpenFile,
@@ -46,7 +48,13 @@ export function FileStream({
 	highlightTheme,
 }: FileStreamProps) {
 	const { scrollerRef, contentRef, cardsRef, navigation, changeViewed } =
-		useFileStream(files, viewed, onViewedChange, onCurrentFileChange);
+		useFileStream(
+			files,
+			viewed,
+			selectedPath,
+			onViewedChange,
+			onCurrentFileChange,
+		);
 
 	useImperativeHandle(streamRef, () => ({
 		scrollToFile: navigation.scrollToFile,

@@ -151,6 +151,7 @@ function streamOf({
 		files: changed,
 		readFile: diffSession.readFile,
 		viewed: review.viewed,
+		selectedPath: files.selectedPath,
 		onViewedChange: review.setViewed,
 		onCurrentFileChange: files.onCurrentFileChange,
 		onOpenFile: links.openFile,

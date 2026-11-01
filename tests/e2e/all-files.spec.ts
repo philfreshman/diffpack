@@ -272,6 +272,25 @@ test("v folds the file being read and stays on it", async ({ page }) => {
 	await expect(stream(page)).toHaveAttribute("data-current", first);
 });
 
+test("v marks the file selected in the tree over the one scrolled to", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const [first = "", second = "", third = ""] = await cardPaths(page);
+	await card(page, first).getByTestId("collapse-file").click();
+	await card(page, second).getByTestId("collapse-file").click();
+	await expect(card(page, third)).toBeInViewport();
+	await card(page, second).getByRole("heading").click();
+	await expect(treeFile(page, second)).toHaveAttribute("aria-selected", "true");
+	await expect(stream(page)).not.toHaveAttribute("data-current", second);
+	const scrolledTo = (await stream(page).getAttribute("data-current")) ?? "";
+
+	await page.keyboard.press("v");
+
+	await expect(card(page, second)).toHaveAttribute("data-viewed");
+	await expect(card(page, scrolledTo)).not.toHaveAttribute("data-viewed");
+});
+
 test("n jumps to the next file not yet viewed", async ({ page }) => {
 	await showAllFiles(page);
 	const [first = "", second = "", third = "", fourth = ""] =
