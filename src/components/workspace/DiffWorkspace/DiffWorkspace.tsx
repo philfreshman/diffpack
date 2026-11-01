@@ -346,7 +346,6 @@ function SingleFile({
 				)
 			}
 			folded={!open}
-			onClose={onClose}
 			pending={pending}
 			showSigns={showSigns}
 			autohideScrollbar={autohideScrollbar}

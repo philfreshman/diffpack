@@ -17,7 +17,6 @@ import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
 import { emphasisStyle } from "#/lib/diff/themeEmphasis.ts";
 import styles from "./DiffView.module.css";
 import { useAnchorSeek } from "./useAnchorSeek.ts";
-import { useCloseOnEscape } from "./useCloseOnEscape.ts";
 import { useOneSidedSelection } from "./useOneSidedSelection.ts";
 import {
 	offsetInEstimatedRows,
@@ -29,7 +28,6 @@ export interface DiffViewProps {
 	file: FileModelControls;
 	header: ReactNode;
 	folded: boolean;
-	onClose(): void;
 	pending?: boolean;
 	showSigns: boolean;
 	autohideScrollbar: boolean;
@@ -43,7 +41,6 @@ export function DiffView({
 	file,
 	header,
 	folded,
-	onClose,
 	pending,
 	showSigns,
 	autohideScrollbar,
@@ -61,7 +58,6 @@ export function DiffView({
 
 	useAnchorSeek(file, anchor, virtualizer);
 	const scrollTopRef = useScrollMemory(file.scrollTop, file.rememberScroll);
-	useCloseOnEscape(onClose);
 	useOneSidedSelection(scroller);
 
 	return (
