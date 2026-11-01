@@ -323,7 +323,7 @@ function SingleFile({
 	highlightTheme,
 }: SingleFileProps) {
 	const viewed = review.viewed.has(shown.path);
-	const [open, setOpen] = useStateResetOn(() => !viewed, [viewed]);
+	const [open, setOpen] = useStateResetOn(() => true, [shown.path]);
 	useKeyShortcut("v", () => review.setViewed(shown.path, !viewed));
 
 	return (
