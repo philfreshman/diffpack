@@ -1,14 +1,14 @@
 .title {
 	margin: 0;
 	font-family: var(--font-display);
-	font-size: var(--text-2xl);
-	font-weight: 700;
-	letter-spacing: -0.025em;
+	font-size: var(--text-display);
+	font-weight: var(--weight-display);
+	letter-spacing: var(--tracking-display);
 }
 
 /* --breakpoint-sm */
 @media (min-width: 53rem) {
 	.title[data-size="hero"] {
-		font-size: var(--text-3xl);
+		font-size: var(--text-display-hero);
 	}
 }

@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 import {
 	CheckIcon,
 	ChevronDownIcon,
@@ -109,7 +109,7 @@ function FileTreeRow({
 			}}
 			tabIndex={active ? 0 : -1}
 			onFocus={() => onFocus(key)}
-			style={{ paddingLeft: `${row.depth * 18 + 4}px` }}
+			style={{ "--depth": row.depth } as CSSProperties}
 			aria-level={row.depth + 1}
 			aria-expanded={hasChildren ? expanded : undefined}
 			aria-selected={selected}

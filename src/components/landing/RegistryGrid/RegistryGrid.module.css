@@ -3,7 +3,7 @@
 	width: 100%;
 	max-width: 64rem;
 	grid-template-columns: 1fr;
-	gap: var(--space-8);
+	gap: var(--gap-section);
 	margin: 0;
 	padding: 0;
 	list-style: none;

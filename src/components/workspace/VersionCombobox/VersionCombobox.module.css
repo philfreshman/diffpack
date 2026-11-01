@@ -3,7 +3,7 @@
 	min-width: 0;
 	flex: 1 1 0;
 	flex-direction: column;
-	gap: var(--space-1);
+	gap: var(--gap-tight);
 }
 
 /* The download link is not in the input: its trailing slot goes inert while
@@ -11,7 +11,7 @@
 .labelRow {
 	display: flex;
 	align-items: center;
-	gap: var(--space-2);
+	gap: var(--gap-inline);
 }
 
 /* A wrapped label would make the header taller than the sidebar's head. */
@@ -19,8 +19,8 @@
 	min-width: 0;
 	overflow: hidden;
 	color: var(--color-foreground);
-	font-size: var(--text-sm);
-	font-weight: 700;
+	font-size: var(--text-body);
+	font-weight: var(--weight-strong);
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
@@ -36,4 +36,10 @@
 .download:hover,
 .download:focus-visible {
 	color: var(--color-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.download {
+		transition: none;
+	}
 }

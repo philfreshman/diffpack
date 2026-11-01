@@ -1,13 +1,15 @@
 .frame {
 	--step-height: 1.75rem;
 	--steps-gap: var(--space-1);
-	--section-padding: var(--space-3);
+	--section-padding: var(--padding-surface-y);
 	--summary-height: 13.75rem;
 	--build-height: calc(
 		var(--step-count) * var(--step-height) + (var(--step-count) - 1) *
 			var(--steps-gap) + 2 * var(--section-padding)
 	);
-	--scan-height: calc(var(--step-height) + 2 * var(--section-padding) + 1px);
+	--scan-height: calc(
+		var(--step-height) + 2 * var(--section-padding) + var(--border-width)
+	);
 	--steps-height: max(
 		var(--summary-height),
 		calc(var(--build-height) + var(--scan-height))
@@ -28,20 +30,19 @@
 	align-self: start;
 	padding: 0;
 	overflow: hidden;
-	border-radius: var(--radius-md);
 	background-color: var(--color-summary-surface);
 }
 
 .build {
 	flex: 1;
-	padding: var(--section-padding) var(--space-4);
+	padding: var(--section-padding) var(--padding-surface-x);
 	background-color: var(--color-summary-overview);
 }
 
 .scan {
 	margin: 0;
-	padding: var(--section-padding) var(--space-4);
-	border-top: 1px solid var(--color-border);
+	padding: var(--section-padding) var(--padding-surface-x);
+	border-top: var(--border-width) solid var(--color-border);
 	list-style: none;
 }
 
@@ -79,8 +80,8 @@
 .dot {
 	width: 0.5rem;
 	height: 0.5rem;
-	border: 1px solid var(--color-muted);
-	border-radius: var(--radius-full);
+	border: var(--border-width) solid var(--color-muted);
+	border-radius: var(--radius-pill);
 }
 
 .dot[data-state="done"] {
@@ -105,5 +106,5 @@
 	gap: var(--space-2);
 	margin-top: var(--space-3);
 	padding-top: var(--space-3);
-	border-top: 1px solid var(--color-border);
+	border-top: var(--border-width) solid var(--color-border);
 }

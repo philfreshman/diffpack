@@ -17,12 +17,12 @@
 	width: 100%;
 	height: var(--control-height);
 	padding: 0 var(--space-8) 0 var(--space-8);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-control);
 	background: var(--color-input);
 	color: var(--color-foreground);
 	font: inherit;
-	font-size: var(--text-sm);
+	font-size: var(--text-body);
 }
 
 .input::placeholder {
@@ -30,8 +30,8 @@
 }
 
 .input:focus-visible {
-	outline: 2px solid var(--color-accent);
-	outline-offset: -1px;
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .shortcut {

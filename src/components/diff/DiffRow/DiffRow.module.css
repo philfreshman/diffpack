@@ -14,16 +14,16 @@
 	width: 100%;
 	display: flex;
 	align-items: stretch;
-	line-height: var(--diff-line-height);
+	line-height: var(--leading-code);
 	font-family: var(--font-mono);
-	font-size: var(--text-sm);
+	font-size: var(--text-body);
 }
 
 .gutter {
 	flex: 0 0 var(--gutter-width);
 	width: var(--gutter-width);
 	padding: 0 var(--space-2);
-	border-right: 1px solid var(--color-border);
+	border-right: var(--border-width) solid var(--color-border);
 	color: var(--color-muted);
 	text-align: right;
 	user-select: none;
@@ -85,13 +85,13 @@
 	position: absolute;
 	inset: 0;
 	background: var(--color-line-selected);
-	box-shadow: inset 3px 0 var(--color-line-selected-edge);
+	box-shadow: inset var(--border-width-accent) 0 var(--color-line-selected-edge);
 	pointer-events: none;
 }
 
 .content mark {
 	color: inherit;
-	border-radius: var(--radius-sm);
+	border-radius: var(--radius-tag);
 }
 
 .content[data-change="added"] mark {

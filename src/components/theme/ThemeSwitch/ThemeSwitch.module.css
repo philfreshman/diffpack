@@ -2,8 +2,8 @@
 	display: flex;
 	gap: var(--space-1);
 	padding: var(--space-1);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-lg);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-surface);
 }
 
 .segment {
@@ -13,7 +13,7 @@
 	justify-content: center;
 	padding: var(--space-1) 0;
 	border: 0;
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-tag);
 	background: transparent;
 	color: var(--color-muted);
 	cursor: pointer;
@@ -29,8 +29,8 @@
 }
 
 .segment:focus-visible {
-	outline: 2px solid var(--color-focus-ring);
-	outline-offset: -2px;
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .segment:disabled {

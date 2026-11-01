@@ -1,6 +1,7 @@
 import { Combobox as Base } from "@base-ui/react/combobox";
 import type { KeyboardEvent, ReactNode, Ref } from "react";
 import { useHydrated } from "#/components/lifecycle/useHydrated.ts";
+import popoverStyles from "#/components/ui/Popover/Popover.module.css";
 import styles from "./Combobox.module.css";
 import { useComboboxRoot } from "./useComboboxRoot.ts";
 
@@ -167,7 +168,7 @@ function ComboboxPopup<T>({
 	return (
 		<Base.Portal>
 			<Base.Positioner className={styles.positioner} sideOffset={4}>
-				<Base.Popup className={styles.popup}>
+				<Base.Popup className={`${popoverStyles.surface} ${styles.popup}`}>
 					{loading ? (
 						<p className={styles.status} role="status">
 							{loadingMessage}
@@ -178,7 +179,7 @@ function ComboboxPopup<T>({
 							<Base.List className={styles.list}>
 								{(item: T) => (
 									<Base.Item
-										className={styles.item}
+										className={`${popoverStyles.item} ${styles.item}`}
 										key={itemToText(item)}
 										value={item}
 									>

@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import { useImperativeHandle } from "react";
 import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 
-/** Must match `--diff-line-height` in pixels. */
+/** Must match `--leading-code` in pixels. */
 const ROW_HEIGHT = 23;
 
 export function useRowVirtualizer(
