@@ -28,8 +28,9 @@ export function useFileNavigation({
 	const openPath = session.file?.path ?? "";
 	const streamRef = useRef<FileStreamHandle>(null);
 	const [streamPath, setStreamPath] = useState<string | null>(null);
+	const [pickedPath, setPickedPath] = useState<string | null>(null);
 	const scrollTargetRef = useScrollOnStreamStart(streamRef, streaming);
-	const currentPath = streaming ? (streamPath ?? "") : openPath;
+	const currentPath = streaming ? (pickedPath ?? streamPath ?? "") : openPath;
 	const currentIndex = changed.findIndex((entry) => entry.path === currentPath);
 
 	function stepFile(direction: 1 | -1) {
@@ -42,17 +43,24 @@ export function useFileNavigation({
 	}
 
 	function showFile(path: string) {
+		setPickedPath(null);
 		if (streaming) streamRef.current?.scrollToFile(path);
 		else openFile(path);
 	}
 
+	function followStream(path: string | null) {
+		setPickedPath(null);
+		setStreamPath(path);
+	}
+
 	function changeLayout(next: FileLayout) {
+		setPickedPath(null);
 		layout.set(next);
 		if (next === "all" && openPath) {
 			scrollTargetRef.current = openPath;
 			closeFile();
 		}
-		if (next === "single" && streaming && streamPath) openFile(streamPath);
+		if (next === "single" && streaming && currentPath) openFile(currentPath);
 	}
 
 	return {
@@ -62,7 +70,8 @@ export function useFileNavigation({
 		streamRef,
 		currentPath,
 		currentIndex,
-		onCurrentFileChange: setStreamPath,
+		onCurrentFileChange: followStream,
+		pickStreamFile: setPickedPath,
 		stepFile,
 		showFile,
 		changeLayout,

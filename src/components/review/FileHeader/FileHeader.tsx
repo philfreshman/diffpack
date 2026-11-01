@@ -25,6 +25,7 @@ interface FileHeaderProps {
 	viewed: boolean;
 	onViewedChange(viewed: boolean): void;
 	onOpenFile?(): void;
+	onSelect?(): void;
 	onClose?(): void;
 	expandAll: boolean | null;
 	onExpandAllChange(expandAll: boolean): void;
@@ -37,6 +38,7 @@ export function FileHeader({
 	viewed,
 	onViewedChange,
 	onOpenFile,
+	onSelect,
 	onClose,
 	expandAll,
 	onExpandAllChange,
@@ -47,6 +49,7 @@ export function FileHeader({
 		<header
 			className={styles.header}
 			data-open={open ? "" : undefined}
+			onPointerDown={() => onSelect?.()}
 			onDoubleClick={(event) => {
 				if (isInsideControl(event.target)) return;
 				clearTextSelection();

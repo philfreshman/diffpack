@@ -27,6 +27,7 @@ export interface FileCardProps {
 	onViewedChange(viewed: boolean): void;
 	onCollapse(): void;
 	onOpenFile(): void;
+	onSelect(): void;
 	onSelectLine(anchor: LineAnchor): void;
 }
 
@@ -39,6 +40,7 @@ export function FileCard({
 	onViewedChange,
 	onCollapse,
 	onOpenFile,
+	onSelect,
 	onSelectLine,
 }: FileCardProps) {
 	const articleRef = useRef<HTMLElement>(null);
@@ -68,6 +70,7 @@ export function FileCard({
 				onExpandAllChange={card.setExpandAll}
 				onOpenChange={changeOpen}
 				onOpenFile={onOpenFile}
+				onSelect={onSelect}
 				onViewedChange={onViewedChange}
 				open={open}
 				viewed={viewed}

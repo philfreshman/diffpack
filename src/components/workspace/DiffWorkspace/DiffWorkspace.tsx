@@ -154,6 +154,7 @@ function streamOf({
 		onViewedChange: review.setViewed,
 		onCurrentFileChange: files.onCurrentFileChange,
 		onOpenFile: links.openFile,
+		onSelectFile: files.pickStreamFile,
 		onSelectLine: links.selectStreamLine,
 		split: viewer.split.value,
 	};

@@ -213,6 +213,36 @@ test("a file picked in the tree scrolls into view without leaving the comparison
 	await expect(page).toHaveURL(EXPRESS);
 });
 
+test("a click on a card's header selects its file in the tree until the stream scrolls on", async ({
+	page,
+}) => {
+	await showAllFiles(page);
+	const [first = "", second = "", third = ""] = await cardPaths(page);
+	await card(page, first).getByTestId("collapse-file").click();
+	await card(page, second).getByTestId("collapse-file").click();
+	await expect(card(page, third)).toBeInViewport();
+
+	await card(page, second).getByRole("heading").click();
+
+	await expect(treeFile(page, second)).toHaveAttribute("aria-selected", "true");
+	await expect(treeFile(page, first)).toHaveAttribute("aria-selected", "false");
+	await expect(page).toHaveURL(EXPRESS);
+
+	await stream(page).evaluate((element) =>
+		element.scrollTo(0, element.scrollHeight),
+	);
+	await expect(stream(page)).not.toHaveAttribute("data-current", second);
+	const scrolledTo = (await stream(page).getAttribute("data-current")) ?? "";
+	await expect(treeFile(page, scrolledTo)).toHaveAttribute(
+		"aria-selected",
+		"true",
+	);
+	await expect(treeFile(page, second)).toHaveAttribute(
+		"aria-selected",
+		"false",
+	);
+});
+
 test("a card opens its file on its own", async ({ page }) => {
 	await showAllFiles(page);
 	const [path = ""] = await cardPaths(page);
