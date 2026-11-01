@@ -16,6 +16,7 @@
 		"test:e2e": "playwright test",
 		"test:networked": "bun test tests/networked",
 		"screenshots": "bun scripts/capture-screenshots.mjs",
+		"screenshot": "bun scripts/screenshot.ts",
 		"lint": "oxlint --deny-warnings --report-unused-disable-directives",
 		"format": "oxfmt --check",
 		"typecheck": "tsc --noEmit",

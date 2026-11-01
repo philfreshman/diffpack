@@ -1,0 +1,22 @@
+.staticPopover {
+	width: 100%;
+}
+
+.detail {
+	margin: 0;
+}
+
+.textLink {
+	color: var(--color-foreground);
+	font-size: var(--text-body);
+	text-underline-offset: var(--underline-offset);
+}
+
+.textLink:hover {
+	text-decoration-thickness: var(--underline-thickness-hover);
+}
+
+.textLink:focus-visible {
+	outline: var(--focus-ring-width) solid var(--color-focus-ring);
+	outline-offset: var(--focus-ring-offset);
+}

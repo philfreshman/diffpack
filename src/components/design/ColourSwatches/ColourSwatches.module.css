@@ -1,0 +1,24 @@
+.swatches {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+	gap: var(--gap-stack) var(--gap-group);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.swatch {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: var(--gap-inline);
+}
+
+.chip {
+	flex: none;
+	width: var(--control-height);
+	height: var(--control-height);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-control);
+	background-color: var(--swatch);
+}
