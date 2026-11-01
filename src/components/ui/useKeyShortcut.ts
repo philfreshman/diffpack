@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent } from "react";
+import { blurActiveElement } from "./blurActiveElement.ts";
 
 export function useKeyShortcut(key: string, onPress: () => void) {
 	const handler = useEffectEvent(onPress);
@@ -9,6 +10,7 @@ export function useKeyShortcut(key: string, onPress: () => void) {
 			if (event.metaKey || event.ctrlKey || event.altKey) return;
 			if (isEditable(event.target)) return;
 			event.preventDefault();
+			blurActiveElement();
 			handler();
 		}
 
