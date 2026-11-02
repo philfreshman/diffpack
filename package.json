@@ -59,7 +59,7 @@
 		"husky": "9.1.7",
 		"nitro": "3.0.260610-beta",
 		"oxc-transform-react": "0.152.0",
-		"oxfmt": "0.74.0",
+		"oxfmt": "0.75.0",
 		"oxlint": "1.89.0",
 		"typescript": "6.0.3",
 		"vite": "8.2.2"
