@@ -402,8 +402,10 @@ test("a light syntax theme brings the whole viewer with it, dark page or not", a
 		"data-syntax",
 		"light",
 	);
-	for (const luma of await surfaceLumas(page))
-		expect(luma).toBeGreaterThan(0.5);
+	await expect(async () => {
+		for (const luma of await surfaceLumas(page))
+			expect(luma).toBeGreaterThan(0.5);
+	}).toPass();
 
 	// And back, so it is the syntax theme deciding rather than a viewer that is always light.
 	await openThemes(page);
@@ -413,7 +415,9 @@ test("a light syntax theme brings the whole viewer with it, dark page or not", a
 		"data-syntax",
 		"dark",
 	);
-	for (const luma of await surfaceLumas(page)) expect(luma).toBeLessThan(0.5);
+	await expect(async () => {
+		for (const luma of await surfaceLumas(page)) expect(luma).toBeLessThan(0.5);
+	}).toPass();
 });
 
 test("colours the code by what the tokens are", async ({ page }) => {
