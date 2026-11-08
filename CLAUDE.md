@@ -356,8 +356,9 @@ server function).
 
 - **Headers, redirects and routing go in `nitro({ routeRules })` in `vite.config.ts`, not
   `vercel.json`.** The build writes its own `.vercel/output/config.json`, so rules in `vercel.json`
-  are never read. Check a change with `VERCEL=1 bun run build` and read that file. A route rule
-  that matches ends matching, which is why `/assets/**.wasm` repeats the immutable cache header.
+  are never read. Check a change with `VERCEL=1 bun run build` and read that file. Matching rules
+  stack, the more specific path last, so `/assets/**.wasm` adds its content type to the immutable
+  cache header `/assets/**` already sets.
 - **Only `main` deploys.** Work goes to `development` through PRs, and CI runs there. `main` is
   released by merging `development` into it. There are no preview deployments.
 - **`main` takes pull requests from `development` only, as a merge commit.** The required

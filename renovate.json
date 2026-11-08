@@ -27,11 +27,6 @@
 				"@types/react",
 				"@types/react-dom"
 			]
-		},
-		{
-			"description": "@astrojs/check pins its typescript peer, so hold typescript back until it supports the next major",
-			"matchPackageNames": ["typescript"],
-			"allowedVersions": "<7"
 		}
 	]
 }

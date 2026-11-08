@@ -143,25 +143,12 @@ function StreamCards({
 	);
 }
 
-const PUMPKIN = String.raw`
-      ___
-   ___)__|___
-  /  /\   /\  \
- |  /__\ /__\  |
- |     /\      |
- |  \/\/\/\/\  |
-  \___________/
-`;
-
 function StreamEnd({ fileCount }: { fileCount: number }) {
 	return (
 		<footer className={styles.end}>
 			<p className={styles.endText}>
 				End of the changes · {fileCount} {fileCount === 1 ? "file" : "files"}
 			</p>
-			<pre className={styles.pumpkin} aria-hidden="true">
-				{PUMPKIN.slice(1)}
-			</pre>
 		</footer>
 	);
 }
