@@ -22,7 +22,7 @@ jobs:
       # Opens an issue when a release fails.
       issues: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # semantic-release reads every commit since the last tag.
           fetch-depth: 0
