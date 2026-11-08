@@ -228,10 +228,11 @@ test("a click on a card's header selects its file in the tree until the stream s
 	await expect(treeFile(page, first)).toHaveAttribute("aria-selected", "false");
 	await expect(page).toHaveURL(EXPRESS);
 
+	const beforeScroll = (await stream(page).getAttribute("data-current")) ?? "";
 	await stream(page).evaluate((element) =>
 		element.scrollTo(0, element.scrollHeight),
 	);
-	await expect(stream(page)).not.toHaveAttribute("data-current", second);
+	await expect(stream(page)).not.toHaveAttribute("data-current", beforeScroll);
 	const scrolledTo = (await stream(page).getAttribute("data-current")) ?? "";
 	await expect(treeFile(page, scrolledTo)).toHaveAttribute(
 		"aria-selected",
