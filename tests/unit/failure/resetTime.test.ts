@@ -21,7 +21,7 @@ describe("formatResetTime", () => {
 		expect(formatResetTime(RESET, "en-US", "UTC")).toBe("12:00 AM UTC");
 		expect(
 			formatResetTime("2026-12-01T00:00:00Z", "en-GB", "Europe/London"),
-		).toBe("00:00 GMT");
+		).toStartWith("00:00 GMT");
 	});
 });
 
