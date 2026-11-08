@@ -20,13 +20,9 @@ export default defineConfig({
 					},
 				},
 				// `instantiateStreaming` needs `application/wasm`, or it silently falls
-				// back to the slow path. The cache header must be repeated: a matching
-				// Vercel route ends matching, so `/assets/**` never applies here.
+				// back to the slow path.
 				"/assets/**.wasm": {
-					headers: {
-						"content-type": "application/wasm",
-						"cache-control": "public, max-age=31536000, immutable",
-					},
+					headers: { "content-type": "application/wasm" },
 				},
 				"/**": {
 					headers: {
