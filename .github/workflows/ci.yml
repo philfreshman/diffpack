@@ -17,7 +17,7 @@ permissions:
 env:
   # Matches the version the project is developed against and the pinned
   # `@types/bun`; CI should not silently move ahead of either.
-  BUN_VERSION: 1.3.14
+  BUN_VERSION: 1.4.4
 
 jobs:
   changes:
