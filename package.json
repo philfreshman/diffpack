@@ -33,18 +33,18 @@
 		"prepare": "husky"
 	},
 	"dependencies": {
-		"@base-ui/react": "1.7.0",
+		"@base-ui/react": "1.9.0",
 		"@philfreshman/diffpack-engine": "0.5.0",
-		"@tanstack/react-query": "5.101.4",
-		"@tanstack/react-router": "1.170.41",
-		"@tanstack/react-start": "1.168.60",
+		"@tanstack/react-query": "5.107.1",
+		"@tanstack/react-router": "1.170.46",
+		"@tanstack/react-start": "1.169.5",
 		"@tanstack/react-store": "0.11.2",
-		"@tanstack/react-virtual": "3.14.24",
+		"@tanstack/react-virtual": "3.14.26",
 		"highlight.js": "11.12.0",
 		"react": "19.3.1",
 		"react-dom": "19.3.1",
 		"three": "0.187.0",
-		"zod": "4.4.3"
+		"zod": "4.6.7"
 	},
 	"devDependencies": {
 		"@playwright/test": "1.62.1",
