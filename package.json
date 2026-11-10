@@ -59,8 +59,8 @@
 		"husky": "9.1.7",
 		"nitro": "3.0.261103-rc",
 		"oxc-transform-react": "0.156.0",
-		"oxfmt": "0.77.0",
-		"oxlint": "1.92.0",
+		"oxfmt": "0.78.0",
+		"oxlint": "1.93.0",
 		"typescript": "7.0.2",
 		"vite": "8.3.6"
 	}
