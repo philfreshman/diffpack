@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import styles from "./AsciiTrail.module.css";
 import { startAsciiTrail } from "./asciiTrailLoop.ts";
+import styles from "./AsciiTrail.module.css";
 
 const MOUSE_WITHOUT_REDUCED_MOTION =
 	"(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";

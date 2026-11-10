@@ -1,4 +1,3 @@
-import rowStyles from "#/components/diff/DiffRow/DiffRow.module.css";
 import { LineNumber } from "#/components/diff/LineNumber/LineNumber.tsx";
 import type {
 	SelectableRowProps,
@@ -8,6 +7,7 @@ import { highlightLine } from "#/lib/diff/highlight.ts";
 import type { TextRange } from "#/lib/diff/inlineChange.ts";
 import { anchorOfLine, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
+import rowStyles from "#/components/diff/DiffRow/DiffRow.module.css";
 import styles from "./SplitDiffRow.module.css";
 
 export function SplitDiffRow({

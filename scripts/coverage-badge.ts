@@ -1,7 +1,7 @@
-import { $ } from "bun";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { $ } from "bun";
 
 const BADGE_PATH = ".github/badges/coverage.svg";
 const MEASURED_SOURCE = "src/";
