@@ -1,0 +1,6 @@
+[install]
+# Only install package versions published at least 14 days ago (value in
+# seconds), the same delay Renovate applies to direct updates. This also
+# covers transitive dependencies that a fresh resolve would otherwise pull
+# in on the day they are published.
+minimumReleaseAge = 1209600
