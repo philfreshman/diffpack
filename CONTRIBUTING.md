@@ -122,9 +122,9 @@ Nothing here builds or tests Rust.
 
 ### The pre-commit hook
 
-`.husky/pre-commit` runs, in order: `typecheck`, `lint`, `format`, `test`, then
+`.husky/pre-commit` runs, in order: `typecheck`, `lint`, `format:check`, `test`, then
 [`fallow audit`](https://fallow.tools) scoped to what your branch changed against its upstream (or
-`development` if it has none). Measured on this repo: typecheck ~2.1s, lint ~1.4s, format ~0.1s,
+`development` if it has none). Measured on this repo: typecheck ~2.1s, lint ~1.4s, format:check ~0.1s,
 test ~0.3s, `fallow audit` ~1.4s warm — about 5.3s total.
 
 `fallow audit --gate new-only` (the default, and what the hook passes) only blocks findings **your
@@ -165,7 +165,7 @@ five jobs — none of which needs a Rust toolchain, since the engine arrives pre
 | Job | Runs | Needs |
 | :--- | :--- | :--- |
 | `conventional commits` | fails on a commit in the PR whose message is not a Conventional Commit | git, PRs only |
-| `typecheck, lint, unit tests` | `typecheck`, `lint`, `format`, `test`, `check:badge`, `check:coverage-badge` | bun only |
+| `typecheck, lint, unit tests` | `typecheck`, `lint`, `format:check`, `test`, `check:badge`, `check:coverage-badge` | bun only |
 | `end-to-end` | `test:e2e` | bun + Chromium |
 | `fallow audit (PR gate)` | `fallow audit --gate new-only`, `fallow security --gate newly-reachable`, `check:coverage-gaps`, SARIF upload | bun, PRs only |
 | `fallow (full repo)` | full-repo `fallow`, the type-aware pass, `check:coverage-gaps`, the health grade, SARIF upload | bun, pushes to `development` only |
@@ -289,9 +289,10 @@ bun run badge:coverage   # then commit .github/badges/coverage.svg
 - **Branching**: Create a feature branch for your changes.
 - **Code Style**: We lint with [oxlint](https://oxc.rs/docs/guide/usage/linter) and format with
   [oxfmt](https://oxc.rs/docs/guide/usage/formatter) — tabs, double quotes. `bun run lint` and
-  `bun run format` only check; to rewrite files in place, run:
+  `bun run format:check` only check; to fix lint findings and rewrite files in place, run:
   ```bash
-  bunx oxfmt
+  bun run lint:fix
+  bun run format
   ```
 - **Styling**: CSS Modules, no Tailwind. A component that has a stylesheet lives in its own folder
   with it (`components/ui/Button/{Button.tsx,Button.module.css}`), so the pair moves as a unit.

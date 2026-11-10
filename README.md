@@ -155,7 +155,8 @@ time), so a change that crosses a boundary crosses a release: see
 | `bun run check:vectors` | `fixtures/cache-key-vectors.json` is byte-identical to the server's at a pinned commit (`:development` compares with the server's tip) |
 | `bun run screenshots` | recapture the reference set (`scripts/capture-screenshots.mjs`) |
 | `bun run typecheck` | `tsc --noEmit` |
-| `bun run lint` · `format` | oxlint · oxfmt (check only; `bunx oxfmt` writes) |
+| `bun run lint` · `lint:fix` | oxlint: check · apply safe fixes |
+| `bun run format` · `format:check` | oxfmt: rewrite files · check only |
 
 <br>
 
