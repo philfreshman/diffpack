@@ -2,7 +2,6 @@ import type { VirtualItem } from "@tanstack/react-virtual";
 import { type CSSProperties, type Ref, useRef } from "react";
 import { CollapsedRow } from "#/components/diff/CollapsedRow/CollapsedRow.tsx";
 import { DiffRow } from "#/components/diff/DiffRow/DiffRow.tsx";
-import viewStyles from "#/components/diff/DiffView/DiffView.module.css";
 import { useOneSidedSelection } from "#/components/diff/DiffView/useOneSidedSelection.ts";
 import { SplitDiffRow } from "#/components/diff/SplitDiffRow/SplitDiffRow.tsx";
 import type { LineRange } from "#/lib/diff/computeVisibility.ts";
@@ -13,11 +12,12 @@ import type { TextRange } from "#/lib/diff/inlineChange.ts";
 import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
 import { emphasisStyle } from "#/lib/diff/themeEmphasis.ts";
-import styles from "./StreamRows.module.css";
 import {
 	type StreamLayoutRefs,
 	useStreamVirtualizer,
 } from "./useStreamVirtualizer.ts";
+import viewStyles from "#/components/diff/DiffView/DiffView.module.css";
+import styles from "./StreamRows.module.css";
 
 export interface RowDisplay {
 	showSigns: boolean;

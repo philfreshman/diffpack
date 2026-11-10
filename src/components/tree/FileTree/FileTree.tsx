@@ -12,8 +12,8 @@ import {
 } from "#/components/ui/icons.tsx";
 import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry, DiffStatus } from "#/lib/worker/protocol.ts";
-import styles from "./FileTree.module.css";
 import { useTreeNavigation } from "./useTreeNavigation.ts";
+import styles from "./FileTree.module.css";
 
 export interface FileTreeProps {
 	rows: readonly TreeRow[];

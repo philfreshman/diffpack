@@ -2,11 +2,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { Button } from "#/components/ui/Button/Button.tsx";
 import type { RegistryAdapter } from "#/lib/registries/types.ts";
-import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { diffSession } from "#/lib/session/diffSession.ts";
-import { resolveSelection } from "../versionSelection.ts";
+import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 import { useVersions } from "../useVersions.ts";
 import { VersionCombobox } from "../VersionCombobox/VersionCombobox.tsx";
+import { resolveSelection } from "../versionSelection.ts";
 import styles from "./VersionControls.module.css";
 
 // Choosing a version does not write the URL; only Compare does, because the
