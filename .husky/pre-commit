@@ -2,7 +2,7 @@ set -e
 
 bun run typecheck
 bun run lint
-bun run format
+bun run format:check
 bun run test
 
 # Determine the diff base for the fallow audit below: the point where this

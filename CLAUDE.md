@@ -21,7 +21,9 @@ bun install
 bun run dev              # Vite on :4321
 bun run typecheck        # tsc --noEmit
 bun run lint             # oxlint, unused disable comments fail too
-bun run format           # oxfmt --check (tabs, double quotes); bunx oxfmt writes
+bun run lint:fix         # oxlint --fix, applies safe fixes
+bun run format           # oxfmt, rewrites files in place (tabs, double quotes)
+bun run format:check     # oxfmt --check, what the hook and CI run
 bun run test             # unit: bun test tests/unit, no network, ~1s
 bun run test:e2e         # Playwright: production build + real registries, slow and online
 bun run generate-routes  # tsr generate, after adding or renaming a file in src/routes/
@@ -39,7 +41,7 @@ bun run ci-failure 258   # why a PR's CI failed: error excerpts, plus Playwright
 - `VITE_DIFFPACK_PROXY_ORIGIN` points the Composer and Go adapters and the engine at another proxy, such as
   `http://localhost:8787` for `bun run dev` in `../diffpack-proxy`. Unset, both use the deployed
   `https://diffpack-proxy.philipswiezak.workers.dev`, and so does every e2e run.
-- The pre-commit hook runs typecheck, lint, format, test, then `fallow audit` against the branch's
+- The pre-commit hook runs typecheck, lint, format:check, test, then `fallow audit` against the branch's
   upstream. Run those before committing rather than finding out from the hook.
 - `src/routeTree.gen.ts` and `src/lib/diff/themeEmphasis.gen.ts` are generated and committed. Do
   not edit them by hand; `themeEmphasis.test.ts` fails when the second is out of date.
