@@ -17,6 +17,8 @@ permissions:
 env:
   # Matches the version the project is developed against and the pinned
   # `@types/bun`; CI should not silently move ahead of either.
+  # Renovate bumps both in the same weekly PR.
+  # renovate: datasource=npm depName=bun
   BUN_VERSION: 1.4.4
 
 jobs:
