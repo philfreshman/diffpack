@@ -4,6 +4,7 @@
 	"printWidth": 80,
 	"singleQuote": false,
 	"trailingComma": "all",
+	"sortImports": { "newlinesBetween": false },
 	"ignorePatterns": [
 		"**/*.md",
 		".claude/",
