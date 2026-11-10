@@ -1,0 +1,48 @@
+name: Renovate
+
+on:
+  schedule:
+    # Daily so security fixes are not held back; regular updates are limited to one weekday by renovate.json.
+    # 06:17 UTC is 07:17 (CET) or 08:17 (CEST) in Europe/Warsaw, so it is always the same weekday there.
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Tracked through npm, which has release dates, so the 14-day delay applies. The matching ghcr.io image is used to run it.
+      # renovate: datasource=npm depName=renovate
+      RENOVATE_VERSION: 44.186.4
+    steps:
+      - name: Check for RENOVATE_TOKEN
+        id: token
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+        run: |
+          if [ -z "$RENOVATE_TOKEN" ]; then
+            echo "::notice title=Renovate skipped::The RENOVATE_TOKEN secret is not set, so Renovate did not run."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Renovate
+        if: steps.token.outputs.present == 'true'
+        uses: renovatebot/github-action@2804199d260ad00c1fae0e9e842888369391c776 # v46.3.10
+        with:
+          renovate-version: ${{ env.RENOVATE_VERSION }}
+          token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_ONBOARDING: 'false'
+          RENOVATE_REQUIRE_CONFIG: required
+          RENOVATE_GIT_AUTHOR: philfreshman <philipswiezak@gmail.com>
+          LOG_LEVEL: info
