@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": [
-    "Self-hosted Renovate, run by .github/workflows/renovate.yml with a personal access token. Every update lands in one weekly PR into development and merges itself once the required CI checks pass.",
+    "Self-hosted Renovate, run by .github/workflows/renovate.yml with a personal access token. Every update lands in one weekly PR into development. Renovate merges it itself on a later run, only when every check on the branch is green, including its own release-age and lockfile checks. GitHub auto-merge (platformAutomerge) is off because it only waits for required checks.",
     "Only the schedule weekday differs between philfreshman repos: diffpack Monday, diffpack-proxy Tuesday, diffpack-engine Wednesday, scheunenhaus Thursday, kasia-swiezak-portfolio Friday.",
     "Versions must be public for 14 days before they are proposed. Security fixes skip both the weekday schedule and the delay (vulnerabilityAlerts defaults).",
     "Pinned tool versions that no built-in manager sees get a `# renovate: datasource=\u2026 depName=\u2026` comment above a `*_VERSION:` key (workflows) or `ENV/ARG *_VERSION=` (Dockerfiles)."
@@ -25,7 +25,7 @@
   "semanticCommits": "enabled",
   "automerge": true,
   "automergeType": "pr",
-  "platformAutomerge": true,
+  "platformAutomerge": false,
   "separateMajorMinor": false,
   "separateMultipleMajor": false,
   "lockFileMaintenance": {
