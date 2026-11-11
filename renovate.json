@@ -1,32 +1,58 @@
 {
-	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["config:recommended"],
-	"schedule": ["before 5am on the 1st and 15th day of the month"],
-	"automerge": true,
-	"automergeType": "pr",
-	"platformAutomerge": true,
-	"prBodyColumns": ["Checklist", "Package", "Diffpack", "Age", "Confidence"],
-	"prBodyDefinitions": {
-		"Checklist": "- [ ]",
-		"Diffpack": "[{{{currentVersion}}} → {{{newVersion}}}](https://www.diffpack.io/{{{datasource}}}/{{{depName}}}/{{{currentVersion}}}/{{{newVersion}}})"
-	},
-	"lockFileMaintenance": {
-		"enabled": true,
-		"schedule": ["before 5am on the 1st day of the month"]
-	},
-	"packageRules": [
-		{
-			"labels": ["dependency-update"],
-			"matchPackageNames": ["*"]
-		},
-		{
-			"groupName": "react",
-			"matchPackageNames": [
-				"react",
-				"react-dom",
-				"@types/react",
-				"@types/react-dom"
-			]
-		}
-	]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Self-hosted Renovate, run by .github/workflows/renovate.yml with a personal access token. Every update lands in one weekly PR into development and merges itself once the required CI checks pass.",
+    "Only the schedule weekday differs between philfreshman repos: diffpack Monday, diffpack-proxy Tuesday, diffpack-engine Wednesday, scheunenhaus Thursday, kasia-swiezak-portfolio Friday.",
+    "Versions must be public for 14 days before they are proposed. Security fixes skip both the weekday schedule and the delay (vulnerabilityAlerts defaults).",
+    "Pinned tool versions that no built-in manager sees get a `# renovate: datasource=\u2026 depName=\u2026` comment above a `*_VERSION:` key (workflows) or `ENV/ARG *_VERSION=` (Dockerfiles)."
+  ],
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigestsToSemver",
+    "customManagers:githubActionsVersions",
+    "customManagers:dockerfileVersions"
+  ],
+  "baseBranchPatterns": [
+    "development"
+  ],
+  "timezone": "Europe/Warsaw",
+  "schedule": [
+    "* * * * 1"
+  ],
+  "minimumReleaseAge": "14 days",
+  "internalChecksFilter": "strict",
+  "dependencyDashboard": true,
+  "semanticCommits": "enabled",
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "separateMajorMinor": false,
+  "separateMultipleMajor": false,
+  "lockFileMaintenance": {
+    "enabled": false
+  },
+  "packageRules": [
+    {
+      "description": "One PR for everything: all managers, all update types including major",
+      "matchPackageNames": [
+        "*"
+      ],
+      "groupName": "all dependencies",
+      "groupSlug": "all"
+    },
+    {
+      "description": "The Renovate image tag in renovate.yml is an expression; RENOVATE_VERSION next to it is updated through npm instead, because GHCR has no release dates for the 14-day delay",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepNames": [
+        "ghcr.io/renovatebot/renovate"
+      ],
+      "enabled": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "osvVulnerabilityAlerts": true
 }
