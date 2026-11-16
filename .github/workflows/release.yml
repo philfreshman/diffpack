@@ -22,7 +22,7 @@ jobs:
       # Opens an issue when a release fails.
       issues: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # semantic-release reads every commit since the last tag.
           fetch-depth: 0
@@ -34,7 +34,7 @@ jobs:
       # committed back: `main` only takes pull requests from `development`.
       # A merge holding only chore, docs, test or ci commits releases nothing.
       # Configuration: `.releaserc.json`.
-      - uses: cycjimmy/semantic-release-action@v8
+      - uses: cycjimmy/semantic-release-action@ad51787758d9654d5a75150a89a6fa9b3ccef95e # v8.1.4
         with:
           semantic_version: 25
           # Preset 10 needs conventional-changelog-writer 9, and
