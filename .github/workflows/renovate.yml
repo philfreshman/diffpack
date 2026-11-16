@@ -20,7 +20,7 @@ jobs:
     env:
       # Tracked through npm, which has release dates, so the 14-day delay applies. The matching ghcr.io image is used to run it.
       # renovate: datasource=npm depName=renovate
-      RENOVATE_VERSION: 44.199.2
+      RENOVATE_VERSION: 44.206.2
     steps:
       - name: Check for RENOVATE_TOKEN
         id: token
