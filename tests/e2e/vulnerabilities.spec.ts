@@ -5,6 +5,10 @@ const NODE = "/npm/node/26.6.0/26.7.0";
 
 const ENGINE = { timeout: 90_000 };
 
+const LOOKUP = /\/diffs\/v1\/[0-9a-f]{64}$/;
+const NPM_TARBALL = /^https:\/\/registry\.npmjs\.org\/.+\/-\/.+\.tgz$/;
+const ANY_ORIGIN = { "access-control-allow-origin": "*" };
+
 const TEMPLATE_FIX = "GHSA-35jh-r3h4-6jhm";
 const TRIM_FIX = "GHSA-29mw-wpgm-hmr9";
 const TEMPLATE_FIX_COMMIT = "3469357cff396a26c363f8c1b5a91dde28ba4b1c";
@@ -19,6 +23,14 @@ const TEMPLATE_FIX_PATCH = [
 	"+        throw new Error(INVALID_TEMPL_VAR_ERROR_TEXT);",
 	"+      }",
 ].join("\n");
+
+// A cache hit or a quick download can finish the comparison, and close the loading box, before it is measured.
+async function holdComparison(page: Page) {
+	await page.route(LOOKUP, (route) =>
+		route.fulfill({ status: 404, body: "", headers: ANY_ORIGIN }),
+	);
+	await page.route(NPM_TARBALL, () => {});
+}
 
 async function stubGitHub(page: Page) {
 	await page.route("https://api.github.com/repos/**", (route) =>
@@ -59,6 +71,7 @@ test("the loading box names the query to OSV.dev", async ({ page }) => {
 test("the loading box diffs third and asks OSV.dev last, set apart", async ({
 	page,
 }) => {
+	await holdComparison(page);
 	await page.goto(LODASH);
 
 	const steps = page.getByTestId("diff-progress").getByRole("listitem");

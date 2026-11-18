@@ -1,9 +1,13 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Route, test } from "@playwright/test";
 
 // A two-file package, which keeps the downloads small.
 const NODE = "/npm/node/26.6.0/26.7.0";
 
 const ENGINE = { timeout: 90_000 };
+
+const LOOKUP = /\/diffs\/v1\/[0-9a-f]{64}$/;
+const NPM_TARBALL = /^https:\/\/registry\.npmjs\.org\/.+\/-\/.+\.tgz$/;
+const ANY_ORIGIN = { "access-control-allow-origin": "*" };
 
 const status = (page: Page) => page.getByTestId("workspace");
 const files = (page: Page) =>
@@ -11,6 +15,21 @@ const files = (page: Page) =>
 
 async function ready(page: Page) {
 	await expect(status(page)).toHaveAttribute("data-state", "ready", ENGINE);
+}
+
+// A cache hit or a quick download can finish the comparison before the first check runs, so keep it building until released.
+async function holdComparison(page: Page): Promise<() => Promise<void>> {
+	const held: Route[] = [];
+	await page.route(LOOKUP, (route) =>
+		route.fulfill({ status: 404, body: "", headers: ANY_ORIGIN }),
+	);
+	await page.route(NPM_TARBALL, (route) => {
+		held.push(route);
+	});
+	return async () => {
+		await page.unroute(NPM_TARBALL);
+		await Promise.all(held.map((route) => route.continue()));
+	};
 }
 
 test("a deep link is the request for a comparison", async ({ page }) => {
@@ -119,9 +138,11 @@ test("marks only the version that cannot be downloaded", async ({ page }) => {
 test("the progress box gives way to the comparison once it is built", async ({
 	page,
 }) => {
+	const release = await holdComparison(page);
 	await page.goto(NODE);
 
 	await expect(page.getByTestId("diff-progress")).toBeVisible();
+	await release();
 	await ready(page);
 	await expect(page.getByTestId("diff-progress")).toHaveCount(0);
 	await expect(page.getByTestId("diff-file")).toBeVisible();
