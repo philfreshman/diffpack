@@ -58,6 +58,7 @@ const entry = (page: Page, id: string) =>
 	report(page).locator(`[data-testid="vulnerability-entry"][data-id="${id}"]`);
 
 test("the loading box names the query to OSV.dev", async ({ page }) => {
+	await holdComparison(page);
 	await page.goto(LODASH);
 
 	await expect(page.getByTestId("progress-osv")).toHaveText(
