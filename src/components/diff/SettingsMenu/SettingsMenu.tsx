@@ -1,6 +1,6 @@
+import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { ThemeSwitch } from "#/components/theme/ThemeSwitch/ThemeSwitch.tsx";
 import { useThemeSelection } from "#/components/theme/useThemeSelection.ts";
-import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
 import { SettingsIcon } from "#/components/ui/icons.tsx";
 import {
 	ChoiceOption,

@@ -12,8 +12,8 @@ import {
 	stylesheetFile,
 } from "#/lib/diff/highlightThemes.ts";
 import { readThemeColours } from "#/lib/diff/themeColours.ts";
-import { emphasisStyle, themeEmphasis } from "#/lib/diff/themeEmphasis.ts";
 import { THEME_EMPHASIS } from "#/lib/diff/themeEmphasis.gen.ts";
+import { emphasisStyle, themeEmphasis } from "#/lib/diff/themeEmphasis.ts";
 import { contrast } from "./contrast.ts";
 
 const SIDES: readonly ChangeSide[] = ["added", "removed"];

@@ -1,13 +1,13 @@
-import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
 import { DiffToolbar } from "#/components/diff/DiffToolbar/DiffToolbar.tsx";
 import { DiffView } from "#/components/diff/DiffView/DiffView.tsx";
 import type { FileModelControls } from "#/components/diff/useFileModel.ts";
 import type { HighlightThemeControls } from "#/components/diff/useHighlightTheme.ts";
+import { useStateResetOn } from "#/components/lifecycle/useStateResetOn.ts";
+import { FileHeader } from "#/components/review/FileHeader/FileHeader.tsx";
 import {
 	FileStream,
 	type FileStreamProps,
 } from "#/components/review/FileStream/FileStream.tsx";
-import { FileHeader } from "#/components/review/FileHeader/FileHeader.tsx";
 import type { ViewedFiles } from "#/components/review/useViewedFiles.ts";
 import { TreePanel } from "#/components/tree/TreePanel/TreePanel.tsx";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
@@ -31,8 +31,8 @@ import type { VulnerabilityFindings } from "../useVulnerabilities.ts";
 import { VulnerabilityNotice } from "../VulnerabilityNotice/VulnerabilityNotice.tsx";
 import { VulnerabilityReport } from "../VulnerabilityReport/VulnerabilityReport.tsx";
 import { WorkspaceHeader } from "../WorkspaceHeader/WorkspaceHeader.tsx";
-import styles from "./DiffWorkspace.module.css";
 import { useWorkspace, type Workspace } from "./useWorkspace.ts";
+import styles from "./DiffWorkspace.module.css";
 
 export function DiffWorkspace({ slug }: { slug: DiffSlug }) {
 	const workspace = useWorkspace(slug);

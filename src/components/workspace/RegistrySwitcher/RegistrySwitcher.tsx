@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import comboboxStyles from "#/components/ui/Combobox/Combobox.module.css";
 import { CheckIcon, ChevronsUpDownIcon } from "#/components/ui/icons.tsx";
 import { Menu, MenuLinkItem } from "#/components/ui/Menu/Menu.tsx";
 import { registryAdapters } from "#/lib/registries/index.ts";
 import type { RegistryAdapter } from "#/lib/registries/types.ts";
+import comboboxStyles from "#/components/ui/Combobox/Combobox.module.css";
 import styles from "./RegistrySwitcher.module.css";
 
 export function RegistrySwitcher({ adapter }: { adapter: RegistryAdapter }) {

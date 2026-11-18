@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
-import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
 import {
 	ChevronDownIcon,
 	CloseIcon,
@@ -8,6 +7,7 @@ import {
 	FoldIcon,
 	UnfoldIcon,
 } from "#/components/ui/icons.tsx";
+import { Kbd } from "#/components/ui/Kbd/Kbd.tsx";
 import { diffStat, type StatBlock } from "#/lib/review/fileStream.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import styles from "./FileHeader.module.css";

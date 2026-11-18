@@ -7,12 +7,12 @@ import {
 	useRef,
 	useState,
 } from "react";
-import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
 import {
 	CheckIcon,
 	ChevronLeftIcon,
 	ChevronRightIcon,
 } from "#/components/ui/icons.tsx";
+import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
 import popoverStyles from "#/components/ui/Popover/Popover.module.css";
 import styles from "./OptionsMenu.module.css";
 
