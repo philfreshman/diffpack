@@ -7,10 +7,10 @@ import { ChevronLeftIcon } from "#/components/ui/icons.tsx";
 import { TREE_LINE_COUNTS, TREE_WIDTH } from "#/lib/storage/settings.ts";
 import { sidebar } from "#/lib/tree/sidebar.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
-import styles from "./TreePanel.module.css";
 import { usePanelPosition } from "./usePanelPosition.ts";
 import { usePanelResize } from "./usePanelResize.ts";
 import { useTreeRows } from "./useTreeRows.ts";
+import styles from "./TreePanel.module.css";
 
 export interface TreePanelProps {
 	tree: DiffFileEntry | null;

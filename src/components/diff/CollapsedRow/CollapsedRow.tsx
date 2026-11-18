@@ -1,4 +1,3 @@
-import rowStyles from "#/components/diff/DiffRow/DiffRow.module.css";
 import type { VirtualRowProps } from "#/components/diff/virtualRow.ts";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
 import {
@@ -7,6 +6,7 @@ import {
 	UnfoldIcon,
 } from "#/components/ui/icons.tsx";
 import type { DiffRow, Expander } from "#/lib/diff/computeVisibility.ts";
+import rowStyles from "#/components/diff/DiffRow/DiffRow.module.css";
 import styles from "./CollapsedRow.module.css";
 
 type Fold = Extract<DiffRow, { kind: "collapsed" }>;

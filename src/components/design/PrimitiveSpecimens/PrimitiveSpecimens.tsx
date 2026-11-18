@@ -8,7 +8,6 @@ import { GALLERY_SECTIONS } from "#/components/design/gallerySections.ts";
 import { Button } from "#/components/ui/Button/Button.tsx";
 import { Combobox } from "#/components/ui/Combobox/Combobox.tsx";
 import { IconButton } from "#/components/ui/IconButton/IconButton.tsx";
-import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
 import {
 	CloseIcon,
 	DotsVerticalIcon,
@@ -27,10 +26,11 @@ import {
 	ToggleOption,
 } from "#/components/ui/OptionsMenu/OptionsMenu.tsx";
 import { Panel } from "#/components/ui/Panel/Panel.tsx";
-import popoverStyles from "#/components/ui/Popover/Popover.module.css";
 import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
 import { SeverityBadge } from "#/components/workspace/SeverityBadge/SeverityBadge.tsx";
 import type { Severity } from "#/lib/vulnerabilities/types.ts";
+import iconButtonStyles from "#/components/ui/IconButton/IconButton.module.css";
+import popoverStyles from "#/components/ui/Popover/Popover.module.css";
 import styles from "./PrimitiveSpecimens.module.css";
 
 const SEVERITIES: readonly Severity[] = [

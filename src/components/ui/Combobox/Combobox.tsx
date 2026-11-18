@@ -1,9 +1,9 @@
 import { Combobox as Base } from "@base-ui/react/combobox";
 import type { KeyboardEvent, ReactNode, Ref } from "react";
 import { useHydrated } from "#/components/lifecycle/useHydrated.ts";
+import { useComboboxRoot } from "./useComboboxRoot.ts";
 import popoverStyles from "#/components/ui/Popover/Popover.module.css";
 import styles from "./Combobox.module.css";
-import { useComboboxRoot } from "./useComboboxRoot.ts";
 
 export interface ComboboxProps<T> {
 	label: string;

@@ -11,10 +11,10 @@ import { Spinner } from "#/components/ui/Spinner/Spinner.tsx";
 import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import { estimatedRows } from "#/lib/review/fileStream.ts";
 import type { DiffFileEntry, FileDiff } from "#/lib/worker/protocol.ts";
-import styles from "./FileCard.module.css";
 import { type CardModel, useCardModel } from "./useCardModel.ts";
 import { type FileLoad, useFileLoad } from "./useFileLoad.ts";
 import { useNearViewport } from "./useNearViewport.ts";
+import styles from "./FileCard.module.css";
 
 const LINE_COUNT = new Intl.NumberFormat("en-US");
 

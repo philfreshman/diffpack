@@ -11,11 +11,10 @@ import type {
 } from "#/components/diff/virtualRow.ts";
 import { gutterChars } from "#/lib/diff/gutter.ts";
 import { highlightAppearance } from "#/lib/diff/highlightThemes.ts";
-import { isAnchoredRow, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { TextRange } from "#/lib/diff/inlineChange.ts";
+import { isAnchoredRow, type LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { SplitSide } from "#/lib/diff/pairSplitRows.ts";
 import { emphasisStyle } from "#/lib/diff/themeEmphasis.ts";
-import styles from "./DiffView.module.css";
 import { useAnchorSeek } from "./useAnchorSeek.ts";
 import { useOneSidedSelection } from "./useOneSidedSelection.ts";
 import {
@@ -23,6 +22,7 @@ import {
 	useRowVirtualizer,
 } from "./useRowVirtualizer.ts";
 import { useScrollMemory } from "./useScrollMemory.ts";
+import styles from "./DiffView.module.css";
 
 export interface DiffViewProps {
 	file: FileModelControls;

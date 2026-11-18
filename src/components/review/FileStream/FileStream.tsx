@@ -6,8 +6,8 @@ import {
 } from "#/components/review/FileCard/FileCard.tsx";
 import type { LineAnchor } from "#/lib/diff/lineAnchor.ts";
 import type { DiffFileEntry, FileDiff } from "#/lib/worker/protocol.ts";
-import styles from "./FileStream.module.css";
 import { useFileStream } from "./useFileStream.ts";
+import styles from "./FileStream.module.css";
 
 export interface FileStreamHandle {
 	scrollToFile(path: string): void;

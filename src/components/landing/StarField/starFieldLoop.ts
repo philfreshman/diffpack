@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { SkyView } from "./skyView.ts";
 import {
 	advanceStarSky,
 	createStarSky,
@@ -6,7 +7,6 @@ import {
 	fitStarSky,
 	type StarSky,
 } from "./starSky.ts";
-import type { SkyView } from "./skyView.ts";
 
 const SHOOTING_MIN_MS = 14000;
 const SHOOTING_MAX_MS = 30000;
