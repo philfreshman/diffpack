@@ -20,7 +20,7 @@ jobs:
     env:
       # Tracked through npm, which has release dates, so the 14-day delay applies. The matching ghcr.io image is used to run it.
       # renovate: datasource=npm depName=renovate
-      RENOVATE_VERSION: 44.206.2
+      RENOVATE_VERSION: 44.224.1
     steps:
       - name: Check for RENOVATE_TOKEN
         id: token
@@ -36,7 +36,7 @@ jobs:
 
       - name: Run Renovate
         if: steps.token.outputs.present == 'true'
-        uses: renovatebot/github-action@1c0cf989c02653fba0efe7ca5772338860ca71dc # v46.3.12
+        uses: renovatebot/github-action@266fef21329c44765ad42f9dea1f01f5d2d91084 # v46.3.13
         with:
           renovate-version: ${{ env.RENOVATE_VERSION }}
           token: ${{ secrets.RENOVATE_TOKEN }}
