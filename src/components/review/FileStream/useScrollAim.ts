@@ -8,14 +8,14 @@ const SMOOTH_REACH_IN_VIEWPORTS = 2;
 
 export interface ScrollAim {
 	aimedIndexRef: RefObject<number | null>;
-	scrollToIndex(index: number, behavior: ScrollBehavior): void;
-	scrollToTop(behavior: ScrollBehavior): void;
+	scrollToIndex: (index: number, behavior: ScrollBehavior) => void;
+	scrollToTop: (behavior: ScrollBehavior) => void;
 }
 
 interface ScrollerReactions {
-	onScrollEnd(): void;
-	onUserScroll(): void;
-	onContentResize(): void;
+	onScrollEnd: () => void;
+	onUserScroll: () => void;
+	onContentResize: () => void;
 }
 
 export function useScrollAim(refs: StreamRefs): ScrollAim {

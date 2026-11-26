@@ -22,13 +22,13 @@ export interface FileCardProps {
 	entry: DiffFileEntry;
 	layout: StreamLayoutRefs;
 	display: RowDisplay & { split: boolean };
-	readFile(entry: DiffFileEntry): Promise<FileDiff>;
+	readFile: (entry: DiffFileEntry) => Promise<FileDiff>;
 	viewed: boolean;
-	onViewedChange(viewed: boolean): void;
-	onCollapse(): void;
-	onOpenFile(): void;
-	onSelect(): void;
-	onSelectLine(anchor: LineAnchor): void;
+	onViewedChange: (viewed: boolean) => void;
+	onCollapse: () => void;
+	onOpenFile: () => void;
+	onSelect: () => void;
+	onSelectLine: (anchor: LineAnchor) => void;
 }
 
 export function FileCard({
@@ -98,8 +98,8 @@ interface CardBodyProps {
 	near: boolean;
 	layout: StreamLayoutRefs;
 	display: RowDisplay;
-	onRetry(): void;
-	onSelectLine(anchor: LineAnchor): void;
+	onRetry: () => void;
+	onSelectLine: (anchor: LineAnchor) => void;
 }
 
 function CardBody({
@@ -156,7 +156,7 @@ function LoadFailure({
 	onRetry,
 }: {
 	message: string;
-	onRetry(): void;
+	onRetry: () => void;
 }) {
 	return (
 		<div className={styles.notice} role="alert">

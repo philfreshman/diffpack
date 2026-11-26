@@ -10,21 +10,21 @@ import { useFileStream } from "./useFileStream.ts";
 import styles from "./FileStream.module.css";
 
 export interface FileStreamHandle {
-	scrollToFile(path: string): void;
-	stepFile(direction: 1 | -1): void;
+	scrollToFile: (path: string) => void;
+	stepFile: (direction: 1 | -1) => void;
 }
 
 export interface FileStreamProps {
 	streamRef: RefObject<FileStreamHandle | null>;
 	files: readonly DiffFileEntry[];
-	readFile(entry: DiffFileEntry): Promise<FileDiff>;
+	readFile: (entry: DiffFileEntry) => Promise<FileDiff>;
 	viewed: ReadonlySet<string>;
 	selectedPath: string;
-	onViewedChange(path: string, viewed: boolean): void;
-	onCurrentFileChange(path: string | null): void;
-	onOpenFile(path: string): void;
-	onSelectFile(path: string): void;
-	onSelectLine(path: string, anchor: LineAnchor): void;
+	onViewedChange: (path: string, viewed: boolean) => void;
+	onCurrentFileChange: (path: string | null) => void;
+	onOpenFile: (path: string) => void;
+	onSelectFile: (path: string) => void;
+	onSelectLine: (path: string, anchor: LineAnchor) => void;
 	split: boolean;
 	showSigns: boolean;
 	autohideScrollbar: boolean;
@@ -106,7 +106,7 @@ interface StreamCardsProps extends Pick<
 	cardsRef: RefObject<HTMLDivElement | null>;
 	layout: FileCardProps["layout"];
 	display: FileCardProps["display"];
-	onCollapse(path: string): void;
+	onCollapse: (path: string) => void;
 }
 
 function StreamCards({

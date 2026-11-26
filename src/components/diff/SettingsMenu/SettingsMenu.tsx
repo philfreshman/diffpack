@@ -13,11 +13,11 @@ import styles from "./SettingsMenu.module.css";
 
 export interface SettingsMenuProps {
 	ignoreWhitespace: boolean;
-	onIgnoreWhitespaceChange(ignore: boolean): void;
+	onIgnoreWhitespaceChange: (ignore: boolean) => void;
 	showSigns: boolean;
-	onShowSignsChange(show: boolean): void;
+	onShowSignsChange: (show: boolean) => void;
 	autohideScrollbar: boolean;
-	onAutohideScrollbarChange(autohide: boolean): void;
+	onAutohideScrollbarChange: (autohide: boolean) => void;
 	/** Passed in, not called here: the viewer must read the same hook instance. */
 	highlight: HighlightThemeControls;
 }

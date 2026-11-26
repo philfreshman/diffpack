@@ -44,13 +44,13 @@ function fakeClock() {
 
 	return {
 		waiting,
-		after(ms: number, fire: () => void) {
+		after: (ms: number, fire: () => void) => {
 			waiting.push({ ms, fire });
 		},
-		elapse() {
+		elapse: () => {
 			for (const { fire } of waiting.splice(0)) fire();
 		},
-		elapseFirst() {
+		elapseFirst: () => {
 			waiting.shift()?.fire();
 		},
 	};

@@ -3,8 +3,8 @@ import { treeCommand } from "#/lib/tree/keymap.ts";
 import { rowKey, type TreeRow } from "#/lib/tree/visibility.ts";
 
 interface TreeActions {
-	onOpenFile(path: string): void;
-	onToggleFolder(path: string, expanded: boolean): void;
+	onOpenFile: (path: string) => void;
+	onToggleFolder: (path: string, expanded: boolean) => void;
 }
 
 export function useTreeNavigation(

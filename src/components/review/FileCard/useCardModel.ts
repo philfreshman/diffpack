@@ -15,9 +15,9 @@ export interface CardModel {
 	model: FileModel | null;
 	gated: boolean;
 	expandAll: boolean | null;
-	acceptLarge(): void;
-	setExpandAll(expandAll: boolean): void;
-	reveal(range: LineRange): void;
+	acceptLarge: () => void;
+	setExpandAll: (expandAll: boolean) => void;
+	reveal: (range: LineRange) => void;
 }
 
 export function useCardModel(

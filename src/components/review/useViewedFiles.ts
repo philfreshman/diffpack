@@ -5,7 +5,7 @@ import type { DiffRequest } from "#/lib/worker/protocol.ts";
 
 export interface ViewedFiles {
 	viewed: ReadonlySet<string>;
-	setViewed(path: string, viewed: boolean): void;
+	setViewed: (path: string, viewed: boolean) => void;
 }
 
 const NOTHING_VIEWED: ReadonlySet<string> = new Set();

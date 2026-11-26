@@ -27,11 +27,11 @@ function createProgressRelay() {
 	let listener: OnArchiveFetched | null = null;
 
 	return {
-		tell(fetched: ArchiveFetched) {
+		tell: (fetched: ArchiveFetched) => {
 			if (listener) listener(fetched);
 			else heard.push(fetched);
 		},
-		listen(next: OnArchiveFetched) {
+		listen: (next: OnArchiveFetched) => {
 			listener = next;
 			for (const fetched of heard.splice(0)) next(fetched);
 		},

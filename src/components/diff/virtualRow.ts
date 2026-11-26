@@ -9,5 +9,5 @@ export interface VirtualRowProps {
 
 export interface SelectableRowProps {
 	selected: boolean;
-	onSelectLine(anchor: LineAnchor): void;
+	onSelectLine: (anchor: LineAnchor) => void;
 }

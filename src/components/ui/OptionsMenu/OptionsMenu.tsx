@@ -113,7 +113,7 @@ export function ToggleOption({
 }: {
 	label: string;
 	on: boolean;
-	onChange(on: boolean): void;
+	onChange: (on: boolean) => void;
 }) {
 	return (
 		<ChoiceOption label={label} chosen={on} onChoose={() => onChange(!on)} />
@@ -129,7 +129,7 @@ export function ChoiceOption({
 }: {
 	label: string;
 	chosen: boolean;
-	onChoose(): void;
+	onChoose: () => void;
 	closesMenu?: boolean;
 } & Omit<ComponentProps<"button">, "className" | "onClick" | "type">) {
 	const closeMenuThen = use(CloseMenuThenContext);

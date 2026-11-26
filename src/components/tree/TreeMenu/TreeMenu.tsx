@@ -21,13 +21,13 @@ const AWAY_FROM_EDGE: Record<TreePosition, FoldOutSide> = {
 
 export interface TreeMenuProps {
 	onlyModified: boolean;
-	onOnlyModifiedChange(onlyModified: boolean): void;
+	onOnlyModifiedChange: (onlyModified: boolean) => void;
 	lineCounts: boolean;
-	onLineCountsChange(lineCounts: boolean): void;
+	onLineCountsChange: (lineCounts: boolean) => void;
 	hideViewed: boolean;
-	onHideViewedChange(hideViewed: boolean): void;
+	onHideViewedChange: (hideViewed: boolean) => void;
 	position: TreePosition;
-	onPositionChange(position: TreePosition): void;
+	onPositionChange: (position: TreePosition) => void;
 }
 export function TreeMenu({
 	onlyModified,

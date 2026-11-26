@@ -9,8 +9,8 @@ import type { RegistryAdapter } from "#/lib/registries/types.ts";
 import { buildPath, type DiffSlug } from "#/lib/url/slug.ts";
 
 export interface LineLink {
-	anchorIn(path: string): LineAnchor | null;
-	select(anchor: LineAnchor): void;
+	anchorIn: (path: string) => LineAnchor | null;
+	select: (anchor: LineAnchor) => void;
 }
 
 export function useLineLink(

@@ -32,7 +32,7 @@ export interface DiffViewProps {
 	showSigns: boolean;
 	autohideScrollbar: boolean;
 	anchor: LineAnchor | null;
-	onSelectLine(anchor: LineAnchor): void;
+	onSelectLine: (anchor: LineAnchor) => void;
 	/** `null` until the stored theme has been read. */
 	highlightTheme: string | null;
 }
@@ -125,7 +125,7 @@ interface VirtualRowsProps {
 	file: FileModelControls;
 	virtualizer: RowVirtualizer;
 	anchor: LineAnchor | null;
-	onSelectLine(anchor: LineAnchor): void;
+	onSelectLine: (anchor: LineAnchor) => void;
 }
 
 interface DiffScrollerProps extends VirtualRowsProps {

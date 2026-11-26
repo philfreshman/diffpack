@@ -18,7 +18,7 @@ export function useFileLoad(
 	entry: DiffFileEntry,
 	readFile: (entry: DiffFileEntry) => Promise<FileDiff>,
 	wanted: boolean,
-): { load: FileLoad; retry(): void } {
+): { load: FileLoad; retry: () => void } {
 	const [load, setLoad] = useState<FileLoad>(IDLE);
 	const mountedRef = useRef(true);
 	const idle = load.state === "idle";

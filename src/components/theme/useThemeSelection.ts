@@ -6,7 +6,7 @@ import { applyTheme, type ThemeSelection } from "#/lib/theme.ts";
 export interface ThemeSelectionControls {
 	selection: ThemeSelection;
 	known: boolean;
-	choose(selection: ThemeSelection): void;
+	choose: (selection: ThemeSelection) => void;
 }
 
 export function useThemeSelection(): ThemeSelectionControls {

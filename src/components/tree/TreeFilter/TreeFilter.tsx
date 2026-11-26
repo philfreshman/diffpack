@@ -8,7 +8,7 @@ import styles from "./TreeFilter.module.css";
 
 export interface TreeFilterProps {
 	filter: string;
-	onFilterChange(filter: string): void;
+	onFilterChange: (filter: string) => void;
 }
 
 const SHORTCUT = "f";

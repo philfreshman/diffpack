@@ -8,7 +8,7 @@ export interface VersionComboboxProps {
 	label: string;
 	versions: readonly string[];
 	value: string;
-	onChange(version: string): void;
+	onChange: (version: string) => void;
 	loading?: boolean;
 	unavailable?: boolean;
 	downloadUrl?: string;

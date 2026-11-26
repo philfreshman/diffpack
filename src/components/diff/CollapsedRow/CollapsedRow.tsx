@@ -19,7 +19,7 @@ export function CollapsedRow({
 	index,
 	style,
 	ref,
-}: VirtualRowProps & { fold: Fold; onReveal(expander: Expander): void }) {
+}: VirtualRowProps & { fold: Fold; onReveal: (expander: Expander) => void }) {
 	const stepped = STEPPED_ORDER.flatMap((direction) =>
 		fold.expanders.filter((it) => it.direction === direction),
 	);
@@ -73,7 +73,7 @@ function ExpandButton({
 }: {
 	expander: Expander;
 	icon?: Expander["direction"];
-	onReveal(expander: Expander): void;
+	onReveal: (expander: Expander) => void;
 }) {
 	const count = expander.end - expander.start + 1;
 	const Arrow =

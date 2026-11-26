@@ -3,11 +3,11 @@ import { useRef, useState } from "react";
 
 interface RootOptions<T> {
 	inputValue: string;
-	onInputValueChange(value: string): void;
-	onSelect(item: T): void;
-	itemToText(item: T): string;
-	onSubmitText?(text: string): void;
-	onOpenChange?(open: boolean): void;
+	onInputValueChange: (value: string) => void;
+	onSelect: (item: T) => void;
+	itemToText: (item: T) => string;
+	onSubmitText?: (text: string) => void;
+	onOpenChange?: (open: boolean) => void;
 }
 
 interface InputValueChangeDetails {

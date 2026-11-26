@@ -18,7 +18,7 @@ const DEFINITION_PATTERNS = [
 ];
 
 interface DiffSide {
-	holds(line: DiffLine): boolean;
+	holds: (line: DiffLine) => boolean;
 	change: DiffLine["type"];
 }
 
