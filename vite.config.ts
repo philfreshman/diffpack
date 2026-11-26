@@ -45,6 +45,16 @@ export default defineConfig({
 			"vite-plus/prefer-vite-plus-imports": "error",
 		},
 		ignorePatterns: ["src/routeTree.gen.ts"],
+		options: {
+			typeAware: true,
+			typeCheck: true,
+		},
+		overrides: [
+			{
+				files: ["tests/**"],
+				rules: { "typescript/await-thenable": "off" },
+			},
+		],
 		jsPlugins: [
 			{
 				name: "vite-plus",
