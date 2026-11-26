@@ -96,7 +96,7 @@ function usePackagePicker(adapter: RegistryAdapter, selected: string) {
 		history.set(addToHistory(history.value, entry));
 
 		setInputValue(trimmed);
-		navigate({ to: buildPath(adapter, { package: trimmed }) });
+		void navigate({ to: buildPath(adapter, { package: trimmed }) });
 	}
 
 	return {

@@ -27,7 +27,7 @@ export function useLineLink(
 	);
 	const select = useCallback(
 		(line: LineAnchor) => {
-			navigate({
+			void navigate({
 				to: buildPath(adapter, slug),
 				hash: formatLineAnchor(line),
 				replace: true,
