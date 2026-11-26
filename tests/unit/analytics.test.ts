@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { GA_MEASUREMENT_ID, GA_SCRIPT, GA_SRC } from "#/lib/analytics.ts";
 
 describe("Google Analytics", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { resolveSelection } from "#/components/workspace/versionSelection.ts";
 
 // Newest first, as every adapter promises.

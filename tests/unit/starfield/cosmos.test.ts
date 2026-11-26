@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { BLUE, COSMOS_GLSL, hueAt, PURPLE } from "#/lib/starfield/cosmos.ts";
 
 const FULL_SWING = (30 * Math.PI) / 180;

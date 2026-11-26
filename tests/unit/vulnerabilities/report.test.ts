@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { compareAdvisories } from "#/lib/vulnerabilities/report.ts";
 import { advisory } from "./advisoryStub.ts";
 

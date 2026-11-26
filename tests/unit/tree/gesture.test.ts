@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { TREE_WIDTH } from "#/lib/storage/settings.ts";
 import { dragFrame, edgeAfterDrag, nudgedWidth } from "#/lib/tree/gesture.ts";
 

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import type { OpenFile } from "#/lib/session/diffSession.ts";
 import { type ShownFile, shownFile } from "#/lib/session/shownFile.ts";
 

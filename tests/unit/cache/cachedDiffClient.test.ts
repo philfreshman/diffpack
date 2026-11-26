@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { createCachedDiffClient } from "#/lib/cache/cachedDiffClient.ts";
 import { ENGINE_VERSION } from "#/lib/cache/diffKey.ts";
 import type { CachedEntry } from "#/lib/cache/entryLookup.ts";

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { cratesAdapter } from "#/lib/registries/crates.ts";
 import { pypiAdapter } from "#/lib/registries/pypi.ts";
 

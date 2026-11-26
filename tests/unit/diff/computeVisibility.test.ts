@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { computeVisibility } from "#/lib/diff/computeVisibility.ts";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 

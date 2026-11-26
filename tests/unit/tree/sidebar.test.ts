@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import {
 	TREE_COLLAPSED,
 	TREE_POSITION,

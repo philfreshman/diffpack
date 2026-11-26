@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { CodedError } from "#/lib/failure/failure.ts";
 import { createDiffSession, diffSession } from "#/lib/session/diffSession.ts";
 import type { DiffSlug } from "#/lib/url/slug.ts";

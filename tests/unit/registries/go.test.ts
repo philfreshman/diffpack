@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { CodedError } from "#/lib/failure/failure.ts";
 import { createGoAdapter, goAdapter } from "#/lib/registries/go.ts";
 import { json, stubFetch, text } from "./fetchStub.ts";

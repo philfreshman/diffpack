@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import type { Rgb } from "#/lib/diff/colour.ts";
 import {
 	type ChangeSide,

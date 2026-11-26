@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { rowKey, visibleRows } from "#/lib/tree/visibility.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 

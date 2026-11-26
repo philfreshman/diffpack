@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { detectLanguage, highlightLine } from "#/lib/diff/highlight.ts";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 

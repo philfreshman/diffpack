@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { type DiffKey, diffId } from "#/lib/cache/diffKey.ts";
 
 const SERVER = "https://mcp.diffpack.io/mcp";

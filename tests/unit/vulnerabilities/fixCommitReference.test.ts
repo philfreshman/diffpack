@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { fixCommitOf } from "#/lib/vulnerabilities/fixCommitReference.ts";
 
 const SHA = "c4847ebe7d14540bb28a8b932a9ce1b9ecbfee1a";

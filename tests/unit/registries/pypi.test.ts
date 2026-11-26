@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { createPypiAdapter, pypiAdapter } from "#/lib/registries/pypi.ts";
 import { json, stubFetch } from "./fetchStub.ts";
 

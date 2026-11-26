@@ -49,7 +49,7 @@ async function unitTestLcov(): Promise<string> {
 	const coverageDir = await mkdtemp(join(tmpdir(), "diffpack-coverage-"));
 	try {
 		const run =
-			await $`bun test tests/unit --coverage --coverage-reporter=lcov --coverage-dir=${coverageDir}`
+			await $`vp test run --coverage --coverage.reporter=lcovonly --coverage.reportsDirectory=${coverageDir}`
 				.quiet()
 				.nothrow();
 		if (run.exitCode !== 0) {

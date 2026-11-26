@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { formatResetTime, nextUtcMidnight } from "#/lib/failure/resetTime.ts";
 
 const RESET = "2026-10-20T00:00:00Z";

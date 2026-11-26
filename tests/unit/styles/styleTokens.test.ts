@@ -1,6 +1,6 @@
 import { globSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { normalizeWhitespace } from "./cssDeclarations.ts";
 import {
 	findViolations,

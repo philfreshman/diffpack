@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { cratesAdapter, createCratesAdapter } from "#/lib/registries/crates.ts";
 import { json, stubFetch } from "./fetchStub.ts";
 
