@@ -30,8 +30,8 @@
 
 	"health": {
 		// Decision 1 on #111: CRAP is advisory here, never a gate.
-		// `bun test --coverage` emits only text and lcov; fallow wants Istanbul
-		// `coverage-final.json`, so every CRAP number in this repo is
+		// The unit tests' coverage is written only as lcov, for the badge; fallow
+		// wants Istanbul `coverage-final.json`, so every CRAP number in this repo is
 		// `static_estimated` — derived from how many places reference an export,
 		// not from real coverage. Gating on that means a function starts failing
 		// because an unrelated file stopped importing it. The number stays in the

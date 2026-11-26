@@ -24,7 +24,7 @@ bun run lint             # vp lint (oxlint), unused disable comments fail too
 bun run lint:fix         # vp lint --fix, applies safe fixes
 bun run format           # vp fmt (oxfmt), rewrites files in place (tabs, double quotes)
 bun run format:check     # vp fmt --check, what the hook and CI run
-bun run test             # unit: bun test tests/unit, no network, ~1s
+bun run test             # unit: vp test run (Vitest), no network, ~1s
 bun run test:e2e         # Playwright: production build + real registries, slow and online
 bun run generate-routes  # tsr generate, after adding or renaming a file in src/routes/
 bun run generate-emphasis # rewrite themeEmphasis.gen.ts, after a highlight.js upgrade or a theme change
@@ -34,7 +34,10 @@ bun run check:coverage-gaps # fail if a file or export in src/lib has no unit te
 bun run ci-failure 258   # why a PR's CI failed: error excerpts, plus Playwright's errors for e2e (--run <id> for a run)
 ```
 
-- One unit test: `bun test tests/unit/session/diffSession.test.ts` (add `-t "<name>"` to narrow).
+- One unit test: `vp test run tests/unit/session/diffSession.test.ts` (add `-t "<name>"` to narrow).
+- The unit tests run on Vitest through Vite+, configured by the `test` block in `vite.config.ts`.
+  Under Vitest that file loads none of the app's plugins: the tests only import `src/lib`, and
+  Nitro would otherwise replace the test environment with its own and add a setup file to every run.
 - One e2e spec: `bunx playwright test tests/e2e/file-tree.spec.ts`. It builds and serves the app
   itself with `--strictPort`; use `PORT=4399` to stay out of another worktree's way, or
   `BASE_URL=http://localhost:4321` to point at a server already running and skip the rebuild.
@@ -54,7 +57,7 @@ src/routes/      TanStack Start file routes: parse the URL, hand it to a compone
 src/components/  React. One folder per component that has a stylesheet: Foo/{Foo.tsx,Foo.module.css}
 src/lib/         Pure TypeScript: no React, no DOM rendering, unit-tested
 src/styles/      globals.css: the token layer, the reset, view transitions
-tests/unit/      bun:test, mirrors src/lib/
+tests/unit/      Vitest (`vite-plus/test`), mirrors src/lib/
 tests/e2e/       Playwright, the only place the wasm, the worker and the DOM run
 ```
 

@@ -14,7 +14,7 @@ Work in this order:
 1. Find the closest existing component and read it (`src/components/**`). Copy its structure.
 2. Build from primitives (below) before writing any CSS.
 3. Style what is left with role tokens only. The table says which one.
-4. Run `bun test tests/unit/styles` — it fails on any raw value.
+4. Run `vp test run tests/unit/styles` — it fails on any raw value.
 5. Look at it: screenshot the gallery and your page in both themes (last section).
 
 ## Role tokens
