@@ -31,7 +31,9 @@ describe("pypi search", () => {
 	test("rejects a backend payload that is not a list of named results", async () => {
 		const { fetcher } = stubFetch(() => json([{ description: "nameless" }]));
 
-		expect(createPypiAdapter(fetcher).search("requests")).rejects.toThrow();
+		await expect(
+			createPypiAdapter(fetcher).search("requests"),
+		).rejects.toThrow();
 	});
 });
 
@@ -57,8 +59,8 @@ describe("pypi versions", () => {
 	test("rejects when the package does not exist", async () => {
 		const { fetcher } = stubFetch(() => json({}, 404));
 
-		expect(createPypiAdapter(fetcher).versions("nope-xyz")).rejects.toThrow(
-			/nope-xyz/,
-		);
+		await expect(
+			createPypiAdapter(fetcher).versions("nope-xyz"),
+		).rejects.toThrow(/nope-xyz/);
 	});
 });

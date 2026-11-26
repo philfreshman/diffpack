@@ -115,7 +115,7 @@ describe("npm versions failure", () => {
 	test("rejects when the package does not exist", async () => {
 		const { fetcher } = stubFetch(() => json({ error: "Not found" }, 404));
 
-		expect(
+		await expect(
 			createNpmAdapter(fetcher).versions("no-such-package-xyz"),
 		).rejects.toThrow(/no-such-package-xyz/);
 	});
