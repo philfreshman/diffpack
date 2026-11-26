@@ -18,12 +18,12 @@ Bun only. No Rust toolchain: the engine arrives prebuilt as `@philfreshman/diffp
 
 ```bash
 bun install
-bun run dev              # Vite on :4321
+bun run dev              # vp dev (Vite) on :4321
 bun run typecheck        # tsc --noEmit
-bun run lint             # oxlint, unused disable comments fail too
-bun run lint:fix         # oxlint --fix, applies safe fixes
-bun run format           # oxfmt, rewrites files in place (tabs, double quotes)
-bun run format:check     # oxfmt --check, what the hook and CI run
+bun run lint             # vp lint (oxlint), unused disable comments fail too
+bun run lint:fix         # vp lint --fix, applies safe fixes
+bun run format           # vp fmt (oxfmt), rewrites files in place (tabs, double quotes)
+bun run format:check     # vp fmt --check, what the hook and CI run
 bun run test             # unit: bun test tests/unit, no network, ~1s
 bun run test:e2e         # Playwright: production build + real registries, slow and online
 bun run generate-routes  # tsr generate, after adding or renaming a file in src/routes/
@@ -353,7 +353,7 @@ what, the primitives to build from, and the screenshot check to run before you a
 
 ## Deployment
 
-Vercel, through the Nitro Vite plugin: `vite build` writes `.vercel/output/` (static assets plus one
+Vercel, through the Nitro Vite plugin: `vp build` writes `.vercel/output/` (static assets plus one
 server function).
 
 - **Headers, redirects and routing go in `nitro({ routeRules })` in `vite.config.ts`, not
