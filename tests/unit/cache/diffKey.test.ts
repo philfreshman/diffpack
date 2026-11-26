@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "bun:test";
 import {
 	canonicalString,
@@ -49,9 +50,12 @@ function vectorNamed(name: string) {
 }
 
 async function installedEngineVersion(): Promise<string> {
-	const manifest = await Bun.file(
-		"node_modules/@philfreshman/diffpack-engine/package.json",
-	).json();
+	const manifest = JSON.parse(
+		await readFile(
+			"node_modules/@philfreshman/diffpack-engine/package.json",
+			"utf8",
+		),
+	);
 	return manifest.version;
 }
 

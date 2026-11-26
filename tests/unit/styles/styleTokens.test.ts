@@ -1,5 +1,6 @@
+import { globSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "bun:test";
-import { Glob } from "bun";
 import { normalizeWhitespace } from "./cssDeclarations.ts";
 import {
 	findViolations,
@@ -73,13 +74,13 @@ const ALLOWED: AllowedException[] = [
 	},
 ];
 
-const CSS_MODULES = new Glob("src/**/*.module.css");
+const CSS_MODULES = "src/**/*.module.css";
 const SKILL = ".claude/skills/ui-component/SKILL.md";
 
 async function moduleViolations(): Promise<Violation[]> {
-	const files = [...CSS_MODULES.scanSync(".")].sort();
+	const files = globSync(CSS_MODULES).sort();
 	const sources = await Promise.all(
-		files.map(async (file) => ({ file, css: await Bun.file(file).text() })),
+		files.map(async (file) => ({ file, css: await readFile(file, "utf8") })),
 	);
 	return sources.flatMap(({ file, css }) => findViolations(file, css));
 }

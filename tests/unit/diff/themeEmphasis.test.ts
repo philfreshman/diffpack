@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "bun:test";
 import type { Rgb } from "#/lib/diff/colour.ts";
 import {
@@ -28,7 +29,7 @@ describe("THEME_EMPHASIS", () => {
 	test.each([...HIGHLIGHT_THEMES])(
 		"is current for $label (run `bun run generate-emphasis`)",
 		async (theme) => {
-			const css = await Bun.file(stylesheetFile(theme)).text();
+			const css = await readFile(stylesheetFile(theme), "utf8");
 
 			expect(THEME_EMPHASIS[theme.value]).toEqual(
 				themeEmphasis(css, theme.appearance),
@@ -40,7 +41,7 @@ describe("THEME_EMPHASIS", () => {
 		"leaves no $label token less readable than today's mark",
 		async (theme) => {
 			const { text } = readThemeColours(
-				await Bun.file(stylesheetFile(theme)).text(),
+				await readFile(stylesheetFile(theme), "utf8"),
 			);
 			const entry = THEME_EMPHASIS[theme.value];
 			if (!entry) throw new Error(`no entry for ${theme.value}`);
@@ -80,7 +81,7 @@ describe("the colours the maths starts from", () => {
 	test.each(["light", "dark"] as const)(
 		"match globals.css on %s rows",
 		async (appearance) => {
-			const css = await Bun.file("src/styles/globals.css").text();
+			const css = await readFile("src/styles/globals.css", "utf8");
 
 			for (const side of SIDES) {
 				const block = blocks[appearance];
