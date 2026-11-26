@@ -115,7 +115,9 @@ test("writes the same six localStorage keys as the old site", async ({
 	}, Object.entries(STORED));
 	await ready(page, "/npm/node/26.6.0/26.7.0");
 
-	const stored = await page.evaluate(() => ({ ...localStorage }));
+	const stored = await page.evaluate(() =>
+		Object.fromEntries(Object.entries(localStorage)),
+	);
 
 	expect(Object.keys(stored).sort()).toEqual(Object.keys(STORED).sort());
 	for (const [key, value] of Object.entries(STORED)) {
