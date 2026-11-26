@@ -2,12 +2,59 @@ import path from "node:path";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { defineConfig } from "vite";
+import { defineConfig, lazyPlugins } from "vite-plus";
 
 export default defineConfig({
+	fmt: {
+		useTabs: true,
+		printWidth: 80,
+		singleQuote: false,
+		trailingComma: "all",
+		sortImports: { newlinesBetween: false },
+		ignorePatterns: [
+			"**/*.md",
+			".claude/",
+			".github/",
+			"docs/",
+			"fixtures/",
+			"public/",
+			"rule-packs/",
+			".fallowrc.jsonc",
+			".mcp.json",
+			"renovate.json",
+			"src/routeTree.gen.ts",
+		],
+	},
+	lint: {
+		plugins: ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+		categories: {
+			correctness: "error",
+		},
+		env: {
+			browser: true,
+			builtin: true,
+		},
+		rules: {
+			"jsx-a11y/control-has-associated-label": "off",
+			"jsx-a11y/prefer-tag-over-role": "off",
+			"react/button-has-type": "error",
+			"react/no-array-index-key": "error",
+			"react/no-danger": "error",
+			"react/rules-of-hooks": "error",
+			"unicorn/no-new-array": "off",
+			"vite-plus/prefer-vite-plus-imports": "error",
+		},
+		ignorePatterns: ["src/routeTree.gen.ts"],
+		jsPlugins: [
+			{
+				name: "vite-plus",
+				specifier: "vite-plus/oxlint-plugin",
+			},
+		],
+	},
 	// Headers and redirects go in routeRules, not `vercel.json`: the build writes
 	// its own `.vercel/output/config.json`, so `vercel.json` rules are never read.
-	plugins: [
+	plugins: lazyPlugins(() => [
 		tanstackStart(),
 		nitro({
 			routeRules: {
@@ -33,7 +80,7 @@ export default defineConfig({
 			},
 		}),
 		viteReact({ compiler: true }),
-	],
+	]),
 	resolve: {
 		tsconfigPaths: true,
 		// DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg runs an unreleased engine build.
