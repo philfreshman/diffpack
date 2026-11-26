@@ -35,7 +35,7 @@ function luma(color: string): number {
 	const hex = color.replace("#", "");
 	const wide =
 		hex.length === 3
-			? [...hex].map((digit) => digit + digit).join("")
+			? Array.from(hex, (digit) => digit + digit).join("")
 			: hex.slice(0, 6);
 	const [r = 0, g = 0, b = 0] = [0, 2, 4].map(
 		(at) => Number.parseInt(wide.slice(at, at + 2), 16) / 255,

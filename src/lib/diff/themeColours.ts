@@ -82,7 +82,8 @@ function parseColour(value: string): Rgb | null {
 function parseShortHex(colour: string): Rgb | null {
 	const digits = SHORT_HEX.exec(colour)?.[1];
 	if (!digits) return null;
-	return parseLongHex(`#${[...digits].map((digit) => digit + digit).join("")}`);
+	const doubled = Array.from(digits, (digit) => digit + digit).join("");
+	return parseLongHex(`#${doubled}`);
 }
 
 function parseLongHex(colour: string): Rgb | null {
