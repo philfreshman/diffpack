@@ -73,6 +73,8 @@ async function recordBuildRequests(page: Page) {
 	await page.addInitScript(() => {
 		const posted: unknown[] = [];
 		(window as unknown as Record<string, unknown>).__posted = posted;
+		// fallow-ignore-next-line added-suppression -- type-aware linting flags the prototype method this patch re-applies
+		// oxlint-disable-next-line typescript/unbound-method -- applied below with the patched worker as `this`
 		const original = Worker.prototype.postMessage;
 		Worker.prototype.postMessage = function patched(
 			this: Worker,

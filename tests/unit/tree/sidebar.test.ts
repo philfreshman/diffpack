@@ -75,6 +75,8 @@ function page(store: SettingStore = memoryStore()) {
 		// What the pre-paint script does for a visitor who left it shut.
 		loadShut: () => html.toggleAttribute("data-tree-collapsed", true),
 		runPrePaintScript: () =>
+			// fallow-ignore-next-line added-suppression -- evaluating the generated script source is what this test checks
+			// oxlint-disable-next-line typescript/no-implied-eval -- runs the pre-paint script source, as the browser does
 			new Function("document", "localStorage", TREE_WIDTH_SCRIPT)(
 				document,
 				store,

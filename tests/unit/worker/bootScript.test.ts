@@ -59,6 +59,8 @@ async function boot(
 		return fetch(url, init);
 	};
 
+	// fallow-ignore-next-line added-suppression -- evaluating the generated script source is what this test checks
+	// oxlint-disable-next-line typescript/no-implied-eval -- runs the generated boot script, as the browser does
 	new Function(
 		"window",
 		"location",
