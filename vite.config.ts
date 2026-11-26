@@ -51,12 +51,6 @@ export default defineConfig({
 			typeAware: true,
 			typeCheck: true,
 		},
-		overrides: [
-			{
-				files: ["tests/**"],
-				rules: { "typescript/await-thenable": "off" },
-			},
-		],
 		jsPlugins: [
 			{
 				name: "vite-plus",
