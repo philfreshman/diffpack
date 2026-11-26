@@ -150,7 +150,7 @@ describe("createDiffClient, when the boot script started another comparison", ()
 		const booted = new FakeWorker();
 		const { client, spawned } = clientWith(bootOf(booted));
 
-		client.buildTree({ ...COMPARISON, ignoreWhitespace: true });
+		const build = client.buildTree({ ...COMPARISON, ignoreWhitespace: true });
 		await settled();
 		expect(booted.posted).toEqual([]);
 
@@ -161,16 +161,18 @@ describe("createDiffClient, when the boot script started another comparison", ()
 		expect(booted.posted).toEqual([
 			{ id: 1, type: "build-tree", ...COMPARISON, ignoreWhitespace: true },
 		]);
+		booted.reply({ id: 1, ok: true, data: TREE });
+		expect(await build).toEqual(TREE);
 	});
 
 	test("does not hand the boot's tree back once another comparison has replaced it", async () => {
 		const booted = new FakeWorker();
 		const { client } = clientWith(bootOf(booted));
 
-		client.buildTree(ANOTHER);
+		const another = client.buildTree(ANOTHER);
 		booted.reply({ id: 0, ok: true, data: TREE });
 		await settled();
-		client.buildTree(COMPARISON);
+		const comparison = client.buildTree(COMPARISON);
 		booted.reply({ id: 1, ok: true, data: TREE });
 		await settled();
 
@@ -178,6 +180,8 @@ describe("createDiffClient, when the boot script started another comparison", ()
 			{ id: 1, type: "build-tree", ...ANOTHER },
 			{ id: 2, type: "build-tree", ...COMPARISON },
 		]);
+		booted.reply({ id: 2, ok: true, data: TREE });
+		expect(await Promise.all([another, comparison])).toEqual([TREE, TREE]);
 	});
 });
 
