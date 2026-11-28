@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { readFile } from "node:fs/promises";
+import { describe, expect, test } from "vite-plus/test";
 import { BLUE, COSMOS_GLSL, hueAt, PURPLE } from "#/lib/starfield/cosmos.ts";
 
 const FULL_SWING = (30 * Math.PI) / 180;
@@ -10,7 +11,7 @@ function toBytes(colour: Channels): Channels {
 }
 
 async function cssBackdropColourAt(position: string): Promise<Channels> {
-	const css = await Bun.file("src/styles/globals.css").text();
+	const css = await readFile("src/styles/globals.css", "utf8");
 	const pattern = new RegExp(
 		`ellipse at ${position},\\s*rgb\\((\\d+) (\\d+) (\\d+)`,
 	);

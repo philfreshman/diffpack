@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { failureOf } from "#/lib/failure/failure.ts";
 import type { DiffBoot } from "#/lib/worker/bootScript.ts";
 import { createDiffClient } from "#/lib/worker/diffWorkerClient.ts";

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { moreSevere, severityOf } from "#/lib/vulnerabilities/severity.ts";
 import type { Severity } from "#/lib/vulnerabilities/types.ts";
 

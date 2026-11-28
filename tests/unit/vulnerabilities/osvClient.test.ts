@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { createOsvClient, osvClient } from "#/lib/vulnerabilities/osvClient.ts";
 import { json, stubFetch } from "../registries/fetchStub.ts";
 import jinjaGithub from "./fixtures/GHSA-462w-v97r-4m45.json" with { type: "json" };

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { advisoryFrom } from "#/lib/vulnerabilities/advisory.ts";
 import type { OsvPackage } from "#/lib/vulnerabilities/types.ts";
 import lodashRedos from "./fixtures/GHSA-29mw-wpgm-hmr9.json" with { type: "json" };

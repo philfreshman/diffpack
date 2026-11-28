@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { PROXY_ORIGIN } from "#/lib/proxy/origin.ts";
 import { createComposerAdapter } from "#/lib/registries/composer.ts";
 import { createCratesAdapter } from "#/lib/registries/crates.ts";

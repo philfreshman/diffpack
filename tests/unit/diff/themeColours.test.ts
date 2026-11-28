@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { readThemeColours } from "#/lib/diff/themeColours.ts";
 
 describe("readThemeColours background, text and change hints", () => {

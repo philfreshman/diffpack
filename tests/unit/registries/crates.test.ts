@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { cratesAdapter, createCratesAdapter } from "#/lib/registries/crates.ts";
 import { json, stubFetch } from "./fetchStub.ts";
 
@@ -54,8 +54,8 @@ describe("crates versions", () => {
 	test("rejects when the crate does not exist", async () => {
 		const { fetcher } = stubFetch(() => json({ errors: [] }, 404));
 
-		expect(createCratesAdapter(fetcher).versions("nope-xyz")).rejects.toThrow(
-			/nope-xyz/,
-		);
+		await expect(
+			createCratesAdapter(fetcher).versions("nope-xyz"),
+		).rejects.toThrow(/nope-xyz/);
 	});
 });

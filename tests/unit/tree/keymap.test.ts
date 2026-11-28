@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { treeCommand } from "#/lib/tree/keymap.ts";
 import type { TreeRow } from "#/lib/tree/visibility.ts";
 

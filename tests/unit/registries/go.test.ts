@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { CodedError } from "#/lib/failure/failure.ts";
 import { createGoAdapter, goAdapter } from "#/lib/registries/go.ts";
 import { json, stubFetch, text } from "./fetchStub.ts";
@@ -143,9 +143,9 @@ describe("go versions for untagged modules", () => {
 	test("rejects when the version list itself fails", async () => {
 		const { fetcher } = stubFetch(() => text("gone", 500));
 
-		expect(createGoAdapter(fetcher).versions("example.com/m")).rejects.toThrow(
-			/example.com\/m/,
-		);
+		await expect(
+			createGoAdapter(fetcher).versions("example.com/m"),
+		).rejects.toThrow(/example.com\/m/);
 	});
 });
 
@@ -392,7 +392,7 @@ describe("go search cancellation", () => {
 			throw new DOMException("The operation was aborted.", "AbortError");
 		});
 
-		expect(
+		await expect(
 			createGoAdapter(fetcher).search(
 				"github.com/go-chi/chi/v5",
 				controller.signal,

@@ -60,6 +60,7 @@ minimumReleaseAgeExcludes = [
 	"@tsrs/win32-x64",
 	"@vitest/browser",
 	"@vitest/browser-preview",
+	"@vitest/coverage-v8",
 	"@vitest/mocker",
 	"@vitest/pretty-format",
 	"@vitest/snapshot",

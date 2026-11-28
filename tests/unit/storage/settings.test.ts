@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { GA_SCRIPT } from "#/lib/analytics.ts";
 import * as settings from "#/lib/storage/settings.ts";
 import {

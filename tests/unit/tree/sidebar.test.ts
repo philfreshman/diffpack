@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { readFile } from "node:fs/promises";
+import { describe, expect, test } from "vite-plus/test";
 import {
 	TREE_COLLAPSED,
 	TREE_POSITION,
@@ -301,7 +302,7 @@ describe("snapping shut", () => {
 
 	test("waits exactly as long as the stylesheet takes to animate it", async () => {
 		// The wait is `--duration-fast` written again in TypeScript.
-		const css = await Bun.file("src/styles/globals.css").text();
+		const css = await readFile("src/styles/globals.css", "utf8");
 		const duration = css.match(/--duration-fast:\s*(\d+)ms;/)?.[1];
 		const { clock } = letGoPastTheMinimum();
 

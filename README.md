@@ -149,7 +149,7 @@ time), so a change that crosses a boundary crosses a release: see
 | `bun run dev` | Vite dev server on `:4321` |
 | `bun run build` | `vp build` (Nitro writes `.vercel/output/`) |
 | `bun run preview` | serve the production build |
-| `bun run test` | unit tests (`bun test tests/unit`) |
+| `bun run test` | unit tests (Vitest, through `vp test run`) |
 | `bun run test:e2e` | Playwright — hits the real registries, so slow and online |
 | `bun run test:networked` | the cache key checked against the live diffpack-server's own `diff_id`s |
 | `bun run check:vectors` | `fixtures/cache-key-vectors.json` is byte-identical to the server's at a pinned commit (`:development` compares with the server's tip) |

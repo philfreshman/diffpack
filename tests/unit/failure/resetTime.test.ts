@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { formatResetTime, nextUtcMidnight } from "#/lib/failure/resetTime.ts";
 
 const RESET = "2026-10-20T00:00:00Z";
@@ -12,16 +12,14 @@ describe("formatResetTime", () => {
 	});
 
 	test("keeps a zone's half hour", () => {
-		expect(formatResetTime(RESET, "en-GB", "Asia/Kolkata")).toStartWith(
-			"05:30",
-		);
+		expect(formatResetTime(RESET, "en-GB", "Asia/Kolkata")).toMatch(/^05:30/);
 	});
 
 	test("reads midnight as midnight where the reader's clock is on UTC", () => {
 		expect(formatResetTime(RESET, "en-US", "UTC")).toBe("12:00 AM UTC");
 		expect(
 			formatResetTime("2026-12-01T00:00:00Z", "en-GB", "Europe/London"),
-		).toStartWith("00:00 GMT");
+		).toMatch(/^00:00 GMT/);
 	});
 });
 

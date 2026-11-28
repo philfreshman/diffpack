@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { cratesAdapter } from "#/lib/registries/crates.ts";
 import { npmAdapter } from "#/lib/registries/npm.ts";
 import { workspaceIntro } from "#/lib/url/workspaceIntro.ts";

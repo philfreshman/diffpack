@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import type { DiffLine } from "#/lib/diff/parseUnifiedDiff.ts";
 import { markLines } from "#/lib/vulnerabilities/lineMarks.ts";
 import type { AffectedFile } from "#/lib/vulnerabilities/types.ts";

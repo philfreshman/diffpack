@@ -272,7 +272,7 @@ The same grade, with the per-threshold detail behind it, is also written to the 
 
 Beside the health grade sits the unit test coverage: the share of lines under `src/` that
 `bun run test` runs (generated `.gen.ts` files aside), rounded down to a whole percent. `scripts/coverage-badge.ts` runs the unit
-tests with Bun's coverage on, reads the lcov report and draws the SVG itself, so no coverage service
+tests with Vitest's V8 coverage on, reads the lcov report and draws the SVG itself, so no coverage service
 is involved. Only files a unit test loads are measured, which is why `check:coverage-gaps` matters:
 it makes sure every file in `src/lib` is one of them. Components and routes are covered by the
 Playwright suite, which this number does not include.

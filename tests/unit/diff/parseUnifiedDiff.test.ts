@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { parseUnifiedDiff } from "#/lib/diff/parseUnifiedDiff.ts";
 
 describe("parseUnifiedDiff numbering and headers", () => {

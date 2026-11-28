@@ -1,4 +1,6 @@
-import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { describe, expect, test } from "vite-plus/test";
 import {
 	defaultHighlightTheme,
 	HIGHLIGHT_THEMES,
@@ -14,8 +16,8 @@ describe("HIGHLIGHT_THEMES", () => {
 
 describe("every theme's stylesheet exists", () => {
 	// Named per file, so a highlight.js upgrade that drops a stylesheet fails here.
-	test.each([...HIGHLIGHT_THEMES])("$label", async (theme) => {
-		expect(await Bun.file(stylesheetFile(theme)).exists()).toBe(true);
+	test.each([...HIGHLIGHT_THEMES])("$label", (theme) => {
+		expect(existsSync(stylesheetFile(theme))).toBe(true);
 	});
 });
 
@@ -47,7 +49,7 @@ function luma(color: string): number {
 describe("every theme's declared appearance is the one it paints", () => {
 	// `appearance` is declared, not read from the stylesheet. Windows 95 is a black theme with a light-sounding name.
 	test.each([...HIGHLIGHT_THEMES])("$label", async (theme) => {
-		const css = await Bun.file(stylesheetFile(theme)).text();
+		const css = await readFile(stylesheetFile(theme), "utf8");
 		const light = luma(hljsBackground(css)) > 0.5;
 
 		expect(light ? "light" : "dark").toBe(theme.appearance);

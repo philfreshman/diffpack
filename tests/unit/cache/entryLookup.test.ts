@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { createEntryLookup } from "#/lib/cache/entryLookup.ts";
 import type { DiffFileEntry } from "#/lib/worker/protocol.ts";
 import vectorFile from "../../../fixtures/cache-key-vectors.json" with { type: "json" };

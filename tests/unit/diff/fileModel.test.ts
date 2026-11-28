@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { rowChange } from "#/lib/diff/changes.ts";
 import { type FileModel, fileModel, parseFile } from "#/lib/diff/fileModel.ts";
 import type { RowSpan } from "#/lib/diff/scrollbar.ts";

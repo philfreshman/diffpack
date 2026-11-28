@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { composerAdapter } from "#/lib/registries/composer.ts";
 import { cratesAdapter } from "#/lib/registries/crates.ts";
 import { goAdapter } from "#/lib/registries/go.ts";

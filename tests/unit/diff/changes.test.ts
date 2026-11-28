@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { rowChange } from "#/lib/diff/changes.ts";
 import type { DiffRow } from "#/lib/diff/computeVisibility.ts";
 import type { SplitRow } from "#/lib/diff/pairSplitRows.ts";

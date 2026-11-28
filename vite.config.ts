@@ -4,6 +4,8 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
+const RUNS_UNDER_VITEST = process.env.VITEST === "true";
+
 export default defineConfig({
 	fmt: {
 		useTabs: true,
@@ -49,12 +51,6 @@ export default defineConfig({
 			typeAware: true,
 			typeCheck: true,
 		},
-		overrides: [
-			{
-				files: ["tests/**"],
-				rules: { "typescript/await-thenable": "off" },
-			},
-		],
 		jsPlugins: [
 			{
 				name: "vite-plus",
@@ -64,33 +60,35 @@ export default defineConfig({
 	},
 	// Headers and redirects go in routeRules, not `vercel.json`: the build writes
 	// its own `.vercel/output/config.json`, so `vercel.json` rules are never read.
-	plugins: lazyPlugins(() => [
-		tanstackStart(),
-		nitro({
-			routeRules: {
-				// Old links to the previous site's `/index.html`.
-				"/index.html": { redirect: { to: "/", status: 301 } },
-				// Nitro already caches `/assets/**`; fonts come from `public/`.
-				"/fonts/**": {
-					headers: {
-						"cache-control": "public, max-age=31536000, immutable",
+	plugins: RUNS_UNDER_VITEST
+		? []
+		: lazyPlugins(() => [
+				tanstackStart(),
+				nitro({
+					routeRules: {
+						// Old links to the previous site's `/index.html`.
+						"/index.html": { redirect: { to: "/", status: 301 } },
+						// Nitro already caches `/assets/**`; fonts come from `public/`.
+						"/fonts/**": {
+							headers: {
+								"cache-control": "public, max-age=31536000, immutable",
+							},
+						},
+						// `instantiateStreaming` needs `application/wasm`, or it silently falls
+						// back to the slow path.
+						"/assets/**.wasm": {
+							headers: { "content-type": "application/wasm" },
+						},
+						"/**": {
+							headers: {
+								"cache-control":
+									"public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
+							},
+						},
 					},
-				},
-				// `instantiateStreaming` needs `application/wasm`, or it silently falls
-				// back to the slow path.
-				"/assets/**.wasm": {
-					headers: { "content-type": "application/wasm" },
-				},
-				"/**": {
-					headers: {
-						"cache-control":
-							"public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
-					},
-				},
-			},
-		}),
-		viteReact({ compiler: true }),
-	]),
+				}),
+				viteReact({ compiler: true }),
+			]),
 	resolve: {
 		tsconfigPaths: true,
 		// DIFFPACK_ENGINE_LOCAL=../diffpack-engine/pkg runs an unreleased engine build.
@@ -111,5 +109,10 @@ export default defineConfig({
 	},
 	worker: {
 		format: "es",
+	},
+	test: {
+		dir: "tests/unit",
+		include: ["**/*.test.ts"],
+		environment: "node",
 	},
 });

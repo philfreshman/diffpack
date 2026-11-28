@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { CodedError } from "#/lib/failure/failure.ts";
 import {
 	composerAdapter,
@@ -43,7 +43,9 @@ describe("composer search", () => {
 			json({ results: [{ description: "nameless" }] }),
 		);
 
-		expect(createComposerAdapter(fetcher).search("monolog")).rejects.toThrow();
+		await expect(
+			createComposerAdapter(fetcher).search("monolog"),
+		).rejects.toThrow();
 	});
 });
 
@@ -77,7 +79,7 @@ describe("composer versions", () => {
 			json({ error: "not_found", message: "No such package." }, 404),
 		);
 
-		expect(
+		await expect(
 			createComposerAdapter(fetcher).versions("acme/missing"),
 		).rejects.toThrow(/acme\/missing/);
 	});

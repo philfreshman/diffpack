@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { compareVersionsDesc } from "#/lib/registries/semver.ts";
 
 function newestFirst(versions: string[]): string[] {
