@@ -20,8 +20,8 @@ export interface FileTreeProps {
 	selectedPath: string;
 	viewedPaths?: ReadonlySet<string>;
 	lineCounts?: boolean;
-	onOpenFile(path: string): void;
-	onToggleFolder(path: string, expanded: boolean): void;
+	onOpenFile: (path: string) => void;
+	onToggleFolder: (path: string, expanded: boolean) => void;
 }
 
 const NONE_VIEWED: ReadonlySet<string> = new Set();
@@ -81,8 +81,8 @@ interface FileTreeRowProps {
 	selected: boolean;
 	viewed: boolean;
 	lineCounts: boolean;
-	onActivate(row: TreeRow): void;
-	onFocus(key: string): void;
+	onActivate: (row: TreeRow) => void;
+	onFocus: (key: string) => void;
 	register: RefObject<Map<string, HTMLElement>>;
 }
 function FileTreeRow({

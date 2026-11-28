@@ -288,7 +288,9 @@ bun run badge:coverage   # then commit .github/badges/coverage.svg
 
 - **Branching**: Create a feature branch for your changes.
 - **Code Style**: We lint with [oxlint](https://oxc.rs/docs/guide/usage/linter) and format with
-  [oxfmt](https://oxc.rs/docs/guide/usage/formatter) — tabs, double quotes. `bun run lint` and
+  [oxfmt](https://oxc.rs/docs/guide/usage/formatter), both run through [Vite+](https://viteplus.dev)
+  (`vp lint`, `vp fmt`) and configured in the `lint` and `fmt` blocks of `vite.config.ts` — tabs,
+  double quotes. `bun run lint` and
   `bun run format:check` only check; to fix lint findings and rewrite files in place, run:
   ```bash
   bun run lint:fix

@@ -15,7 +15,7 @@ export interface HighlightThemeControls {
 	/** `null` until the stored choice has been read. */
 	theme: string | null;
 	appearance: HighlightAppearance | null;
-	choose(theme: string): void;
+	choose: (theme: string) => void;
 }
 
 export function useHighlightTheme(): HighlightThemeControls {

@@ -22,12 +22,12 @@ export interface DiffToolbarProps {
 	path: string;
 	fileIndex: number;
 	fileCount: number;
-	onStepFile(direction: 1 | -1): void;
+	onStepFile: (direction: 1 | -1) => void;
 	file: Pick<FileModelControls, "stepDifference"> | null;
 	split: boolean;
-	onSplitChange(split: boolean): void;
+	onSplitChange: (split: boolean) => void;
 	layout: FileLayout;
-	onLayoutChange(layout: FileLayout): void;
+	onLayoutChange: (layout: FileLayout) => void;
 	settings: SettingsMenuProps;
 }
 

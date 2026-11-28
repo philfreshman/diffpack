@@ -147,7 +147,7 @@ time), so a change that crosses a boundary crosses a release: see
 | | |
 | :-- | :-- |
 | `bun run dev` | Vite dev server on `:4321` |
-| `bun run build` | `vite build` (Nitro writes `.vercel/output/`) |
+| `bun run build` | `vp build` (Nitro writes `.vercel/output/`) |
 | `bun run preview` | serve the production build |
 | `bun run test` | unit tests (`bun test tests/unit`) |
 | `bun run test:e2e` | Playwright — hits the real registries, so slow and online |
@@ -155,8 +155,8 @@ time), so a change that crosses a boundary crosses a release: see
 | `bun run check:vectors` | `fixtures/cache-key-vectors.json` is byte-identical to the server's at a pinned commit (`:development` compares with the server's tip) |
 | `bun run screenshots` | recapture the reference set (`scripts/capture-screenshots.mjs`) |
 | `bun run typecheck` | `tsc --noEmit` |
-| `bun run lint` · `lint:fix` | oxlint: check · apply safe fixes |
-| `bun run format` · `format:check` | oxfmt: rewrite files · check only |
+| `bun run lint` · `lint:fix` | `vp lint` (oxlint): check · apply safe fixes |
+| `bun run format` · `format:check` | `vp fmt` (oxfmt): rewrite files · check only |
 
 <br>
 
@@ -168,7 +168,7 @@ time), so a change that crosses a boundary crosses a release: see
 | **State** | [Query](https://tanstack.com/query) for registry calls, [Store](https://tanstack.com/store) for the diff session |
 | **UI** | [Base UI](https://base-ui.com) primitives wrapped in `src/components/ui`, CSS Modules over a custom-property token layer — no Tailwind; [React Compiler](https://react.dev/learn/react-compiler) (its Rust port) memoizes at build time |
 | **Engine** | Rust → WebAssembly for extraction and diffing, in its own repo: [diffpack-engine](https://github.com/philfreshman/diffpack-engine) |
-| **Tooling** | [oxlint and oxfmt](https://oxc.rs), [fallow](https://fallow.tools) |
+| **Tooling** | [Vite+](https://viteplus.dev) (Vite, oxlint and oxfmt behind one `vp` CLI), [fallow](https://fallow.tools) |
 
 <br>
 
@@ -177,7 +177,7 @@ time), so a change that crosses a boundary crosses a release: see
 
 <br>
 
-Vercel via the [Nitro](https://nitro.build) Vite plugin: `vite build` writes a Build Output API v3
+Vercel via the [Nitro](https://nitro.build) Vite plugin: `vp build` writes a Build Output API v3
 tree to `.vercel/output/` — static assets plus one server function — which Vercel serves as-is.
 
 **Routing and headers belong in `nitro({ routeRules })` in `vite.config.ts`, not `vercel.json`.**

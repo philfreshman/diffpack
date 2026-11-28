@@ -9,9 +9,9 @@ import { useScrollSpy } from "./useScrollSpy.ts";
 
 export interface StreamNavigation {
 	currentIndex: number;
-	scrollToFile(path: string): void;
-	stepFile(direction: 1 | -1): void;
-	keepPlace(path: string): void;
+	scrollToFile: (path: string) => void;
+	stepFile: (direction: 1 | -1) => void;
+	keepPlace: (path: string) => void;
 }
 
 export function useStreamNavigation(

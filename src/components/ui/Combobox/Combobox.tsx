@@ -9,12 +9,12 @@ export interface ComboboxProps<T> {
 	label: string;
 	items: readonly T[];
 	inputValue: string;
-	onInputValueChange(value: string): void;
-	onSelect(item: T): void;
-	itemToText(item: T): string;
-	renderItem?(item: T): ReactNode;
+	onInputValueChange: (value: string) => void;
+	onSelect: (item: T) => void;
+	itemToText: (item: T) => string;
+	renderItem?: (item: T) => ReactNode;
 	/** Enter with nothing highlighted; omit when only listed items are valid. */
-	onSubmitText?(text: string): void;
+	onSubmitText?: (text: string) => void;
 	/** Substring match by default; `null` when the items arrive already filtered. */
 	filter?: null | ((item: T, query: string) => boolean);
 	loading?: boolean;
@@ -26,7 +26,7 @@ export interface ComboboxProps<T> {
 	trailing?: ReactNode;
 	inputRef?: Ref<HTMLInputElement>;
 	keyShortcut?: string;
-	onOpenChange?(open: boolean): void;
+	onOpenChange?: (open: boolean) => void;
 }
 
 function substringFilter(text: string, query: string): boolean {
@@ -112,8 +112,8 @@ interface ComboboxFieldProps {
 	trailing: ReactNode;
 	inputRef: Ref<HTMLInputElement> | undefined;
 	keyShortcut: string | undefined;
-	onFocus(): void;
-	onKeyDown(event: KeyboardEvent<HTMLInputElement>): void;
+	onFocus: () => void;
+	onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
 }
 
 function ComboboxField({
@@ -154,7 +154,7 @@ interface ComboboxPopupProps<T> {
 	loading: boolean;
 	loadingMessage: string;
 	emptyMessage: string;
-	itemToText(item: T): string;
+	itemToText: (item: T) => string;
 	renderItem: ((item: T) => ReactNode) | undefined;
 }
 

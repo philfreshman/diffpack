@@ -11,7 +11,7 @@ export function stubFetch(
 		input: string | URL | Request,
 		init?: RequestInit,
 	): Promise<Response> => {
-		const url = String(input);
+		const url = input instanceof Request ? input.url : String(input);
 		calls.push({ url, signal: init?.signal, init });
 		return handler(url);
 	};

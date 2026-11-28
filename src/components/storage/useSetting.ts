@@ -10,7 +10,7 @@ export interface SettingControls<T> {
 	value: T;
 	/** False on the server and while hydrating, while `value` is the fallback. */
 	known: boolean;
-	set(value: T): void;
+	set: (value: T) => void;
 }
 
 /** Read after hydration: reading during it would mismatch the server's fallback. */

@@ -11,8 +11,8 @@ interface FileNavigationOptions {
 	urlPath: string;
 	summaryShown: boolean;
 	layout: SettingControls<FileLayout>;
-	openFile(path: string): void;
-	closeFile(): void;
+	openFile: (path: string) => void;
+	closeFile: () => void;
 }
 
 export function useFileNavigation({

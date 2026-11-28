@@ -67,7 +67,7 @@ function Half({
 	cell: SplitSide;
 	change: TextRange | undefined;
 	language: string | null;
-	onSelectLine(anchor: LineAnchor): void;
+	onSelectLine: (anchor: LineAnchor) => void;
 	side: "left" | "right";
 }) {
 	const line = cell?.line;

@@ -223,6 +223,8 @@ function storesWithNothingFor(key: string): Array<[string, unknown]> {
 }
 
 function readInHeadFrom(setting: HeadSetting<unknown>, store: unknown) {
+	// fallow-ignore-next-line added-suppression -- evaluating the generated script source is what this test checks
+	// oxlint-disable-next-line typescript/no-implied-eval -- runs the generated head script, as the browser does
 	return new Function("localStorage", `return ${readInHead(setting)};`)(store);
 }
 

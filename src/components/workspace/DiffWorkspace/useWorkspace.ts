@@ -103,15 +103,15 @@ function useWorkspaceLinks(adapter: RegistryAdapter, slug: DiffSlug) {
 	}
 
 	function openFile(file: string) {
-		navigate({ to: fileLink(file) });
+		void navigate({ to: fileLink(file) });
 	}
 
 	function closeFile() {
-		navigate({ to: comparisonPath });
+		void navigate({ to: comparisonPath });
 	}
 
 	function selectStreamLine(file: string, anchor: LineAnchor) {
-		navigate({ to: fileLink(file), hash: formatLineAnchor(anchor) });
+		void navigate({ to: fileLink(file), hash: formatLineAnchor(anchor) });
 	}
 
 	return { comparisonPath, fileLink, openFile, closeFile, selectStreamLine };

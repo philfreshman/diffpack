@@ -29,8 +29,8 @@ interface StreamRowsProps {
 	near: boolean;
 	layout: StreamLayoutRefs;
 	display: RowDisplay;
-	onReveal(range: LineRange): void;
-	onSelectLine(anchor: LineAnchor): void;
+	onReveal: (range: LineRange) => void;
+	onSelectLine: (anchor: LineAnchor) => void;
 }
 
 export function StreamRows({
@@ -96,8 +96,8 @@ interface StreamRowProps {
 	top: number;
 	measureRef: Ref<HTMLTableRowElement>;
 	model: FileModel;
-	onReveal(range: LineRange): void;
-	onSelectLine(anchor: LineAnchor): void;
+	onReveal: (range: LineRange) => void;
+	onSelectLine: (anchor: LineAnchor) => void;
 }
 
 function StreamRow({

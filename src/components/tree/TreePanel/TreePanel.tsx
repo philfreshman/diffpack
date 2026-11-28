@@ -17,7 +17,7 @@ export interface TreePanelProps {
 	comparison: string;
 	selectedPath: string;
 	viewedPaths?: ReadonlySet<string>;
-	onOpenFile(path: string): void;
+	onOpenFile: (path: string) => void;
 }
 export function TreePanel({
 	tree,
@@ -76,8 +76,8 @@ export function TreePanel({
 
 interface PanelEdgeProps {
 	width: number;
-	onResizeStart(event: React.PointerEvent<HTMLElement>): void;
-	onNudge(event: React.KeyboardEvent<HTMLElement>): void;
+	onResizeStart: (event: React.PointerEvent<HTMLElement>) => void;
+	onNudge: (event: React.KeyboardEvent<HTMLElement>) => void;
 }
 
 function PanelEdge({ width, onResizeStart, onNudge }: PanelEdgeProps) {

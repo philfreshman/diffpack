@@ -186,7 +186,7 @@ interface ComparisonPaneProps extends FilePaneProps {
 	summary: TreeSummary | null;
 	streaming: boolean;
 	stream: StreamProps;
-	fileLink(path: string): string;
+	fileLink: (path: string) => string;
 }
 
 function ComparisonPane({
@@ -238,7 +238,7 @@ interface FilePaneProps {
 	shown: FileModelControls | null;
 	tree: DiffFileEntry | null;
 	review: ViewedFiles;
-	onClose(): void;
+	onClose: () => void;
 	highlight: HighlightThemeControls;
 	showSigns: boolean;
 	autohideScrollbar: boolean;
@@ -305,7 +305,7 @@ interface SingleFileProps {
 	shown: FileModelControls;
 	entry: DiffFileEntry | undefined;
 	review: ViewedFiles;
-	onClose(): void;
+	onClose: () => void;
 	pending: boolean;
 	showSigns: boolean;
 	autohideScrollbar: boolean;

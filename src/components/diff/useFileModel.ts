@@ -13,15 +13,15 @@ import type { OpenFile } from "#/lib/session/diffSession.ts";
 import { type ShownFile, shownFile } from "#/lib/session/shownFile.ts";
 
 export interface DiffViewHandle {
-	topRow(): number;
-	scrollToRow(index: number): void;
+	topRow: () => number;
+	scrollToRow: (index: number) => void;
 }
 
 export interface FileModelControls extends FileModel {
-	stepDifference(direction: 1 | -1): void;
-	setExpandAll(expandAll: boolean): void;
-	reveal(range: LineRange): void;
-	rememberScroll(scrollTop: number): void;
+	stepDifference: (direction: 1 | -1) => void;
+	setExpandAll: (expandAll: boolean) => void;
+	reveal: (range: LineRange) => void;
+	rememberScroll: (scrollTop: number) => void;
 	viewport: RefObject<DiffViewHandle | null>;
 }
 

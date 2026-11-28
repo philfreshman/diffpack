@@ -14,10 +14,10 @@ export interface DiffScrollbar {
 	thumb: Thumb | null;
 	shown: boolean;
 	trackRef: RefObject<HTMLDivElement | null>;
-	onTrackMouseDown(event: React.MouseEvent): void;
-	onThumbMouseDown(event: React.MouseEvent): void;
-	onTrackMouseEnter(): void;
-	onTrackMouseLeave(): void;
+	onTrackMouseDown: (event: React.MouseEvent) => void;
+	onThumbMouseDown: (event: React.MouseEvent) => void;
+	onTrackMouseEnter: () => void;
+	onTrackMouseLeave: () => void;
 }
 
 type HoldReason = "hovering" | "dragging";
@@ -95,18 +95,18 @@ function useAutohide() {
 
 	return {
 		shown,
-		flash() {
+		flash: () => {
 			setShown(true);
 			hideLater();
 		},
-		keepShown() {
+		keepShown: () => {
 			setShown(true);
 			cancelHide();
 		},
-		hold(reason: HoldReason) {
+		hold: (reason: HoldReason) => {
 			heldRef.current[reason] = true;
 		},
-		release(reason: HoldReason) {
+		release: (reason: HoldReason) => {
 			heldRef.current[reason] = false;
 			hideLater();
 		},

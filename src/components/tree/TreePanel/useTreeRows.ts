@@ -49,7 +49,7 @@ export function useTreeRows(
 		setHideViewed,
 		changeFilter: (next: string) => narrow(() => setFilter(next)),
 		changeOnlyModified: (next: boolean) => narrow(() => setOnlyModified(next)),
-		toggleFolder(path: string, expanded: boolean) {
+		toggleFolder: (path: string, expanded: boolean) => {
 			dispatch({ kind: "toggle", path, expanded });
 		},
 	};

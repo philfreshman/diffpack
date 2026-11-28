@@ -21,14 +21,14 @@ const STAT_KINDS: readonly StatBlock[] = ["added", "removed", "neutral"];
 interface FileHeaderProps {
 	entry: DiffFileEntry;
 	open: boolean;
-	onOpenChange(open: boolean): void;
+	onOpenChange: (open: boolean) => void;
 	viewed: boolean;
-	onViewedChange(viewed: boolean): void;
-	onOpenFile?(): void;
-	onSelect?(): void;
-	onClose?(): void;
+	onViewedChange: (viewed: boolean) => void;
+	onOpenFile?: () => void;
+	onSelect?: () => void;
+	onClose?: () => void;
 	expandAll: boolean | null;
-	onExpandAllChange(expandAll: boolean): void;
+	onExpandAllChange: (expandAll: boolean) => void;
 }
 
 export function FileHeader({

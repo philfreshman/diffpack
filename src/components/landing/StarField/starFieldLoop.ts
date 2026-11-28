@@ -12,13 +12,13 @@ const SHOOTING_MIN_MS = 14000;
 const SHOOTING_MAX_MS = 30000;
 
 interface CameraSway {
-	aim(event: PointerEvent): void;
-	follow(seconds: number): void;
+	aim: (event: PointerEvent) => void;
+	follow: (seconds: number) => void;
 }
 
 interface Frames {
-	draw(now: number): void;
-	launch(now: number): void;
+	draw: (now: number) => void;
+	launch: (now: number) => void;
 }
 
 export function startStarField(

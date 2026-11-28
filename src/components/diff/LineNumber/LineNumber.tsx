@@ -11,7 +11,7 @@ export function LineNumber({
 }: {
 	number: number | null;
 	anchor: LineAnchor | null;
-	onSelect(anchor: LineAnchor): void;
+	onSelect: (anchor: LineAnchor) => void;
 }) {
 	if (number === null || !anchor) return null;
 

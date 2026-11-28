@@ -63,7 +63,10 @@ export function failureFrom(
 
 function messageOf(thrown: object): string {
 	const { message } = thrown as Record<string, unknown>;
-	return typeof message === "string" ? message : String(thrown);
+	if (typeof message === "string") return message;
+	// fallow-ignore-next-line added-suppression -- type-aware linting flags a String() fallback the failure tests pin
+	// oxlint-disable-next-line typescript/no-base-to-string -- an object without a message is described by its own toString, which it may override
+	return String(thrown);
 }
 
 export function failureOf(error: unknown): Failure {

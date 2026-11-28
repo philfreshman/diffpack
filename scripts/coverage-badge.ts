@@ -94,7 +94,7 @@ function colourFor(percent: number): string {
 }
 
 function textWidth(text: string): number {
-	const width = [...text].reduce(
+	const width = Array.from(text).reduce(
 		(sum, character) =>
 			sum + (VERDANA_11PX_WIDTHS[character] ?? AVERAGE_CHARACTER_WIDTH),
 		0,

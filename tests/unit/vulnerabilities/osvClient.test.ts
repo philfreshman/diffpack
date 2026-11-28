@@ -8,7 +8,9 @@ import jinjaPysec from "./fixtures/PYSEC-2019-217.json" with { type: "json" };
 const QUERY_URL = "https://api.osv.dev/v1/query";
 
 function bodyOf(init: RequestInit | undefined): unknown {
-	return JSON.parse(String(init?.body));
+	const body = init?.body;
+	if (typeof body !== "string") throw new TypeError("Expected a JSON body");
+	return JSON.parse(body);
 }
 
 describe("the OSV.dev client's request", () => {
