@@ -114,5 +114,6 @@ export default defineConfig({
 		dir: "tests/unit",
 		include: ["**/*.test.ts"],
 		environment: "node",
+		css: { include: [/\/highlight\.js\/styles\//] },
 	},
 });
